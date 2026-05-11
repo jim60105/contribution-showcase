@@ -302,56 +302,64 @@ fn collect_git_commits_filtered(
 }
 
 fn build_timeline(commits: &[CommitEntry]) -> Vec<TimelineEntry> {
-    let mut week_counts: HashMap<String, usize> = HashMap::new();
+    let mut week_lines: HashMap<String, usize> = HashMap::new();
 
     for c in commits {
         if let Ok(date) = chrono::NaiveDate::parse_from_str(&c.date, "%Y-%m-%d") {
             let iso_week = date.format("%G-W%V").to_string();
-            *week_counts.entry(iso_week).or_insert(0) += 1;
+            *week_lines.entry(iso_week).or_insert(0) += c.insertions + c.deletions;
         }
     }
 
-    let mut weeks: Vec<(String, usize)> = week_counts.into_iter().collect();
+    let mut weeks: Vec<(String, usize)> = week_lines.into_iter().collect();
     weeks.sort_by(|a, b| a.0.cmp(&b.0));
 
-    let max_count = weeks.iter().map(|(_, c)| *c).max().unwrap_or(1).max(1);
+    let max_lines = weeks.iter().map(|(_, l)| *l).max().unwrap_or(0);
 
     weeks
         .into_iter()
-        .map(|(label, count)| TimelineEntry {
+        .map(|(label, lines)| TimelineEntry {
             label,
-            count,
-            height: (count as f64 / max_count as f64) * 100.0,
+            lines,
+            height: if max_lines == 0 {
+                0.0
+            } else {
+                (lines as f64 / max_lines as f64) * 100.0
+            },
         })
         .collect()
 }
 
 fn build_type_breakdown(commits: &[CommitEntry]) -> Vec<TypeBreakdown> {
-    let mut label_counts: HashMap<String, (String, usize)> = HashMap::new();
+    let mut label_lines: HashMap<String, (String, usize)> = HashMap::new();
     for c in commits {
         let label = type_label(&c.commit_type).to_string();
         let canonical_type = match label.as_str() {
             "其他" => "other",
             _ => &c.commit_type,
         };
-        let entry = label_counts
+        let entry = label_lines
             .entry(label.clone())
             .or_insert_with(|| (canonical_type.to_string(), 0));
-        entry.1 += 1;
+        entry.1 += c.insertions + c.deletions;
     }
 
-    let total = commits.len().max(1);
-    let mut breakdown: Vec<TypeBreakdown> = label_counts
+    let total_lines: usize = commits.iter().map(|c| c.insertions + c.deletions).sum();
+    let mut breakdown: Vec<TypeBreakdown> = label_lines
         .into_iter()
-        .map(|(label, (commit_type, count))| TypeBreakdown {
+        .map(|(label, (commit_type, lines))| TypeBreakdown {
             label,
             commit_type,
-            count,
-            percentage: (count as f64 / total as f64) * 100.0,
+            lines,
+            percentage: if total_lines == 0 {
+                0.0
+            } else {
+                (lines as f64 / total_lines as f64) * 100.0
+            },
         })
         .collect();
 
-    breakdown.sort_by(|a, b| b.count.cmp(&a.count));
+    breakdown.sort_by(|a, b| b.lines.cmp(&a.lines));
     breakdown
 }
 
@@ -369,21 +377,25 @@ fn build_project_data(
     let lines_added: usize = project_commits.iter().map(|c| c.insertions).sum();
     let lines_removed: usize = project_commits.iter().map(|c| c.deletions).sum();
 
-    let mut type_counts: HashMap<String, usize> = HashMap::new();
+    let mut type_lines: HashMap<String, usize> = HashMap::new();
     for c in &project_commits {
-        *type_counts.entry(c.commit_type.clone()).or_insert(0) += 1;
+        *type_lines.entry(c.commit_type.clone()).or_insert(0) += c.insertions + c.deletions;
     }
-    let total = project_commits.len().max(1);
-    let mut top_types: Vec<TypeBreakdown> = type_counts
+    let total_lines: usize = project_commits.iter().map(|c| c.insertions + c.deletions).sum();
+    let mut top_types: Vec<TypeBreakdown> = type_lines
         .into_iter()
-        .map(|(t, count)| TypeBreakdown {
+        .map(|(t, lines)| TypeBreakdown {
             label: type_label(&t).to_string(),
             commit_type: t,
-            count,
-            percentage: (count as f64 / total as f64) * 100.0,
+            lines,
+            percentage: if total_lines == 0 {
+                0.0
+            } else {
+                (lines as f64 / total_lines as f64) * 100.0
+            },
         })
         .collect();
-    top_types.sort_by(|a, b| b.count.cmp(&a.count));
+    top_types.sort_by(|a, b| b.lines.cmp(&a.lines));
     top_types.truncate(5);
 
     ProjectData {
@@ -565,8 +577,8 @@ mod tests {
                 scope: "".to_string(),
                 subject: "Initial commit".to_string(),
                 project: "test".to_string(),
-                insertions: 0,
-                deletions: 0,
+                insertions: 10,
+                deletions: 5,
             },
             CommitEntry {
                 hash: "b".to_string(),
@@ -575,8 +587,8 @@ mod tests {
                 scope: "".to_string(),
                 subject: "Merge branch".to_string(),
                 project: "test".to_string(),
-                insertions: 0,
-                deletions: 0,
+                insertions: 20,
+                deletions: 3,
             },
             CommitEntry {
                 hash: "c".to_string(),
@@ -585,14 +597,14 @@ mod tests {
                 scope: "".to_string(),
                 subject: "Unknown change".to_string(),
                 project: "test".to_string(),
-                insertions: 0,
-                deletions: 0,
+                insertions: 7,
+                deletions: 2,
             },
         ];
         let breakdown = build_type_breakdown(&commits);
         let other_entries: Vec<_> = breakdown.iter().filter(|b| b.label == "其他").collect();
         assert_eq!(other_entries.len(), 1, "Should have exactly one '其他' entry");
-        assert_eq!(other_entries[0].count, 3);
+        assert_eq!(other_entries[0].lines, 10 + 5 + 20 + 3 + 7 + 2);
     }
 
     #[test]
@@ -605,8 +617,8 @@ mod tests {
                 scope: "".to_string(),
                 subject: "feat: A".to_string(),
                 project: "test".to_string(),
-                insertions: 0,
-                deletions: 0,
+                insertions: 10,
+                deletions: 5,
             },
             CommitEntry {
                 hash: "b".to_string(),
@@ -615,8 +627,8 @@ mod tests {
                 scope: "".to_string(),
                 subject: "fix: B".to_string(),
                 project: "test".to_string(),
-                insertions: 0,
-                deletions: 0,
+                insertions: 20,
+                deletions: 3,
             },
             CommitEntry {
                 hash: "c".to_string(),
@@ -625,14 +637,14 @@ mod tests {
                 scope: "".to_string(),
                 subject: "docs: C".to_string(),
                 project: "test".to_string(),
-                insertions: 0,
-                deletions: 0,
+                insertions: 7,
+                deletions: 2,
             },
         ];
         let timeline = build_timeline(&commits);
         assert!(timeline.len() >= 2, "Should have at least 2 week buckets");
-        let total: usize = timeline.iter().map(|t| t.count).sum();
-        assert_eq!(total, 3);
+        let total: usize = timeline.iter().map(|t| t.lines).sum();
+        assert_eq!(total, 10 + 5 + 20 + 3 + 7 + 2);
     }
 
     #[test]
@@ -887,5 +899,196 @@ mod tests {
             (lines_added + lines_removed) as f64 / unique_dates.len() as f64
         };
         assert!((avg - 0.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_zero_stat_commits_contribute_zero_to_timeline() {
+        let commits = vec![
+            CommitEntry {
+                hash: "z1".to_string(),
+                date: "2024-03-01".to_string(),
+                commit_type: "feat".to_string(),
+                scope: String::new(),
+                subject: "feat: empty".to_string(),
+                project: "test".to_string(),
+                insertions: 0,
+                deletions: 0,
+            },
+        ];
+        let timeline = build_timeline(&commits);
+        assert_eq!(timeline.len(), 1);
+        assert_eq!(timeline[0].lines, 0);
+    }
+
+    #[test]
+    fn test_all_zero_timeline_no_division_by_zero() {
+        let commits = vec![
+            CommitEntry {
+                hash: "z1".to_string(),
+                date: "2024-03-01".to_string(),
+                commit_type: "feat".to_string(),
+                scope: String::new(),
+                subject: "feat: empty".to_string(),
+                project: "test".to_string(),
+                insertions: 0,
+                deletions: 0,
+            },
+            CommitEntry {
+                hash: "z2".to_string(),
+                date: "2024-03-08".to_string(),
+                commit_type: "fix".to_string(),
+                scope: String::new(),
+                subject: "fix: empty".to_string(),
+                project: "test".to_string(),
+                insertions: 0,
+                deletions: 0,
+            },
+        ];
+        let timeline = build_timeline(&commits);
+        for entry in &timeline {
+            assert_eq!(entry.height, 0.0, "Height should be 0.0 when all lines are zero");
+        }
+    }
+
+    #[test]
+    fn test_all_zero_type_breakdown_no_division_by_zero() {
+        let commits = vec![
+            CommitEntry {
+                hash: "z1".to_string(),
+                date: "2024-03-01".to_string(),
+                commit_type: "feat".to_string(),
+                scope: String::new(),
+                subject: "feat: empty".to_string(),
+                project: "test".to_string(),
+                insertions: 0,
+                deletions: 0,
+            },
+            CommitEntry {
+                hash: "z2".to_string(),
+                date: "2024-03-02".to_string(),
+                commit_type: "fix".to_string(),
+                scope: String::new(),
+                subject: "fix: empty".to_string(),
+                project: "test".to_string(),
+                insertions: 0,
+                deletions: 0,
+            },
+        ];
+        let breakdown = build_type_breakdown(&commits);
+        for entry in &breakdown {
+            assert_eq!(entry.percentage, 0.0, "Percentage should be 0.0 when all lines are zero");
+        }
+    }
+
+    #[test]
+    fn test_type_breakdown_ordering_descending_by_lines() {
+        let commits = vec![
+            CommitEntry {
+                hash: "a".to_string(),
+                date: "2024-01-01".to_string(),
+                commit_type: "feat".to_string(),
+                scope: String::new(),
+                subject: "feat: big".to_string(),
+                project: "test".to_string(),
+                insertions: 100,
+                deletions: 50,
+            },
+            CommitEntry {
+                hash: "b".to_string(),
+                date: "2024-01-02".to_string(),
+                commit_type: "fix".to_string(),
+                scope: String::new(),
+                subject: "fix: small".to_string(),
+                project: "test".to_string(),
+                insertions: 5,
+                deletions: 2,
+            },
+            CommitEntry {
+                hash: "c".to_string(),
+                date: "2024-01-03".to_string(),
+                commit_type: "docs".to_string(),
+                scope: String::new(),
+                subject: "docs: medium".to_string(),
+                project: "test".to_string(),
+                insertions: 30,
+                deletions: 10,
+            },
+        ];
+        let breakdown = build_type_breakdown(&commits);
+        assert_eq!(breakdown.len(), 3);
+        assert_eq!(breakdown[0].lines, 150); // feat: 100+50
+        assert_eq!(breakdown[1].lines, 40);  // docs: 30+10
+        assert_eq!(breakdown[2].lines, 7);   // fix: 5+2
+    }
+
+    #[test]
+    fn test_project_top_types_lines_semantics() {
+        let commits = vec![
+            CommitEntry {
+                hash: "a".to_string(),
+                date: "2024-01-01".to_string(),
+                commit_type: "fix".to_string(),
+                scope: String::new(),
+                subject: "fix: big fix".to_string(),
+                project: "proj".to_string(),
+                insertions: 200,
+                deletions: 100,
+            },
+            CommitEntry {
+                hash: "b".to_string(),
+                date: "2024-01-02".to_string(),
+                commit_type: "feat".to_string(),
+                scope: String::new(),
+                subject: "feat: small feature".to_string(),
+                project: "proj".to_string(),
+                insertions: 50,
+                deletions: 10,
+            },
+            CommitEntry {
+                hash: "c".to_string(),
+                date: "2024-01-03".to_string(),
+                commit_type: "docs".to_string(),
+                scope: String::new(),
+                subject: "docs: update".to_string(),
+                project: "proj".to_string(),
+                insertions: 20,
+                deletions: 5,
+            },
+        ];
+        let data = build_project_data("proj", "Test project", &commits, &[]);
+        // top_types ordered by descending lines
+        assert_eq!(data.top_types.len(), 3);
+        assert_eq!(data.top_types[0].commit_type, "fix");
+        assert_eq!(data.top_types[0].lines, 300); // 200+100
+        assert_eq!(data.top_types[1].commit_type, "feat");
+        assert_eq!(data.top_types[1].lines, 60); // 50+10
+        assert_eq!(data.top_types[2].commit_type, "docs");
+        assert_eq!(data.top_types[2].lines, 25); // 20+5
+        // percentages based on total lines (385)
+        let total = 385.0_f64;
+        assert!((data.top_types[0].percentage - 300.0 / total * 100.0).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_project_top_types_truncates_to_five() {
+        let types = ["feat", "fix", "docs", "test", "chore", "ci", "style"];
+        let commits: Vec<CommitEntry> = types
+            .iter()
+            .enumerate()
+            .map(|(i, t)| CommitEntry {
+                hash: format!("{}", i),
+                date: "2024-01-01".to_string(),
+                commit_type: t.to_string(),
+                scope: String::new(),
+                subject: format!("{}: x", t),
+                project: "proj".to_string(),
+                insertions: (i + 1) * 10,
+                deletions: 0,
+            })
+            .collect();
+        let data = build_project_data("proj", "Test project", &commits, &[]);
+        assert_eq!(data.top_types.len(), 5);
+        // First should be the largest lines (style: 70, ci: 60, chore: 50, test: 40, docs: 30)
+        assert!(data.top_types[0].lines >= data.top_types[1].lines);
     }
 }

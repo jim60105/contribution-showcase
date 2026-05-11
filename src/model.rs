@@ -27,7 +27,7 @@ pub struct Summary {
 #[derive(Debug, Serialize)]
 pub struct TimelineEntry {
     pub label: String,
-    pub count: usize,
+    pub lines: usize,
     pub height: f64,
 }
 
@@ -35,7 +35,7 @@ pub struct TimelineEntry {
 pub struct TypeBreakdown {
     pub commit_type: String,
     pub label: String,
-    pub count: usize,
+    pub lines: usize,
     pub percentage: f64,
 }
 

@@ -32,12 +32,12 @@
       --font-body: 'Inter', 'Noto Sans TC', system-ui, sans-serif;
       --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
 
-      --fs-display: clamp(48px, 6vw, 76px);
-      --fs-h1: clamp(32px, 4vw, 48px);
-      --fs-h2: clamp(24px, 3vw, 36px);
-      --fs-body: 16px;
-      --fs-small: 14px;
-      --fs-xs: 12px;
+      --fs-display: clamp(52px, 6vw, 84px);
+      --fs-h1: clamp(36px, 4vw, 52px);
+      --fs-h2: clamp(28px, 3vw, 40px);
+      --fs-body: 22px;
+      --fs-small: 20px;
+      --fs-xs: 18px;
 
       --gap-xs: 8px;
       --gap-sm: 12px;
@@ -136,7 +136,7 @@
 
     .metric {
       font-family: var(--font-display);
-      font-size: clamp(36px, 5vw, 56px);
+      font-size: clamp(40px, 5vw, 60px);
       font-weight: 700;
       letter-spacing: -0.02em;
       line-height: 1;
@@ -233,7 +233,7 @@
     .kpi-card--red { background: #fef2f2; }
     .kpi-card--accent { background: #eff6ff; }
 
-    .kpi-value { font-size: clamp(28px, 4vw, 44px); font-weight: 700; font-family: var(--font-display); line-height: 1.2; }
+    .kpi-value { font-size: clamp(32px, 4vw, 48px); font-weight: 700; font-family: var(--font-display); line-height: 1.2; }
     .kpi-unit { font-size: var(--fs-small); color: var(--muted); }
 
     /* Timeline */
@@ -260,11 +260,12 @@
 
     .bar {
       width: 100%;
-      min-height: 2px;
       background: rgba(37, 99, 235, 0.25);
       border-radius: 3px 3px 0 0;
       transition: height 1s cubic-bezier(0.22, 1, 0.36, 1);
     }
+
+    .bar:not(.bar--zero) { min-height: 2px; }
 
     .bar--peak { background: var(--accent); }
 
@@ -411,7 +412,7 @@
 
     .data-table th button:hover { color: var(--accent); }
 
-    .sort-arrow { font-size: 10px; opacity: 0.6; }
+    .sort-arrow { font-size: 18px; opacity: 0.6; }
 
     .data-table td {
       padding: var(--gap-sm) var(--gap-sm);
@@ -461,13 +462,13 @@
       gap: var(--gap-xs);
     }
 
-    .hero-metric .metric { font-size: clamp(56px, 8vw, 96px); }
+    .hero-metric .metric { font-size: clamp(60px, 8vw, 100px); }
     .hero-metric-label { color: var(--muted); font-size: var(--fs-body); }
 
     .scroll-indicator {
       position: absolute;
       bottom: var(--gap-lg);
-      font-size: 24px;
+      font-size: 28px;
       color: var(--muted);
       animation: pulse 2s infinite;
     }
@@ -693,7 +694,7 @@
 
       var peakIdx = 0;
       for (var i = 1; i < timeline.length; i++) {
-        if (timeline[i].count > timeline[peakIdx].count) peakIdx = i;
+        if (timeline[i].lines > timeline[peakIdx].lines) peakIdx = i;
       }
 
       var html = '';
@@ -701,10 +702,11 @@
         var entry = timeline[j];
         var isPeak = j === peakIdx;
         html += '<div class="bar-wrapper">';
-        if (isPeak) {
-          html += '<span class="peak-annotation">高峰：' + entry.label + '（' + entry.count + '次）</span>';
+        if (isPeak && timeline[peakIdx].lines > 0) {
+          html += '<span class="peak-annotation">高峰：' + entry.label + '（' + entry.lines.toLocaleString('zh-TW') + '行）</span>';
         }
-        html += '<div class="bar' + (isPeak ? ' bar--peak' : '') + '" style="height: 0%;" data-height="' + entry.height + '"></div>';
+        var barClass = 'bar' + (isPeak ? ' bar--peak' : '') + (entry.lines === 0 ? ' bar--zero' : '');
+        html += '<div class="' + barClass + '" style="height: 0%;" data-height="' + entry.height + '"></div>';
         html += '<span class="bar-label">' + entry.label + '</span>';
         html += '</div>';
       }
@@ -737,7 +739,7 @@
         var entry = breakdown[i];
         var typeClass = entry.commit_type || 'other';
         html += '<div class="breakdown-row animate" style="transition-delay: ' + (i * 80) + 'ms;">';
-        html += '<span class="breakdown-label">' + escapeHtml(entry.label) + '（' + entry.count + '）</span>';
+        html += '<span class="breakdown-label">' + escapeHtml(entry.label) + '（' + entry.lines.toLocaleString('zh-TW') + '行）</span>';
         html += '<div class="breakdown-bar-track"><div class="breakdown-bar-fill" style="width: 0%; background: var(--' + typeClass + ');" data-width="' + entry.percentage + '"></div></div>';
         html += '<span class="breakdown-pct">' + entry.percentage.toFixed(1) + '%</span>';
         html += '</div>';
