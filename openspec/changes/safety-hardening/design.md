@@ -189,8 +189,9 @@ the user runs the command.
 `ProjectConfig`. When set, replace `--all` with the specified branch name in the
 `git log` command. When absent, default to `--all` for backward compatibility.
 The branch value MUST be validated to not start with `-` to prevent argument
-injection (e.g., `--since=1970-01-01` being interpreted as a git flag). The
-branch is placed after `--` in the argument list for safe ref resolution.
+injection (e.g., `--since=1970-01-01` being interpreted as a git flag), and must
+not contain revspec operators (`..`, `^`, `~`, spaces) to prevent scope
+manipulation. The branch is passed as a direct revision argument to `git log`.
 
 ```toml
 # showcase.toml
@@ -202,11 +203,9 @@ branch = "dev"   # optional — omit to scan all refs
 
 ```rust
 if let Some(ref branch) = project.branch {
-    if branch.starts_with('-') {
-        anyhow::bail!("branch name must not start with '-': {branch}");
+    if branch.starts_with('-') || branch.contains("..") {
+        anyhow::bail!("invalid branch name: {branch}");
     }
-    // Place branch after -- for safe argument handling
-    args.push("--".to_string());
     args.push(branch.clone());
 } else {
     args.push("--all".to_string());

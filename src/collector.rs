@@ -194,10 +194,33 @@ fn apply_filters(
     (filtered_commits, filtered_proposals)
 }
 
+fn parse_shortstat(line: &str) -> (usize, usize) {
+    let mut insertions = 0;
+    let mut deletions = 0;
+    let trimmed = line.trim();
+    if trimmed.is_empty() {
+        return (0, 0);
+    }
+    for part in trimmed.split(',') {
+        let part = part.trim();
+        if part.contains("insertion") {
+            if let Some(n) = part.split_whitespace().next() {
+                insertions = n.parse().unwrap_or(0);
+            }
+        } else if part.contains("deletion") {
+            if let Some(n) = part.split_whitespace().next() {
+                deletions = n.parse().unwrap_or(0);
+            }
+        }
+    }
+    (insertions, deletions)
+}
+
 fn collect_git_commits_filtered(
     repo_path: &str,
     project_name: &str,
     author_filter: Option<&str>,
+    branch: Option<&str>,
 ) -> Result<Vec<CommitEntry>> {
     let path = Path::new(repo_path);
     if !path.exists() || !path.join(".git").exists() {
@@ -209,20 +232,33 @@ fn collect_git_commits_filtered(
         "-C".to_string(),
         repo_path.to_string(),
         "log".to_string(),
-        "--all".to_string(),
-        format!("--format={}%H|||%aN|||%aI|||%s", COMMIT_DELIM),
-        "--shortstat".to_string(),
     ];
+
+    if let Some(branch_name) = branch {
+        args.push(branch_name.to_string());
+    } else {
+        args.push("--all".to_string());
+    }
+
+    args.push(format!("--format={}%H|||%aN|||%aI|||%s", COMMIT_DELIM));
+    args.push("--shortstat".to_string());
 
     if let Some(author) = author_filter {
         args.push(format!("--author={}", author));
     }
 
-    let output = Command::new("git").args(&args).output()?;
+    let output = Command::new("git")
+        .env("LC_ALL", "C")
+        .args(&args)
+        .output()?;
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        eprintln!("Warning: git log failed for '{}': {}", repo_path, stderr);
+        let ref_desc = branch.unwrap_or("--all");
+        eprintln!(
+            "Warning: git log failed for '{}' (ref: {}): {}",
+            project_name, ref_desc, stderr
+        );
         return Ok(Vec::new());
     }
 
@@ -251,20 +287,10 @@ fn collect_git_commits_filtered(
             }
         } else if let Some(ref mut c) = current {
             let trimmed = line.trim();
-            if trimmed.is_empty() {
-                continue;
-            }
-            for part in trimmed.split(',') {
-                let part = part.trim();
-                if part.contains("insertion") {
-                    if let Some(n) = part.split_whitespace().next() {
-                        c.insertions = n.parse().unwrap_or(0);
-                    }
-                } else if part.contains("deletion") {
-                    if let Some(n) = part.split_whitespace().next() {
-                        c.deletions = n.parse().unwrap_or(0);
-                    }
-                }
+            if !trimmed.is_empty() {
+                let (ins, del) = parse_shortstat(trimmed);
+                c.insertions = ins;
+                c.deletions = del;
             }
         }
     }
@@ -379,7 +405,12 @@ pub fn collect(config: &Config) -> Result<ShowcaseData> {
     let mut all_proposals = Vec::new();
 
     for project in &config.projects {
-        let commits = collect_git_commits_filtered(&project.path, &project.name, author_filter)?;
+        let commits = collect_git_commits_filtered(
+            &project.path,
+            &project.name,
+            author_filter,
+            project.branch.as_deref(),
+        )?;
         all_commits.extend(commits);
 
         let proposals = collect_proposals(&project.path, &project.name);
@@ -453,4 +484,307 @@ pub fn collect(config: &Config) -> Result<ShowcaseData> {
         proposals: all_proposals,
         commits: all_commits,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_parse_conventional_commit_feat() {
+        let (t, s) = parse_conventional_commit("feat: add login");
+        assert_eq!(t, "feat");
+        assert_eq!(s, "");
+    }
+
+    #[test]
+    fn test_parse_conventional_commit_with_scope() {
+        let (t, s) = parse_conventional_commit("fix(auth): token refresh");
+        assert_eq!(t, "fix");
+        assert_eq!(s, "auth");
+    }
+
+    #[test]
+    fn test_parse_conventional_commit_breaking() {
+        let (t, s) = parse_conventional_commit("feat!: remove API");
+        assert_eq!(t, "feat");
+        assert_eq!(s, "");
+    }
+
+    #[test]
+    fn test_parse_conventional_commit_non_matching() {
+        let (t, s) = parse_conventional_commit("Initial commit");
+        assert_eq!(t, "other");
+        assert_eq!(s, "");
+    }
+
+    #[test]
+    fn test_parse_conventional_commit_merge() {
+        let (t, s) = parse_conventional_commit("Merge branch 'dev'");
+        assert_eq!(t, "other");
+        assert_eq!(s, "");
+    }
+
+    #[test]
+    fn test_type_label_known_types() {
+        assert_eq!(type_label("feat"), "新功能");
+        assert_eq!(type_label("fix"), "錯誤修復");
+        assert_eq!(type_label("docs"), "文件");
+        assert_eq!(type_label("refactor"), "重構");
+        assert_eq!(type_label("test"), "測試");
+        assert_eq!(type_label("chore"), "維護");
+        assert_eq!(type_label("ci"), "CI/CD");
+        assert_eq!(type_label("build"), "建構");
+        assert_eq!(type_label("style"), "格式");
+        assert_eq!(type_label("perf"), "效能");
+    }
+
+    #[test]
+    fn test_type_label_unknown_fallback() {
+        assert_eq!(type_label("unknown"), "其他");
+        assert_eq!(type_label("random"), "其他");
+        assert_eq!(type_label(""), "其他");
+    }
+
+    #[test]
+    fn test_build_type_breakdown_no_duplicate_other() {
+        let commits = vec![
+            CommitEntry {
+                hash: "a".to_string(),
+                date: "2024-01-01".to_string(),
+                commit_type: "initial".to_string(),
+                scope: "".to_string(),
+                subject: "Initial commit".to_string(),
+                project: "test".to_string(),
+                insertions: 0,
+                deletions: 0,
+            },
+            CommitEntry {
+                hash: "b".to_string(),
+                date: "2024-01-02".to_string(),
+                commit_type: "merge".to_string(),
+                scope: "".to_string(),
+                subject: "Merge branch".to_string(),
+                project: "test".to_string(),
+                insertions: 0,
+                deletions: 0,
+            },
+            CommitEntry {
+                hash: "c".to_string(),
+                date: "2024-01-03".to_string(),
+                commit_type: "unknown".to_string(),
+                scope: "".to_string(),
+                subject: "Unknown change".to_string(),
+                project: "test".to_string(),
+                insertions: 0,
+                deletions: 0,
+            },
+        ];
+        let breakdown = build_type_breakdown(&commits);
+        let other_entries: Vec<_> = breakdown.iter().filter(|b| b.label == "其他").collect();
+        assert_eq!(other_entries.len(), 1, "Should have exactly one '其他' entry");
+        assert_eq!(other_entries[0].count, 3);
+    }
+
+    #[test]
+    fn test_build_timeline_weekly_aggregation() {
+        let commits = vec![
+            CommitEntry {
+                hash: "a".to_string(),
+                date: "2024-01-01".to_string(),
+                commit_type: "feat".to_string(),
+                scope: "".to_string(),
+                subject: "feat: A".to_string(),
+                project: "test".to_string(),
+                insertions: 0,
+                deletions: 0,
+            },
+            CommitEntry {
+                hash: "b".to_string(),
+                date: "2024-01-02".to_string(),
+                commit_type: "fix".to_string(),
+                scope: "".to_string(),
+                subject: "fix: B".to_string(),
+                project: "test".to_string(),
+                insertions: 0,
+                deletions: 0,
+            },
+            CommitEntry {
+                hash: "c".to_string(),
+                date: "2024-01-15".to_string(),
+                commit_type: "docs".to_string(),
+                scope: "".to_string(),
+                subject: "docs: C".to_string(),
+                project: "test".to_string(),
+                insertions: 0,
+                deletions: 0,
+            },
+        ];
+        let timeline = build_timeline(&commits);
+        assert!(timeline.len() >= 2, "Should have at least 2 week buckets");
+        let total: usize = timeline.iter().map(|t| t.count).sum();
+        assert_eq!(total, 3);
+    }
+
+    #[test]
+    fn test_apply_filters_date_range() {
+        let commits = vec![
+            CommitEntry {
+                hash: "a".to_string(),
+                date: "2024-01-01".to_string(),
+                commit_type: "feat".to_string(),
+                scope: "".to_string(),
+                subject: "A".to_string(),
+                project: "test".to_string(),
+                insertions: 0,
+                deletions: 0,
+            },
+            CommitEntry {
+                hash: "b".to_string(),
+                date: "2024-06-15".to_string(),
+                commit_type: "fix".to_string(),
+                scope: "".to_string(),
+                subject: "B".to_string(),
+                project: "test".to_string(),
+                insertions: 0,
+                deletions: 0,
+            },
+            CommitEntry {
+                hash: "c".to_string(),
+                date: "2024-12-31".to_string(),
+                commit_type: "docs".to_string(),
+                scope: "".to_string(),
+                subject: "C".to_string(),
+                project: "test".to_string(),
+                insertions: 0,
+                deletions: 0,
+            },
+        ];
+        let proposals = vec![];
+        let config = Config {
+            title: None,
+            output: None,
+            projects: vec![],
+            filters: Some(crate::config::FilterConfig {
+                author: None,
+                since: Some("2024-03-01".to_string()),
+                until: Some("2024-09-01".to_string()),
+                types: None,
+            }),
+        };
+        let (filtered, _) = apply_filters(&commits, &proposals, &config);
+        assert_eq!(filtered.len(), 1);
+        assert_eq!(filtered[0].hash, "b");
+    }
+
+    #[test]
+    fn test_apply_filters_date_range_inclusive() {
+        let commits = vec![
+            CommitEntry {
+                hash: "a".to_string(),
+                date: "2024-01-01".to_string(),
+                commit_type: "feat".to_string(),
+                scope: "".to_string(),
+                subject: "A".to_string(),
+                project: "test".to_string(),
+                insertions: 0,
+                deletions: 0,
+            },
+            CommitEntry {
+                hash: "b".to_string(),
+                date: "2024-12-31".to_string(),
+                commit_type: "fix".to_string(),
+                scope: "".to_string(),
+                subject: "B".to_string(),
+                project: "test".to_string(),
+                insertions: 0,
+                deletions: 0,
+            },
+        ];
+        let proposals = vec![];
+        let config = Config {
+            title: None,
+            output: None,
+            projects: vec![],
+            filters: Some(crate::config::FilterConfig {
+                author: None,
+                since: Some("2024-01-01".to_string()),
+                until: Some("2024-12-31".to_string()),
+                types: None,
+            }),
+        };
+        let (filtered, _) = apply_filters(&commits, &proposals, &config);
+        assert_eq!(filtered.len(), 2, "Boundary dates should be inclusive");
+    }
+
+    #[test]
+    fn test_apply_filters_type_filter() {
+        let commits = vec![
+            CommitEntry {
+                hash: "a".to_string(),
+                date: "2024-01-01".to_string(),
+                commit_type: "feat".to_string(),
+                scope: "".to_string(),
+                subject: "A".to_string(),
+                project: "test".to_string(),
+                insertions: 0,
+                deletions: 0,
+            },
+            CommitEntry {
+                hash: "b".to_string(),
+                date: "2024-01-02".to_string(),
+                commit_type: "fix".to_string(),
+                scope: "".to_string(),
+                subject: "B".to_string(),
+                project: "test".to_string(),
+                insertions: 0,
+                deletions: 0,
+            },
+            CommitEntry {
+                hash: "c".to_string(),
+                date: "2024-01-03".to_string(),
+                commit_type: "docs".to_string(),
+                scope: "".to_string(),
+                subject: "C".to_string(),
+                project: "test".to_string(),
+                insertions: 0,
+                deletions: 0,
+            },
+        ];
+        let proposals = vec![];
+        let config = Config {
+            title: None,
+            output: None,
+            projects: vec![],
+            filters: Some(crate::config::FilterConfig {
+                author: None,
+                since: None,
+                until: None,
+                types: Some(vec!["feat".to_string(), "fix".to_string()]),
+            }),
+        };
+        let (filtered, _) = apply_filters(&commits, &proposals, &config);
+        assert_eq!(filtered.len(), 2);
+    }
+
+    #[test]
+    fn test_shortstat_parsing_insertions_only() {
+        let (ins, del) = parse_shortstat("3 files changed, 42 insertions(+)");
+        assert_eq!(ins, 42);
+        assert_eq!(del, 0);
+    }
+
+    #[test]
+    fn test_shortstat_parsing_deletions_only() {
+        let (ins, del) = parse_shortstat("1 file changed, 5 deletions(-)");
+        assert_eq!(ins, 0);
+        assert_eq!(del, 5);
+    }
+
+    #[test]
+    fn test_shortstat_parsing_both() {
+        let (ins, del) = parse_shortstat("2 files changed, 10 insertions(+), 3 deletions(-)");
+        assert_eq!(ins, 10);
+        assert_eq!(del, 3);
+    }
 }
