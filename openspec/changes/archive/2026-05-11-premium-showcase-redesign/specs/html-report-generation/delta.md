@@ -69,17 +69,24 @@ The sixth card is the new average daily lines metric.
 
 ### Requirement: Typography Craft System
 
-The system SHALL use a structured typography system with serif display font
-(`'Iowan Old Style', 'Charter', Georgia, serif`), sans-serif body font
-(system font stack), and monospace for data numbers
-(`font-variant-numeric: tabular-nums`). Headlines use negative letter-spacing
-and a 3-weight hierarchy (400 body / 550 labels / 600 headlines).
+The system SHALL use a structured typography system with Google Fonts:
+serif display (`'Playfair Display', 'Noto Serif TC', Georgia, serif`),
+sans-serif body (`'Inter', 'Noto Sans TC', system-ui, sans-serif`), and
+monospace for data numbers (`'JetBrains Mono'`,
+`font-variant-numeric: tabular-nums`). Headlines use negative letter-spacing
+and a multi-weight hierarchy (400 body / 500–600 labels / 700 headlines).
+Font loading uses `<link rel="preconnect">` and `font-display: swap`.
+
+**Note**: This introduces external Google Fonts CDN dependencies, superseding
+the previous self-contained constraint for fonts only. The HTML output still
+requires no other external resources.
 
 #### Scenario: Typography applied
 - **GIVEN** the generated HTML file
 - **WHEN** inspecting CSS
-- **THEN** display headings use serif with negative tracking, body text uses
-  sans-serif, and numeric values use monospace with tabular-nums
+- **THEN** display headings use Playfair Display/Noto Serif TC with negative
+  tracking, body text uses Inter/Noto Sans TC, and numeric values use
+  JetBrains Mono with tabular-nums
 
 ### Requirement: Empty Data State
 

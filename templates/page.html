@@ -425,8 +425,8 @@
     /* Animations */
     .animate {
       opacity: 0;
-      transform: translateY(20px);
-      transition: opacity 0.6s ease, transform 0.6s ease;
+      transform: translateY(24px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
     }
 
     .animate.in-view {
@@ -1009,7 +1009,7 @@
     function initKeyboard() {
       document.addEventListener('keydown', function(e) {
         var tag = e.target.tagName.toLowerCase();
-        if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+        if (tag === 'input' || tag === 'textarea' || tag === 'select' || tag === 'button' || tag === 'a') return;
         if (e.target.closest('.scroll-container')) return;
 
         var slides = document.querySelectorAll('.slide');
