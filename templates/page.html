@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>貢獻總覽</title>
+<style>
+/* ── Reset & Base ───────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root {
+  --bg: #f2f2f0;
+  --surface: #ffffff;
+  --border: #ececea;
+  --border-strong: #e2e2df;
+  --ink: #0a0a0a;
+  --secondary: #6b6b6b;
+  --tertiary: #9a9a95;
+  --radius: 16px;
+  --shadow: 0 1px 2px rgba(10,10,10,.04), 0 1px 1px rgba(10,10,10,.02);
+
+  --feat: #2f7d4a;
+  --fix: #b53a2a;
+  --docs: #6366f1;
+  --refactor: #d97706;
+  --test: #0891b2;
+  --chore: #6b7280;
+  --ci: #7c3aed;
+  --build: #ea580c;
+  --style: #db2777;
+  --perf: #059669;
+  --other: #9a9a95;
+}
+
+html { font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+  min-height: 100vh;
+}
+
+/* ── Container ──────────────────────────────────────────────── */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 24px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* ── Card surface ───────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 24px;
+}
+
+/* ── Section titles ─────────────────────────────────────────── */
+.section-title {
+  font-size: 1.15rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  margin-bottom: 18px;
+  color: var(--ink);
+}
+
+/* ── Hero ───────────────────────────────────────────────────── */
+.hero {
+  text-align: center;
+  padding: 48px 24px 40px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.hero-title {
+  font-size: 2rem;
+  font-weight: 750;
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+  margin-bottom: 12px;
+}
+.hero-subtitle {
+  font-size: 1.05rem;
+  color: var(--secondary);
+  font-weight: 450;
+}
+.hero-meta {
+  margin-top: 10px;
+  font-size: 0.8rem;
+  color: var(--tertiary);
+}
+
+/* ── KPI Strip ──────────────────────────────────────────────── */
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+.kpi-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px 16px;
+  text-align: center;
+  transition: border-color .15s;
+}
+.kpi-card:hover { border-color: var(--border-strong); }
+.kpi-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums lining-nums;
+  line-height: 1.2;
+  color: var(--ink);
+}
+.kpi-label {
+  font-size: 0.78rem;
+  color: var(--secondary);
+  margin-top: 4px;
+  font-weight: 450;
+}
+
+/* ── Charts Row ─────────────────────────────────────────────── */
+.charts-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 16px;
+}
+
+/* Timeline bar chart */
+.timeline-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  height: 180px;
+  padding: 0 4px;
+}
+.timeline-bar-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  justify-content: flex-end;
+  min-width: 0;
+}
+.timeline-bar {
+  width: 100%;
+  max-width: 40px;
+  border-radius: 4px 4px 0 0;
+  background: rgba(37, 99, 235, 0.7);
+  transition: background .15s, height .3s ease;
+  min-height: 2px;
+  cursor: default;
+}
+.timeline-bar:hover { background: rgba(37, 99, 235, 0.95); }
+.timeline-label {
+  font-size: 0.65rem;
+  color: var(--tertiary);
+  margin-top: 6px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Type breakdown */
+.type-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.type-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 6px;
+  white-space: nowrap;
+  min-width: 56px;
+  text-align: center;
+}
+.type-bar-track {
+  flex: 1;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--border);
+  overflow: hidden;
+}
+.type-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width .4s ease;
+}
+.type-count {
+  font-size: 0.78rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  min-width: 32px;
+  text-align: right;
+}
+
+/* ── Project Cards ──────────────────────────────────────────── */
+.project-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+  gap: 14px;
+}
+.project-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color .15s;
+}
+.project-card:hover { border-color: var(--border-strong); }
+.project-name {
+  font-size: 1rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.project-desc {
+  font-size: 0.82rem;
+  color: var(--secondary);
+  margin-top: -6px;
+}
+.project-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 0.78rem;
+  color: var(--secondary);
+}
+.project-stat-value {
+  font-weight: 650;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.project-type-bar {
+  height: 6px;
+  border-radius: 3px;
+  display: flex;
+  overflow: hidden;
+  background: var(--border);
+  margin-top: auto;
+}
+.project-type-segment {
+  height: 100%;
+  transition: width .4s ease;
+}
+
+/* ── Proposals ──────────────────────────────────────────────── */
+.proposal-group-title {
+  font-size: 0.92rem;
+  font-weight: 620;
+  margin: 18px 0 8px;
+  color: var(--ink);
+}
+.proposal-group-title:first-of-type { margin-top: 0; }
+
+.proposal-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+  margin-bottom: 12px;
+}
+.proposal-table th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--secondary);
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border-strong);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.proposal-table td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.proposal-table tr:nth-child(even) td { background: rgba(0,0,0,.015); }
+.proposal-slug {
+  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', ui-monospace, monospace;
+  font-size: 0.78rem;
+  color: var(--ink);
+}
+.proposal-task-count {
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+/* ── Commit Log ─────────────────────────────────────────────── */
+.commit-table-wrapper { overflow-x: auto; }
+
+.commit-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+.commit-table th {
+  text-align: left;
+  font-weight: 600;
+  color: var(--secondary);
+  padding: 8px 10px;
+  border-bottom: 2px solid var(--border-strong);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+  position: relative;
+}
+.commit-table th:hover { color: var(--ink); }
+.commit-table th .sort-arrow {
+  margin-left: 4px;
+  font-size: 0.65rem;
+  opacity: 0.4;
+}
+.commit-table th.sorted .sort-arrow { opacity: 1; color: var(--ink); }
+.commit-table td {
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+.commit-table tr:hover td { background: rgba(0,0,0,.02); }
+.commit-date {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--secondary);
+}
+.commit-project {
+  font-size: 0.78rem;
+  color: var(--secondary);
+  white-space: nowrap;
+}
+.commit-subject {
+  max-width: 420px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.commit-scope {
+  color: var(--tertiary);
+  font-size: 0.78rem;
+}
+.commit-stats {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.78rem;
+}
+.stat-add { color: var(--feat); font-weight: 600; }
+.stat-del { color: var(--fix); font-weight: 600; }
+
+/* Commit badge (small pill in table) */
+.commit-badge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 5px;
+  white-space: nowrap;
+}
+
+/* Show-all button */
+.show-all-btn {
+  display: block;
+  margin: 14px auto 0;
+  padding: 8px 24px;
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 550;
+  color: var(--secondary);
+  cursor: pointer;
+  transition: all .15s;
+}
+.show-all-btn:hover {
+  border-color: var(--ink);
+  color: var(--ink);
+}
+
+/* ── Footer ─────────────────────────────────────────────────── */
+.page-footer {
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--tertiary);
+  padding: 24px 0 0;
+  border-top: 1px solid var(--border);
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .charts-row { grid-template-columns: 1fr; }
+}
+@media (max-width: 768px) {
+  .project-grid { grid-template-columns: 1fr; }
+  .kpi-strip { grid-template-columns: repeat(3, 1fr); }
+  .hero-title { font-size: 1.55rem; }
+  .container { padding: 20px 16px 40px; gap: 20px; }
+  .commit-subject { max-width: 220px; }
+}
+@media (max-width: 480px) {
+  .kpi-strip { grid-template-columns: 1fr; }
+  .hero { padding: 32px 16px 28px; }
+  .hero-title { font-size: 1.3rem; }
+}
+
+/* ── Print ──────────────────────────────────────────────────── */
+@media print {
+  body { background: #fff; }
+  .container { padding: 0; max-width: 100%; }
+  .card, .project-card, .kpi-card, .hero {
+    box-shadow: none;
+    border: 1px solid #ddd;
+    break-inside: avoid;
+  }
+  .show-all-btn { display: none !important; }
+  .commit-table tr { break-inside: avoid; }
+  .timeline-bar:hover { background: rgba(37, 99, 235, 0.7); }
+}
+</style>
+</head>
+<body>
+
+<main class="container">
+  <header id="hero" data-od-id="hero"></header>
+  <section id="kpi" data-od-id="kpi"></section>
+  <section id="charts" data-od-id="charts"></section>
+  <section id="projects" data-od-id="projects"></section>
+  <section id="proposals" data-od-id="proposals"></section>
+  <section id="commits" data-od-id="commits"></section>
+  <footer id="page-footer" data-od-id="footer" class="page-footer"></footer>
+</main>
+
+<script>
+// The Rust CLI replaces the placeholder string (including quotes) with real JSON.
+const DATA = "__SHOWCASE_DATA__";
+
+// ── Helpers ────────────────────────────────────────────────────
+function formatNumber(n) {
+  return Number(n).toLocaleString('zh-TW');
+}
+
+function el(tag, attrs, children) {
+  var node = document.createElement(tag);
+  if (attrs) {
+    Object.keys(attrs).forEach(function(k) {
+      if (k === 'textContent') { node.textContent = attrs[k]; }
+      else if (k === 'className') { node.className = attrs[k]; }
+      else if (k === 'style') { node.style.cssText = attrs[k]; }
+      else { node.setAttribute(k, attrs[k]); }
+    });
+  }
+  if (children) {
+    (Array.isArray(children) ? children : [children]).forEach(function(c) {
+      if (c != null) {
+        node.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+      }
+    });
+  }
+  return node;
+}
+
+function typeColor(t) {
+  var map = {
+    feat:'--feat', fix:'--fix', docs:'--docs', refactor:'--refactor',
+    test:'--test', chore:'--chore', ci:'--ci', build:'--build',
+    style:'--style', perf:'--perf'
+  };
+  var v = map[t];
+  if (v) {
+    return getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  }
+  return getComputedStyle(document.documentElement).getPropertyValue('--other').trim();
+}
+
+function makeBadge(commitType, label, small) {
+  var color = typeColor(commitType);
+  var bg = color + '1a';
+  var css = 'background:' + bg + ';color:' + color + ';';
+  return el('span', {
+    className: small ? 'commit-badge' : 'type-badge',
+    style: css,
+    textContent: label || commitType
+  });
+}
+
+// ── Renderers ──────────────────────────────────────────────────
+
+function renderHero(data) {
+  var root = document.getElementById('hero');
+  root.className = 'hero';
+  root.appendChild(el('h1', { className: 'hero-title', textContent: data.title }));
+  root.appendChild(el('p', { className: 'hero-subtitle', textContent: data.author + '\u3000·\u3000' + data.date_range }));
+  root.appendChild(el('p', { className: 'hero-meta', textContent: '\u7522\u751f\u65bc ' + data.generated_at }));
+}
+
+function renderKPI(data) {
+  var root = document.getElementById('kpi');
+  root.className = 'kpi-strip';
+  var items = [
+    { value: data.summary.total_commits, label: '\u63d0\u4ea4\u6b21\u6578' },
+    { value: data.summary.total_repos, label: '\u5c08\u6848\u6578' },
+    { value: data.summary.total_proposals, label: 'OpenSpec \u63d0\u6848' },
+    { value: data.summary.lines_added, label: '\u65b0\u589e\u884c\u6578' },
+    { value: data.summary.lines_removed, label: '\u522a\u9664\u884c\u6578' }
+  ];
+  items.forEach(function(item) {
+    root.appendChild(
+      el('div', { className: 'kpi-card' }, [
+        el('div', { className: 'kpi-value', textContent: formatNumber(item.value) }),
+        el('div', { className: 'kpi-label', textContent: item.label })
+      ])
+    );
+  });
+}
+
+function renderCharts(data) {
+  var root = document.getElementById('charts');
+  root.className = 'charts-row';
+
+  // ── Timeline ──
+  var timelineCard = el('div', { className: 'card' });
+  timelineCard.appendChild(el('h2', { className: 'section-title', textContent: '\u63d0\u4ea4\u6642\u9593\u8ef8' }));
+  var chart = el('div', { className: 'timeline-chart' });
+  data.timeline.forEach(function(w) {
+    var bar = el('div', {
+      className: 'timeline-bar',
+      style: 'height:' + Math.max(w.height, 1) + '%',
+      title: w.label + ': ' + w.count + ' \u6b21\u63d0\u4ea4'
+    });
+    var wrapper = el('div', { className: 'timeline-bar-wrapper' }, [
+      bar,
+      el('span', { className: 'timeline-label', textContent: w.label })
+    ]);
+    chart.appendChild(wrapper);
+  });
+  timelineCard.appendChild(chart);
+  root.appendChild(timelineCard);
+
+  // ── Type breakdown ──
+  var typeCard = el('div', { className: 'card' });
+  typeCard.appendChild(el('h2', { className: 'section-title', textContent: '\u8ca2\u737b\u985e\u578b\u5206\u4f48' }));
+  var maxPct = 0;
+  data.type_breakdown.forEach(function(t) { if (t.percentage > maxPct) maxPct = t.percentage; });
+  data.type_breakdown.forEach(function(t) {
+    var color = typeColor(t.commit_type);
+    var fill = el('div', {
+      className: 'type-bar-fill',
+      style: 'width:' + (t.percentage / maxPct * 100) + '%;background:' + color + '33;'
+    });
+    var track = el('div', { className: 'type-bar-track' }, [fill]);
+    typeCard.appendChild(
+      el('div', { className: 'type-row' }, [
+        makeBadge(t.commit_type, t.label),
+        track,
+        el('span', { className: 'type-count', style: 'color:' + color, textContent: String(t.count) })
+      ])
+    );
+  });
+  root.appendChild(typeCard);
+}
+
+function renderProjects(data) {
+  var root = document.getElementById('projects');
+  root.appendChild(el('h2', { className: 'section-title', textContent: '\u5c08\u6848\u8ca2\u737b\u660e\u7d30' }));
+  var grid = el('div', { className: 'project-grid' });
+
+  data.projects.forEach(function(p) {
+    var card = el('div', { className: 'project-card' });
+    card.appendChild(el('h3', { className: 'project-name', textContent: p.name }));
+    if (p.description) {
+      card.appendChild(el('p', { className: 'project-desc', textContent: p.description }));
+    }
+
+    var stats = el('div', { className: 'project-stats' });
+    var commitStat = el('span');
+    commitStat.appendChild(el('span', { className: 'project-stat-value', textContent: formatNumber(p.commit_count) }));
+    commitStat.appendChild(document.createTextNode(' \u63d0\u4ea4'));
+    stats.appendChild(commitStat);
+
+    var proposalStat = el('span');
+    proposalStat.appendChild(el('span', { className: 'project-stat-value', textContent: formatNumber(p.proposal_count) }));
+    proposalStat.appendChild(document.createTextNode(' \u63d0\u6848'));
+    stats.appendChild(proposalStat);
+
+    stats.appendChild(el('span', null, [
+      el('span', { className: 'project-stat-value stat-add', textContent: '+' + formatNumber(p.lines_added) })
+    ]));
+    stats.appendChild(el('span', null, [
+      el('span', { className: 'project-stat-value stat-del', textContent: '\u2212' + formatNumber(p.lines_removed) })
+    ]));
+    card.appendChild(stats);
+
+    // Type distribution bar
+    if (p.top_types && p.top_types.length > 0) {
+      var bar = el('div', { className: 'project-type-bar' });
+      p.top_types.forEach(function(t) {
+        bar.appendChild(el('div', {
+          className: 'project-type-segment',
+          style: 'width:' + t.percentage + '%;background:' + typeColor(t.commit_type) + ';',
+          title: t.label + ' ' + t.percentage + '%'
+        }));
+      });
+      card.appendChild(bar);
+    }
+    grid.appendChild(card);
+  });
+  root.appendChild(grid);
+}
+
+function renderProposals(data) {
+  var root = document.getElementById('proposals');
+  if (!data.proposals || data.proposals.length === 0) {
+    root.style.display = 'none';
+    return;
+  }
+
+  var wrapper = el('div', { className: 'card' });
+  wrapper.appendChild(el('h2', { className: 'section-title', textContent: 'OpenSpec \u8b8a\u66f4\u63d0\u6848' }));
+
+  // Group by project
+  var groups = {};
+  var order = [];
+  data.proposals.forEach(function(p) {
+    if (!groups[p.project]) { groups[p.project] = []; order.push(p.project); }
+    groups[p.project].push(p);
+  });
+
+  order.forEach(function(proj) {
+    wrapper.appendChild(el('h3', { className: 'proposal-group-title', textContent: proj }));
+    var table = el('table', { className: 'proposal-table' });
+    var thead = el('thead');
+    var headRow = el('tr');
+    ['\u65e5\u671f', '\u63d0\u6848\u540d\u7a31', '\u4efb\u52d9\u6578'].forEach(function(h) {
+      headRow.appendChild(el('th', { textContent: h }));
+    });
+    thead.appendChild(headRow);
+    table.appendChild(thead);
+
+    var tbody = el('tbody');
+    groups[proj].forEach(function(p) {
+      var tr = el('tr');
+      tr.appendChild(el('td', { textContent: p.date }));
+      var slugCell = el('td');
+      slugCell.appendChild(el('span', { className: 'proposal-slug', textContent: p.slug }));
+      if (p.description) {
+        slugCell.appendChild(el('br'));
+        slugCell.appendChild(el('span', { style: 'font-size:0.75rem;color:var(--secondary)', textContent: p.description }));
+      }
+      tr.appendChild(slugCell);
+      tr.appendChild(el('td', { className: 'proposal-task-count', textContent: String(p.task_count) }));
+      tbody.appendChild(tr);
+    });
+    table.appendChild(tbody);
+    wrapper.appendChild(table);
+  });
+
+  root.appendChild(wrapper);
+}
+
+function renderCommits(data) {
+  var root = document.getElementById('commits');
+  var wrapper = el('div', { className: 'card' });
+  wrapper.appendChild(el('h2', { className: 'section-title', textContent: '\u63d0\u4ea4\u7d00\u9304' }));
+
+  var tableWrap = el('div', { className: 'commit-table-wrapper' });
+  var table = el('table', { className: 'commit-table' });
+
+  var columns = [
+    { key: 'date', label: '\u65e5\u671f' },
+    { key: 'project', label: '\u5c08\u6848' },
+    { key: 'commit_type', label: '\u985e\u578b' },
+    { key: 'subject', label: '\u8aaa\u660e' },
+    { key: 'insertions', label: '+/\u2212' }
+  ];
+
+  var thead = el('thead');
+  var headRow = el('tr');
+  var sortState = { key: null, asc: true };
+  var currentData = data.commits.slice();
+  var LIMIT = 100;
+  var showAll = false;
+
+  columns.forEach(function(col) {
+    var arrow = el('span', { className: 'sort-arrow', textContent: '\u25b2' });
+    var th = el('th', null, [document.createTextNode(col.label), arrow]);
+    th.addEventListener('click', function() {
+      var asc = sortState.key === col.key ? !sortState.asc : true;
+      sortState.key = col.key;
+      sortState.asc = asc;
+
+      currentData.sort(function(a, b) {
+        var va = a[col.key] != null ? a[col.key] : '';
+        var vb = b[col.key] != null ? b[col.key] : '';
+        if (typeof va === 'number' && typeof vb === 'number') {
+          return asc ? va - vb : vb - va;
+        }
+        va = String(va); vb = String(vb);
+        return asc ? va.localeCompare(vb) : vb.localeCompare(va);
+      });
+
+      // Update header styles
+      var allTh = thead.querySelectorAll('th');
+      for (var i = 0; i < allTh.length; i++) {
+        allTh[i].className = '';
+        var sa = allTh[i].querySelector('.sort-arrow');
+        if (sa) sa.textContent = '\u25b2';
+      }
+      th.className = 'sorted';
+      arrow.textContent = asc ? '\u25b2' : '\u25bc';
+
+      rebuildBody();
+    });
+    headRow.appendChild(th);
+  });
+  thead.appendChild(headRow);
+  table.appendChild(thead);
+
+  var tbody = el('tbody');
+  table.appendChild(tbody);
+  tableWrap.appendChild(table);
+  wrapper.appendChild(tableWrap);
+
+  // Show-all button
+  var btnContainer = el('div');
+  var btn = el('button', { className: 'show-all-btn' });
+  btnContainer.appendChild(btn);
+  wrapper.appendChild(btnContainer);
+
+  function rebuildBody() {
+    while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
+
+    var visibleData = showAll ? currentData : currentData.slice(0, LIMIT);
+    visibleData.forEach(function(c) {
+      var tr = el('tr');
+
+      // Date (MM-DD)
+      var dateStr = c.date || '';
+      var parts = dateStr.split('-');
+      var shortDate = parts.length >= 3 ? parts[1] + '-' + parts[2] : dateStr;
+      tr.appendChild(el('td', { className: 'commit-date', textContent: shortDate }));
+
+      // Project
+      tr.appendChild(el('td', { className: 'commit-project', textContent: c.project || '' }));
+
+      // Type badge
+      var badgeCell = el('td');
+      badgeCell.appendChild(makeBadge(c.commit_type, c.commit_type, true));
+      tr.appendChild(badgeCell);
+
+      // Subject with optional scope
+      var subjectCell = el('td', { className: 'commit-subject' });
+      if (c.scope) {
+        subjectCell.appendChild(el('span', { className: 'commit-scope', textContent: '(' + c.scope + ') ' }));
+      }
+      subjectCell.appendChild(document.createTextNode(c.subject || ''));
+      tr.appendChild(subjectCell);
+
+      // +/-
+      var statsCell = el('td', { className: 'commit-stats' });
+      statsCell.appendChild(el('span', { className: 'stat-add', textContent: '+' + (c.insertions || 0) }));
+      statsCell.appendChild(document.createTextNode(' '));
+      statsCell.appendChild(el('span', { className: 'stat-del', textContent: '\u2212' + (c.deletions || 0) }));
+      tr.appendChild(statsCell);
+
+      tbody.appendChild(tr);
+    });
+
+    // Toggle button visibility
+    if (currentData.length > LIMIT) {
+      btn.textContent = showAll
+        ? '\u6536\u5408\u81f3 ' + LIMIT + ' \u7b46'
+        : '\u986f\u793a\u5168\u90e8 ' + formatNumber(currentData.length) + ' \u7b46';
+      btn.style.display = '';
+    } else {
+      btn.style.display = 'none';
+    }
+  }
+
+  btn.addEventListener('click', function() {
+    showAll = !showAll;
+    rebuildBody();
+  });
+
+  rebuildBody();
+  root.appendChild(wrapper);
+}
+
+function renderFooter(data) {
+  var root = document.getElementById('page-footer');
+  root.appendChild(document.createTextNode('\u7531 contribution-showcase \u7522\u751f \u00b7 ' + data.generated_at));
+}
+
+// ── Main ───────────────────────────────────────────────────────
+function render() {
+  if (typeof DATA === 'string') {
+    document.body.appendChild(
+      el('p', {
+        style: 'text-align:center;padding:60px;color:var(--tertiary);font-size:1.1rem;',
+        textContent: '\u5c1a\u672a\u5d4c\u5165\u8cc7\u6599\u3002\u8acb\u900f\u904e CLI \u5de5\u5177\u7522\u751f\u5831\u544a\u3002'
+      })
+    );
+    return;
+  }
+  document.title = DATA.title || '\u8ca2\u737b\u7e3d\u89bd';
+  renderHero(DATA);
+  renderKPI(DATA);
+  renderCharts(DATA);
+  renderProjects(DATA);
+  renderProposals(DATA);
+  renderCommits(DATA);
+  renderFooter(DATA);
+}
+
+render();
+</script>
+
+</body>
+</html>
