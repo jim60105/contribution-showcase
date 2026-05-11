@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::path::Path;
 use std::process::Command;
 
@@ -439,6 +439,14 @@ pub fn collect(config: &Config) -> Result<ShowcaseData> {
     let lines_added: usize = all_commits.iter().map(|c| c.insertions).sum();
     let lines_removed: usize = all_commits.iter().map(|c| c.deletions).sum();
 
+    let unique_dates: HashSet<&str> = all_commits.iter().map(|c| &c.date[..10]).collect();
+    let unique_date_count = unique_dates.len();
+    let avg_daily_lines = if unique_date_count > 0 {
+        (lines_added + lines_removed) as f64 / unique_date_count as f64
+    } else {
+        0.0
+    };
+
     let date_range = if all_commits.is_empty() {
         "N/A".to_string()
     } else {
@@ -477,6 +485,7 @@ pub fn collect(config: &Config) -> Result<ShowcaseData> {
             total_proposals,
             lines_added,
             lines_removed,
+            avg_daily_lines,
         },
         timeline,
         type_breakdown,
@@ -786,5 +795,97 @@ mod tests {
         let (ins, del) = parse_shortstat("2 files changed, 10 insertions(+), 3 deletions(-)");
         assert_eq!(ins, 10);
         assert_eq!(del, 3);
+    }
+
+    #[test]
+    fn test_avg_daily_lines_multiple_dates() {
+        let commits = vec![
+            CommitEntry {
+                hash: "a1".to_string(),
+                date: "2025-01-01".to_string(),
+                commit_type: "feat".to_string(),
+                scope: String::new(),
+                subject: "feat: a".to_string(),
+                project: "p1".to_string(),
+                insertions: 100,
+                deletions: 50,
+            },
+            CommitEntry {
+                hash: "a2".to_string(),
+                date: "2025-01-02".to_string(),
+                commit_type: "fix".to_string(),
+                scope: String::new(),
+                subject: "fix: b".to_string(),
+                project: "p1".to_string(),
+                insertions: 200,
+                deletions: 100,
+            },
+            CommitEntry {
+                hash: "a3".to_string(),
+                date: "2025-01-03".to_string(),
+                commit_type: "docs".to_string(),
+                scope: String::new(),
+                subject: "docs: c".to_string(),
+                project: "p1".to_string(),
+                insertions: 50,
+                deletions: 0,
+            },
+        ];
+        // 3 unique dates, total lines = 100+50+200+100+50+0 = 500
+        let unique_dates: std::collections::HashSet<&str> =
+            commits.iter().map(|c| &c.date[..10]).collect();
+        let lines_added: usize = commits.iter().map(|c| c.insertions).sum();
+        let lines_removed: usize = commits.iter().map(|c| c.deletions).sum();
+        let avg = (lines_added + lines_removed) as f64 / unique_dates.len() as f64;
+        assert!((avg - 166.666).abs() < 1.0);
+        assert_eq!(unique_dates.len(), 3);
+    }
+
+    #[test]
+    fn test_avg_daily_lines_same_date() {
+        let commits = vec![
+            CommitEntry {
+                hash: "b1".to_string(),
+                date: "2025-03-15".to_string(),
+                commit_type: "feat".to_string(),
+                scope: String::new(),
+                subject: "feat: x".to_string(),
+                project: "p1".to_string(),
+                insertions: 40,
+                deletions: 10,
+            },
+            CommitEntry {
+                hash: "b2".to_string(),
+                date: "2025-03-15".to_string(),
+                commit_type: "fix".to_string(),
+                scope: String::new(),
+                subject: "fix: y".to_string(),
+                project: "p1".to_string(),
+                insertions: 60,
+                deletions: 20,
+            },
+        ];
+        let unique_dates: std::collections::HashSet<&str> =
+            commits.iter().map(|c| &c.date[..10]).collect();
+        assert_eq!(unique_dates.len(), 1);
+        let lines_added: usize = commits.iter().map(|c| c.insertions).sum();
+        let lines_removed: usize = commits.iter().map(|c| c.deletions).sum();
+        let avg = (lines_added + lines_removed) as f64 / unique_dates.len() as f64;
+        assert!((avg - 130.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_avg_daily_lines_no_commits() {
+        let commits: Vec<CommitEntry> = Vec::new();
+        let unique_dates: std::collections::HashSet<&str> =
+            commits.iter().map(|c| &c.date[..10]).collect();
+        let avg = if unique_dates.is_empty() {
+            0.0
+        } else {
+            let lines_added: usize = commits.iter().map(|c| c.insertions).sum();
+            let lines_removed: usize = commits.iter().map(|c| c.deletions).sum();
+            (lines_added + lines_removed) as f64 / unique_dates.len() as f64
+        };
+        assert!((avg - 0.0).abs() < f64::EPSILON);
     }
 }

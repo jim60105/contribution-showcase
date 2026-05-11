@@ -1,834 +1,1058 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>貢獻總覽</title>
-<style>
-/* ── Reset & Base ───────────────────────────────────────────── */
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>貢獻總覽</title>
+  <style>
+    :root {
+      --bg: #f8f7f4;
+      --surface: #ffffff;
+      --fg: #1a1916;
+      --muted: #6b6964;
+      --border: #e8e5df;
+      --accent: #2563eb;
 
-:root {
-  --bg: #f2f2f0;
-  --surface: #ffffff;
-  --border: #ececea;
-  --border-strong: #e2e2df;
-  --ink: #0a0a0a;
-  --secondary: #6b6b6b;
-  --tertiary: #9a9a95;
-  --radius: 16px;
-  --shadow: 0 1px 2px rgba(10,10,10,.04), 0 1px 1px rgba(10,10,10,.02);
+      --feat: #2f7d4a;
+      --fix: #b53a2a;
+      --docs: #6366f1;
+      --refactor: #d97706;
+      --test: #0891b2;
+      --chore: #6b7280;
+      --ci: #7c3aed;
+      --build: #ea580c;
+      --style: #db2777;
+      --perf: #059669;
+      --other: #9a9a95;
 
-  --feat: #2f7d4a;
-  --fix: #b53a2a;
-  --docs: #6366f1;
-  --refactor: #d97706;
-  --test: #0891b2;
-  --chore: #6b7280;
-  --ci: #7c3aed;
-  --build: #ea580c;
-  --style: #db2777;
-  --perf: #059669;
-  --other: #9a9a95;
-}
+      --font-display: 'Iowan Old Style', 'Charter', Georgia, serif;
+      --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      --font-mono: ui-monospace, 'SF Mono', Menlo, monospace;
 
-html { font-size: 14px; line-height: 1.6; -webkit-font-smoothing: antialiased; }
+      --fs-display: clamp(48px, 6vw, 76px);
+      --fs-h1: clamp(32px, 4vw, 48px);
+      --fs-h2: clamp(24px, 3vw, 36px);
+      --fs-body: 16px;
+      --fs-small: 14px;
+      --fs-xs: 12px;
 
-body {
-  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  background: var(--bg);
-  color: var(--ink);
-  min-height: 100vh;
-}
+      --gap-xs: 8px;
+      --gap-sm: 12px;
+      --gap-md: 20px;
+      --gap-lg: 32px;
+      --gap-xl: 56px;
+      --gap-2xl: 96px;
+      --container: 1120px;
+      --radius: 12px;
+    }
 
-/* ── Container ──────────────────────────────────────────────── */
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 32px 24px 48px;
-  display: flex;
-  flex-direction: column;
-  gap: 28px;
-}
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* ── Card surface ───────────────────────────────────────────── */
-.card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 24px;
-}
+    html { scroll-behavior: smooth; }
 
-/* ── Section titles ─────────────────────────────────────────── */
-.section-title {
-  font-size: 1.15rem;
-  font-weight: 650;
-  letter-spacing: -0.01em;
-  margin-bottom: 18px;
-  color: var(--ink);
-}
+    body {
+      font-family: var(--font-body);
+      font-size: var(--fs-body);
+      color: var(--fg);
+      background: var(--bg);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
 
-/* ── Hero ───────────────────────────────────────────────────── */
-.hero {
-  text-align: center;
-  padding: 48px 24px 40px;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-}
-.hero-title {
-  font-size: 2rem;
-  font-weight: 750;
-  letter-spacing: -0.025em;
-  line-height: 1.2;
-  margin-bottom: 12px;
-}
-.hero-subtitle {
-  font-size: 1.05rem;
-  color: var(--secondary);
-  font-weight: 450;
-}
-.hero-meta {
-  margin-top: 10px;
-  font-size: 0.8rem;
-  color: var(--tertiary);
-}
+    main {
+      scroll-snap-type: y mandatory;
+      overflow-y: auto;
+      height: 100vh;
+    }
 
-/* ── KPI Strip ──────────────────────────────────────────────── */
-.kpi-strip {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 12px;
-}
-.kpi-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 20px 16px;
-  text-align: center;
-  transition: border-color .15s;
-}
-.kpi-card:hover { border-color: var(--border-strong); }
-.kpi-value {
-  font-size: 1.75rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums lining-nums;
-  line-height: 1.2;
-  color: var(--ink);
-}
-.kpi-label {
-  font-size: 0.78rem;
-  color: var(--secondary);
-  margin-top: 4px;
-  font-weight: 450;
-}
+    .slide {
+      min-height: 100vh;
+      scroll-snap-align: start;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: var(--gap-xl) var(--gap-md);
+      position: relative;
+    }
 
-/* ── Charts Row ─────────────────────────────────────────────── */
-.charts-row {
-  display: grid;
-  grid-template-columns: 2fr 1fr;
-  gap: 16px;
-}
+    .slide--scrollable {
+      justify-content: flex-start;
+      padding-top: var(--gap-lg);
+    }
 
-/* Timeline bar chart */
-.timeline-chart {
-  display: flex;
-  align-items: flex-end;
-  gap: 4px;
-  height: 180px;
-  padding: 0 4px;
-}
-.timeline-bar-wrapper {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  height: 100%;
-  justify-content: flex-end;
-  min-width: 0;
-}
-.timeline-bar {
-  width: 100%;
-  max-width: 40px;
-  border-radius: 4px 4px 0 0;
-  background: rgba(37, 99, 235, 0.7);
-  transition: background .15s, height .3s ease;
-  min-height: 2px;
-  cursor: default;
-}
-.timeline-bar:hover { background: rgba(37, 99, 235, 0.95); }
-.timeline-label {
-  font-size: 0.65rem;
-  color: var(--tertiary);
-  margin-top: 6px;
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-}
+    .slide-inner {
+      width: 100%;
+      max-width: var(--container);
+    }
 
-/* Type breakdown */
-.type-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
-}
-.type-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.7rem;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 6px;
-  white-space: nowrap;
-  min-width: 56px;
-  text-align: center;
-}
-.type-bar-track {
-  flex: 1;
-  height: 8px;
-  border-radius: 4px;
-  background: var(--border);
-  overflow: hidden;
-}
-.type-bar-fill {
-  height: 100%;
-  border-radius: 4px;
-  transition: width .4s ease;
-}
-.type-count {
-  font-size: 0.78rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  min-width: 32px;
-  text-align: right;
-}
+    .scroll-container {
+      width: 100%;
+      max-width: var(--container);
+      max-height: calc(100vh - 120px);
+      overflow-y: auto;
+      padding-right: var(--gap-xs);
+    }
 
-/* ── Project Cards ──────────────────────────────────────────── */
-.project-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
-  gap: 14px;
-}
-.project-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  transition: border-color .15s;
-}
-.project-card:hover { border-color: var(--border-strong); }
-.project-name {
-  font-size: 1rem;
-  font-weight: 650;
-  letter-spacing: -0.01em;
-}
-.project-desc {
-  font-size: 0.82rem;
-  color: var(--secondary);
-  margin-top: -6px;
-}
-.project-stats {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
-  font-size: 0.78rem;
-  color: var(--secondary);
-}
-.project-stat-value {
-  font-weight: 650;
-  color: var(--ink);
-  font-variant-numeric: tabular-nums;
-}
-.project-type-bar {
-  height: 6px;
-  border-radius: 3px;
-  display: flex;
-  overflow: hidden;
-  background: var(--border);
-  margin-top: auto;
-}
-.project-type-segment {
-  height: 100%;
-  transition: width .4s ease;
-}
+    /* Typography */
+    .display {
+      font-family: var(--font-display);
+      font-size: var(--fs-display);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+    }
 
-/* ── Proposals ──────────────────────────────────────────────── */
-.proposal-group-title {
-  font-size: 0.92rem;
-  font-weight: 620;
-  margin: 18px 0 8px;
-  color: var(--ink);
-}
-.proposal-group-title:first-of-type { margin-top: 0; }
+    .h1 {
+      font-family: var(--font-display);
+      font-size: var(--fs-h1);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: var(--gap-lg);
+    }
 
-.proposal-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.82rem;
-  margin-bottom: 12px;
-}
-.proposal-table th {
-  text-align: left;
-  font-weight: 600;
-  color: var(--secondary);
-  padding: 6px 10px;
-  border-bottom: 1px solid var(--border-strong);
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-.proposal-table td {
-  padding: 7px 10px;
-  border-bottom: 1px solid var(--border);
-  vertical-align: top;
-}
-.proposal-table tr:nth-child(even) td { background: rgba(0,0,0,.015); }
-.proposal-slug {
-  font-family: 'SF Mono', 'Cascadia Code', 'Fira Code', ui-monospace, monospace;
-  font-size: 0.78rem;
-  color: var(--ink);
-}
-.proposal-task-count {
-  font-variant-numeric: tabular-nums;
-  text-align: center;
-}
+    .h2 {
+      font-family: var(--font-display);
+      font-size: var(--fs-h2);
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
 
-/* ── Commit Log ─────────────────────────────────────────────── */
-.commit-table-wrapper { overflow-x: auto; }
+    .caps {
+      font-size: var(--fs-xs);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      font-weight: 600;
+    }
 
-.commit-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.82rem;
-}
-.commit-table th {
-  text-align: left;
-  font-weight: 600;
-  color: var(--secondary);
-  padding: 8px 10px;
-  border-bottom: 2px solid var(--border-strong);
-  font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  cursor: pointer;
-  user-select: none;
-  white-space: nowrap;
-  position: relative;
-}
-.commit-table th:hover { color: var(--ink); }
-.commit-table th .sort-arrow {
-  margin-left: 4px;
-  font-size: 0.65rem;
-  opacity: 0.4;
-}
-.commit-table th.sorted .sort-arrow { opacity: 1; color: var(--ink); }
-.commit-table td {
-  padding: 7px 10px;
-  border-bottom: 1px solid var(--border);
-  vertical-align: top;
-}
-.commit-table tr:hover td { background: rgba(0,0,0,.02); }
-.commit-date {
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-  color: var(--secondary);
-}
-.commit-project {
-  font-size: 0.78rem;
-  color: var(--secondary);
-  white-space: nowrap;
-}
-.commit-subject {
-  max-width: 420px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-.commit-scope {
-  color: var(--tertiary);
-  font-size: 0.78rem;
-}
-.commit-stats {
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-  font-size: 0.78rem;
-}
-.stat-add { color: var(--feat); font-weight: 600; }
-.stat-del { color: var(--fix); font-weight: 600; }
+    .xs { font-size: var(--fs-xs); }
+    .small { font-size: var(--fs-small); }
+    .muted { color: var(--muted); }
+    .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 
-/* Commit badge (small pill in table) */
-.commit-badge {
-  display: inline-block;
-  font-size: 0.68rem;
-  font-weight: 600;
-  padding: 1px 7px;
-  border-radius: 5px;
-  white-space: nowrap;
-}
+    .metric {
+      font-family: var(--font-display);
+      font-size: clamp(36px, 5vw, 56px);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
 
-/* Show-all button */
-.show-all-btn {
-  display: block;
-  margin: 14px auto 0;
-  padding: 8px 24px;
-  background: var(--surface);
-  border: 1px solid var(--border-strong);
-  border-radius: 8px;
-  font-size: 0.82rem;
-  font-weight: 550;
-  color: var(--secondary);
-  cursor: pointer;
-  transition: all .15s;
-}
-.show-all-btn:hover {
-  border-color: var(--ink);
-  color: var(--ink);
-}
+    /* Navigation Dots */
+    .slide-nav {
+      position: fixed;
+      right: 24px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      z-index: 100;
+    }
 
-/* ── Footer ─────────────────────────────────────────────────── */
-.page-footer {
-  text-align: center;
-  font-size: 0.78rem;
-  color: var(--tertiary);
-  padding: 24px 0 0;
-  border-top: 1px solid var(--border);
-}
+    .nav-dot {
+      position: relative;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 2px solid var(--muted);
+      background: transparent;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      padding: 0;
+    }
 
-/* ── Responsive ─────────────────────────────────────────────── */
-@media (max-width: 900px) {
-  .charts-row { grid-template-columns: 1fr; }
-}
-@media (max-width: 768px) {
-  .project-grid { grid-template-columns: 1fr; }
-  .kpi-strip { grid-template-columns: repeat(3, 1fr); }
-  .hero-title { font-size: 1.55rem; }
-  .container { padding: 20px 16px 40px; gap: 20px; }
-  .commit-subject { max-width: 220px; }
-}
-@media (max-width: 480px) {
-  .kpi-strip { grid-template-columns: 1fr; }
-  .hero { padding: 32px 16px 28px; }
-  .hero-title { font-size: 1.3rem; }
-}
+    .nav-dot[aria-current="true"] {
+      background: var(--fg);
+      border-color: var(--fg);
+      width: 12px;
+      height: 12px;
+    }
 
-/* ── Print ──────────────────────────────────────────────────── */
-@media print {
-  body { background: #fff; }
-  .container { padding: 0; max-width: 100%; }
-  .card, .project-card, .kpi-card, .hero {
-    box-shadow: none;
-    border: 1px solid #ddd;
-    break-inside: avoid;
-  }
-  .show-all-btn { display: none !important; }
-  .commit-table tr { break-inside: avoid; }
-  .timeline-bar:hover { background: rgba(37, 99, 235, 0.7); }
-}
-</style>
+    .nav-dot:not([aria-current="true"]) {
+      width: 10px;
+      height: 10px;
+    }
+
+    .nav-dot-label {
+      position: absolute;
+      right: 24px;
+      top: 50%;
+      transform: translateY(-50%);
+      white-space: nowrap;
+      font-size: var(--fs-xs);
+      color: var(--fg);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      pointer-events: none;
+      background: var(--surface);
+      padding: 2px 8px;
+      border-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .nav-dot:hover .nav-dot-label,
+    .nav-dot:focus-visible .nav-dot-label { opacity: 1; }
+
+    .nav-dot:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    /* KPI Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--gap-md);
+      width: 100%;
+      max-width: var(--container);
+    }
+
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: var(--gap-md) var(--gap-md) var(--gap-lg);
+      display: flex;
+      flex-direction: column;
+      gap: var(--gap-xs);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+    }
+
+    .kpi-card--green { background: #f0fdf4; }
+    .kpi-card--red { background: #fef2f2; }
+    .kpi-card--accent { background: #eff6ff; }
+
+    .kpi-value { font-size: clamp(28px, 4vw, 44px); font-weight: 700; font-family: var(--font-display); line-height: 1.2; }
+    .kpi-unit { font-size: var(--fs-small); color: var(--muted); }
+
+    /* Timeline */
+    .timeline-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 240px;
+      width: 100%;
+      max-width: var(--container);
+      padding-bottom: 40px;
+      position: relative;
+    }
+
+    .bar-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100%;
+      justify-content: flex-end;
+      position: relative;
+    }
+
+    .bar {
+      width: 100%;
+      min-height: 2px;
+      background: rgba(37, 99, 235, 0.25);
+      border-radius: 3px 3px 0 0;
+      transition: height 1s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .bar--peak { background: var(--accent); }
+
+    .bar-label {
+      position: absolute;
+      bottom: -36px;
+      font-size: var(--fs-xs);
+      color: var(--muted);
+      transform: rotate(-45deg);
+      transform-origin: top left;
+      white-space: nowrap;
+    }
+
+    .peak-annotation {
+      position: absolute;
+      top: -24px;
+      font-size: var(--fs-xs);
+      color: var(--accent);
+      white-space: nowrap;
+      font-weight: 600;
+    }
+
+    /* Type Breakdown */
+    .breakdown-list {
+      width: 100%;
+      max-width: var(--container);
+      display: flex;
+      flex-direction: column;
+      gap: var(--gap-sm);
+    }
+
+    .breakdown-row {
+      display: grid;
+      grid-template-columns: 180px 1fr 60px;
+      align-items: center;
+      gap: var(--gap-sm);
+    }
+
+    .breakdown-label { font-size: var(--fs-small); font-weight: 500; }
+
+    .breakdown-bar-track {
+      height: 28px;
+      background: var(--bg);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .breakdown-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .breakdown-pct { font-size: var(--fs-small); color: var(--muted); text-align: right; font-family: var(--font-mono); }
+
+    /* Projects */
+    .project-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--gap-md);
+      width: 100%;
+      max-width: var(--container);
+    }
+
+    .project-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: var(--gap-md);
+      display: flex;
+      flex-direction: column;
+      gap: var(--gap-sm);
+    }
+
+    .project-card:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+    }
+
+    .project-stats {
+      display: flex;
+      gap: var(--gap-md);
+      font-size: var(--fs-small);
+      color: var(--muted);
+    }
+
+    .project-lines { font-size: var(--fs-small); font-family: var(--font-mono); }
+    .line-add { color: var(--feat); }
+    .line-del { color: var(--fix); }
+
+    .type-badges { display: flex; flex-wrap: wrap; gap: var(--gap-xs); margin-top: var(--gap-xs); }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      font-size: var(--fs-xs);
+      font-weight: 500;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .badge-feat { color: var(--feat); background: #2f7d4a1a; }
+    .badge-fix { color: var(--fix); background: #b53a2a1a; }
+    .badge-docs { color: var(--docs); background: #6366f11a; }
+    .badge-refactor { color: var(--refactor); background: #d977061a; }
+    .badge-test { color: var(--test); background: #0891b21a; }
+    .badge-chore { color: var(--chore); background: #6b72801a; }
+    .badge-ci { color: var(--ci); background: #7c3aed1a; }
+    .badge-build { color: var(--build); background: #ea580c1a; }
+    .badge-style { color: var(--style); background: #db27771a; }
+    .badge-perf { color: var(--perf); background: #0596691a; }
+    .badge-other { color: var(--other); background: #9a9a951a; }
+
+    /* Tables */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--fs-small);
+    }
+
+    .data-table th {
+      text-align: left;
+      padding: var(--gap-sm) var(--gap-sm);
+      border-bottom: 2px solid var(--border);
+      font-weight: 600;
+      white-space: nowrap;
+      position: sticky;
+      top: 0;
+      background: var(--surface);
+      z-index: 1;
+    }
+
+    .data-table th button {
+      background: none;
+      border: none;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 0;
+      color: inherit;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .data-table th button:hover { color: var(--accent); }
+
+    .sort-arrow { font-size: 10px; opacity: 0.6; }
+
+    .data-table td {
+      padding: var(--gap-sm) var(--gap-sm);
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    .data-table tr:nth-child(even) td { background: var(--bg); }
+    .data-table tr:hover td { background: var(--border); }
+
+    /* Animations */
+    .animate {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.6s ease, transform 0.6s ease;
+    }
+
+    .animate.in-view {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .stagger-1 { transition-delay: 100ms; }
+    .stagger-2 { transition-delay: 200ms; }
+    .stagger-3 { transition-delay: 300ms; }
+    .stagger-4 { transition-delay: 400ms; }
+    .stagger-5 { transition-delay: 500ms; }
+    .stagger-6 { transition-delay: 600ms; }
+
+    /* Cover */
+    .cover-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: var(--gap-md);
+    }
+
+    .cover-subtitle { color: var(--muted); font-size: var(--fs-body); }
+    .cover-generated { color: var(--muted); font-size: var(--fs-xs); }
+
+    .hero-metric {
+      margin-top: var(--gap-xl);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--gap-xs);
+    }
+
+    .hero-metric .metric { font-size: clamp(56px, 8vw, 96px); }
+    .hero-metric-label { color: var(--muted); font-size: var(--fs-body); }
+
+    .scroll-indicator {
+      position: absolute;
+      bottom: var(--gap-lg);
+      font-size: 24px;
+      color: var(--muted);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; transform: translateY(0); }
+      50% { opacity: 1; transform: translateY(6px); }
+    }
+
+    /* Show more button */
+    .show-more-btn {
+      display: block;
+      margin: var(--gap-md) auto 0;
+      padding: var(--gap-xs) var(--gap-md);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: var(--fs-small);
+      cursor: pointer;
+      color: var(--accent);
+      font-weight: 500;
+      transition: background 0.2s;
+    }
+
+    .show-more-btn:hover { background: var(--bg); }
+
+    .empty-state {
+      text-align: center;
+      color: var(--muted);
+      padding: var(--gap-xl);
+      font-size: var(--fs-body);
+    }
+
+    /* Responsive */
+    @media (max-width: 1199px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 920px) {
+      main { scroll-snap-type: none; height: auto; }
+      .slide { min-height: auto; padding: var(--gap-lg) var(--gap-md); }
+      .slide-nav { display: none; }
+      .kpi-grid { grid-template-columns: 1fr; }
+      .project-grid { grid-template-columns: 1fr; }
+      .breakdown-row { grid-template-columns: 120px 1fr 50px; }
+      .scroll-container { max-height: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .animate { opacity: 1 !important; transform: none !important; transition: none !important; }
+      .bar { transition: none !important; }
+      .breakdown-bar-fill { transition: none !important; }
+      .scroll-indicator { animation: none; }
+    }
+  </style>
 </head>
 <body>
+  <nav class="slide-nav" aria-label="頁面導覽" id="slideNav"></nav>
 
-<main class="container">
-  <header id="hero" data-od-id="hero"></header>
-  <section id="kpi" data-od-id="kpi"></section>
-  <section id="charts" data-od-id="charts"></section>
-  <section id="projects" data-od-id="projects"></section>
-  <section id="proposals" data-od-id="proposals"></section>
-  <section id="commits" data-od-id="commits"></section>
-  <footer id="page-footer" data-od-id="footer" class="page-footer"></footer>
-</main>
+  <main id="main">
+    <section class="slide" id="slide-cover">
+      <div class="cover-content">
+        <h1 class="display animate" id="coverTitle"></h1>
+        <p class="cover-subtitle animate stagger-1" id="coverSubtitle"></p>
+        <p class="cover-generated animate stagger-2" id="coverGenerated"></p>
+        <div class="hero-metric animate stagger-3">
+          <span class="metric" id="heroCounter" data-target="0">0</span>
+          <span class="hero-metric-label">次提交</span>
+        </div>
+      </div>
+      <div class="scroll-indicator" aria-hidden="true">↓</div>
+    </section>
 
-<script>
-// The Rust CLI replaces the placeholder string (including quotes) with real JSON.
-const DATA = "__SHOWCASE_DATA__";
+    <section class="slide" id="slide-kpi">
+      <div class="slide-inner">
+        <h2 class="h1 animate">關鍵指標</h2>
+        <div class="kpi-grid" id="kpiGrid"></div>
+      </div>
+    </section>
 
-// ── Helpers ────────────────────────────────────────────────────
-function formatNumber(n) {
-  return Number(n).toLocaleString('zh-TW');
-}
+    <section class="slide" id="slide-timeline">
+      <div class="slide-inner">
+        <h2 class="h1 animate">時間軸</h2>
+        <div class="timeline-chart animate stagger-1" id="timelineChart"></div>
+      </div>
+    </section>
 
-function el(tag, attrs, children) {
-  var node = document.createElement(tag);
-  if (attrs) {
-    Object.keys(attrs).forEach(function(k) {
-      if (k === 'textContent') { node.textContent = attrs[k]; }
-      else if (k === 'className') { node.className = attrs[k]; }
-      else if (k === 'style') { node.style.cssText = attrs[k]; }
-      else { node.setAttribute(k, attrs[k]); }
-    });
-  }
-  if (children) {
-    (Array.isArray(children) ? children : [children]).forEach(function(c) {
-      if (c != null) {
-        node.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
-      }
-    });
-  }
-  return node;
-}
+    <section class="slide" id="slide-breakdown">
+      <div class="slide-inner">
+        <h2 class="h1 animate">貢獻類型</h2>
+        <div class="breakdown-list" id="breakdownList"></div>
+      </div>
+    </section>
 
-function typeColor(t) {
-  var map = {
-    feat:'--feat', fix:'--fix', docs:'--docs', refactor:'--refactor',
-    test:'--test', chore:'--chore', ci:'--ci', build:'--build',
-    style:'--style', perf:'--perf'
-  };
-  var v = map[t];
-  if (v) {
-    return getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-  }
-  return getComputedStyle(document.documentElement).getPropertyValue('--other').trim();
-}
+    <section class="slide" id="slide-projects">
+      <div class="slide-inner">
+        <h2 class="h1 animate">專案</h2>
+        <div class="project-grid" id="projectGrid"></div>
+      </div>
+    </section>
 
-function makeBadge(commitType, label, small) {
-  var color = typeColor(commitType);
-  var bg = color + '1a';
-  var css = 'background:' + bg + ';color:' + color + ';';
-  return el('span', {
-    className: small ? 'commit-badge' : 'type-badge',
-    style: css,
-    textContent: label || commitType
-  });
-}
+    <section class="slide slide--scrollable" id="slide-proposals">
+      <div class="slide-inner">
+        <h2 class="h1 animate">OpenSpec 提案</h2>
+        <div class="scroll-container" id="proposalContainer"></div>
+      </div>
+    </section>
 
-// ── Renderers ──────────────────────────────────────────────────
+    <section class="slide slide--scrollable" id="slide-commits">
+      <div class="slide-inner">
+        <h2 class="h1 animate">提交紀錄</h2>
+        <div class="scroll-container" id="commitContainer"></div>
+      </div>
+    </section>
+  </main>
 
-function renderHero(data) {
-  var root = document.getElementById('hero');
-  root.className = 'hero';
-  root.appendChild(el('h1', { className: 'hero-title', textContent: data.title }));
-  root.appendChild(el('p', { className: 'hero-subtitle', textContent: data.author + '\u3000·\u3000' + data.date_range }));
-  root.appendChild(el('p', { className: 'hero-meta', textContent: '\u7522\u751f\u65bc ' + data.generated_at }));
-}
+  <script>
+    var DATA = "__SHOWCASE_DATA__";
 
-function renderKPI(data) {
-  var root = document.getElementById('kpi');
-  root.className = 'kpi-strip';
-  var items = [
-    { value: data.summary.total_commits, label: '\u63d0\u4ea4\u6b21\u6578' },
-    { value: data.summary.total_repos, label: '\u5c08\u6848\u6578' },
-    { value: data.summary.total_proposals, label: 'OpenSpec \u63d0\u6848' },
-    { value: data.summary.lines_added, label: '\u65b0\u589e\u884c\u6578' },
-    { value: data.summary.lines_removed, label: '\u522a\u9664\u884c\u6578' }
-  ];
-  items.forEach(function(item) {
-    root.appendChild(
-      el('div', { className: 'kpi-card' }, [
-        el('div', { className: 'kpi-value', textContent: formatNumber(item.value) }),
-        el('div', { className: 'kpi-label', textContent: item.label })
-      ])
-    );
-  });
-}
+    var NAV_LABELS = ['封面', '指標', '時間軸', '類型', '專案', '提案', '紀錄'];
+    var SLIDE_IDS = ['slide-cover', 'slide-kpi', 'slide-timeline', 'slide-breakdown', 'slide-projects', 'slide-proposals', 'slide-commits'];
+    var COMMIT_LIMIT = 100;
+    var commitShowAll = false;
+    var commitSortCol = null;
+    var commitSortAsc = true;
 
-function renderCharts(data) {
-  var root = document.getElementById('charts');
-  root.className = 'charts-row';
-
-  // ── Timeline ──
-  var timelineCard = el('div', { className: 'card' });
-  timelineCard.appendChild(el('h2', { className: 'section-title', textContent: '\u63d0\u4ea4\u6642\u9593\u8ef8' }));
-  var chart = el('div', { className: 'timeline-chart' });
-  data.timeline.forEach(function(w) {
-    var bar = el('div', {
-      className: 'timeline-bar',
-      style: 'height:' + Math.max(w.height, 1) + '%',
-      title: w.label + ': ' + w.count + ' \u6b21\u63d0\u4ea4'
-    });
-    var wrapper = el('div', { className: 'timeline-bar-wrapper' }, [
-      bar,
-      el('span', { className: 'timeline-label', textContent: w.label })
-    ]);
-    chart.appendChild(wrapper);
-  });
-  timelineCard.appendChild(chart);
-  root.appendChild(timelineCard);
-
-  // ── Type breakdown ──
-  var typeCard = el('div', { className: 'card' });
-  typeCard.appendChild(el('h2', { className: 'section-title', textContent: '\u8ca2\u737b\u985e\u578b\u5206\u4f48' }));
-  var maxPct = 0;
-  data.type_breakdown.forEach(function(t) { if (t.percentage > maxPct) maxPct = t.percentage; });
-  data.type_breakdown.forEach(function(t) {
-    var color = typeColor(t.commit_type);
-    var fill = el('div', {
-      className: 'type-bar-fill',
-      style: 'width:' + (t.percentage / maxPct * 100) + '%;background:' + color + '33;'
-    });
-    var track = el('div', { className: 'type-bar-track' }, [fill]);
-    typeCard.appendChild(
-      el('div', { className: 'type-row' }, [
-        makeBadge(t.commit_type, t.label),
-        track,
-        el('span', { className: 'type-count', style: 'color:' + color, textContent: String(t.count) })
-      ])
-    );
-  });
-  root.appendChild(typeCard);
-}
-
-function renderProjects(data) {
-  var root = document.getElementById('projects');
-  root.appendChild(el('h2', { className: 'section-title', textContent: '\u5c08\u6848\u8ca2\u737b\u660e\u7d30' }));
-  var grid = el('div', { className: 'project-grid' });
-
-  data.projects.forEach(function(p) {
-    var card = el('div', { className: 'project-card' });
-    card.appendChild(el('h3', { className: 'project-name', textContent: p.name }));
-    if (p.description) {
-      card.appendChild(el('p', { className: 'project-desc', textContent: p.description }));
+    function init() {
+      renderNav();
+      renderCover();
+      renderKPI();
+      renderTimeline();
+      renderBreakdown();
+      renderProjects();
+      renderProposals();
+      renderCommits();
+      initAnimations();
+      initNavObserver();
+      initKeyboard();
     }
 
-    var stats = el('div', { className: 'project-stats' });
-    var commitStat = el('span');
-    commitStat.appendChild(el('span', { className: 'project-stat-value', textContent: formatNumber(p.commit_count) }));
-    commitStat.appendChild(document.createTextNode(' \u63d0\u4ea4'));
-    stats.appendChild(commitStat);
+    // --- Navigation ---
+    function renderNav() {
+      var nav = document.getElementById('slideNav');
+      var html = '';
+      for (var i = 0; i < SLIDE_IDS.length; i++) {
+        html += '<button class="nav-dot" data-slide="' + SLIDE_IDS[i] + '" aria-label="' + NAV_LABELS[i] + '">';
+        html += '<span class="nav-dot-label">' + NAV_LABELS[i] + '</span>';
+        html += '</button>';
+      }
+      nav.innerHTML = html;
 
-    var proposalStat = el('span');
-    proposalStat.appendChild(el('span', { className: 'project-stat-value', textContent: formatNumber(p.proposal_count) }));
-    proposalStat.appendChild(document.createTextNode(' \u63d0\u6848'));
-    stats.appendChild(proposalStat);
+      var dots = nav.querySelectorAll('.nav-dot');
+      for (var j = 0; j < dots.length; j++) {
+        dots[j].addEventListener('click', function() {
+          var target = document.getElementById(this.getAttribute('data-slide'));
+          if (target) target.scrollIntoView({ behavior: 'smooth' });
+        });
+      }
+    }
 
-    stats.appendChild(el('span', null, [
-      el('span', { className: 'project-stat-value stat-add', textContent: '+' + formatNumber(p.lines_added) })
-    ]));
-    stats.appendChild(el('span', null, [
-      el('span', { className: 'project-stat-value stat-del', textContent: '\u2212' + formatNumber(p.lines_removed) })
-    ]));
-    card.appendChild(stats);
+    function initNavObserver() {
+      var dots = document.querySelectorAll('.nav-dot');
+      var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            var id = entry.target.id;
+            for (var i = 0; i < dots.length; i++) {
+              var isActive = dots[i].getAttribute('data-slide') === id;
+              dots[i].setAttribute('aria-current', isActive ? 'true' : 'false');
+            }
+          }
+        });
+      }, { threshold: 0.5 });
 
-    // Type distribution bar
-    if (p.top_types && p.top_types.length > 0) {
-      var bar = el('div', { className: 'project-type-bar' });
-      p.top_types.forEach(function(t) {
-        bar.appendChild(el('div', {
-          className: 'project-type-segment',
-          style: 'width:' + t.percentage + '%;background:' + typeColor(t.commit_type) + ';',
-          title: t.label + ' ' + t.percentage + '%'
-        }));
+      SLIDE_IDS.forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) observer.observe(el);
       });
-      card.appendChild(bar);
     }
-    grid.appendChild(card);
-  });
-  root.appendChild(grid);
-}
 
-function renderProposals(data) {
-  var root = document.getElementById('proposals');
-  if (!data.proposals || data.proposals.length === 0) {
-    root.style.display = 'none';
-    return;
-  }
+    // --- Cover ---
+    function renderCover() {
+      document.getElementById('coverTitle').textContent = DATA.title || '貢獻總覽';
+      document.getElementById('coverSubtitle').textContent = (DATA.author || '') + ' · ' + (DATA.date_range || '');
+      document.getElementById('coverGenerated').textContent = '產生於 ' + (DATA.generated_at || '');
+      var counter = document.getElementById('heroCounter');
+      counter.setAttribute('data-target', DATA.summary.total_commits || 0);
+    }
 
-  var wrapper = el('div', { className: 'card' });
-  wrapper.appendChild(el('h2', { className: 'section-title', textContent: 'OpenSpec \u8b8a\u66f4\u63d0\u6848' }));
+    // --- KPI ---
+    function renderKPI() {
+      var grid = document.getElementById('kpiGrid');
+      var cards = [
+        { label: '總提交', value: DATA.summary.total_commits, cls: '' },
+        { label: '活躍儲存庫', value: DATA.summary.total_repos, cls: '' },
+        { label: 'OpenSpec 提案', value: DATA.summary.total_proposals, cls: '' },
+        { label: '新增行數', value: DATA.summary.lines_added, cls: 'kpi-card--green' },
+        { label: '刪除行數', value: DATA.summary.lines_removed, cls: 'kpi-card--red' },
+        { label: '日均變更行數', value: Math.round(DATA.summary.avg_daily_lines), unit: '行/天', cls: 'kpi-card--accent' }
+      ];
 
-  // Group by project
-  var groups = {};
-  var order = [];
-  data.proposals.forEach(function(p) {
-    if (!groups[p.project]) { groups[p.project] = []; order.push(p.project); }
-    groups[p.project].push(p);
-  });
-
-  order.forEach(function(proj) {
-    wrapper.appendChild(el('h3', { className: 'proposal-group-title', textContent: proj }));
-    var table = el('table', { className: 'proposal-table' });
-    var thead = el('thead');
-    var headRow = el('tr');
-    ['\u65e5\u671f', '\u63d0\u6848\u540d\u7a31', '\u4efb\u52d9\u6578'].forEach(function(h) {
-      headRow.appendChild(el('th', { textContent: h }));
-    });
-    thead.appendChild(headRow);
-    table.appendChild(thead);
-
-    var tbody = el('tbody');
-    groups[proj].forEach(function(p) {
-      var tr = el('tr');
-      tr.appendChild(el('td', { textContent: p.date }));
-      var slugCell = el('td');
-      slugCell.appendChild(el('span', { className: 'proposal-slug', textContent: p.slug }));
-      if (p.description) {
-        slugCell.appendChild(el('br'));
-        slugCell.appendChild(el('span', { style: 'font-size:0.75rem;color:var(--secondary)', textContent: p.description }));
+      var html = '';
+      for (var i = 0; i < cards.length; i++) {
+        var c = cards[i];
+        html += '<div class="kpi-card ' + c.cls + ' animate stagger-' + (i + 1) + '">';
+        html += '<span class="caps">' + c.label + '</span>';
+        html += '<span class="kpi-value counter" data-target="' + (c.value || 0) + '">' + (c.value || 0).toLocaleString('zh-TW') + '</span>';
+        if (c.unit) html += '<span class="kpi-unit">' + c.unit + '</span>';
+        html += '</div>';
       }
-      tr.appendChild(slugCell);
-      tr.appendChild(el('td', { className: 'proposal-task-count', textContent: String(p.task_count) }));
-      tbody.appendChild(tr);
-    });
-    table.appendChild(tbody);
-    wrapper.appendChild(table);
-  });
+      grid.innerHTML = html;
+    }
 
-  root.appendChild(wrapper);
-}
+    // --- Timeline ---
+    function renderTimeline() {
+      var chart = document.getElementById('timelineChart');
+      var timeline = DATA.timeline || [];
 
-function renderCommits(data) {
-  var root = document.getElementById('commits');
-  var wrapper = el('div', { className: 'card' });
-  wrapper.appendChild(el('h2', { className: 'section-title', textContent: '\u63d0\u4ea4\u7d00\u9304' }));
+      if (timeline.length === 0) {
+        chart.innerHTML = '<div class="empty-state">無提交記錄</div>';
+        return;
+      }
 
-  var tableWrap = el('div', { className: 'commit-table-wrapper' });
-  var table = el('table', { className: 'commit-table' });
+      var peakIdx = 0;
+      for (var i = 1; i < timeline.length; i++) {
+        if (timeline[i].count > timeline[peakIdx].count) peakIdx = i;
+      }
 
-  var columns = [
-    { key: 'date', label: '\u65e5\u671f' },
-    { key: 'project', label: '\u5c08\u6848' },
-    { key: 'commit_type', label: '\u985e\u578b' },
-    { key: 'subject', label: '\u8aaa\u660e' },
-    { key: 'insertions', label: '+/\u2212' }
-  ];
-
-  var thead = el('thead');
-  var headRow = el('tr');
-  var sortState = { key: null, asc: true };
-  var currentData = data.commits.slice();
-  var LIMIT = 100;
-  var showAll = false;
-
-  columns.forEach(function(col) {
-    var arrow = el('span', { className: 'sort-arrow', textContent: '\u25b2' });
-    var th = el('th', null, [document.createTextNode(col.label), arrow]);
-    th.addEventListener('click', function() {
-      var asc = sortState.key === col.key ? !sortState.asc : true;
-      sortState.key = col.key;
-      sortState.asc = asc;
-
-      currentData.sort(function(a, b) {
-        var va = a[col.key] != null ? a[col.key] : '';
-        var vb = b[col.key] != null ? b[col.key] : '';
-        if (typeof va === 'number' && typeof vb === 'number') {
-          return asc ? va - vb : vb - va;
+      var html = '';
+      for (var j = 0; j < timeline.length; j++) {
+        var entry = timeline[j];
+        var isPeak = j === peakIdx;
+        html += '<div class="bar-wrapper">';
+        if (isPeak) {
+          html += '<span class="peak-annotation">高峰：' + entry.label + '（' + entry.count + '次）</span>';
         }
-        va = String(va); vb = String(vb);
-        return asc ? va.localeCompare(vb) : vb.localeCompare(va);
+        html += '<div class="bar' + (isPeak ? ' bar--peak' : '') + '" style="height: 0%;" data-height="' + entry.height + '"></div>';
+        html += '<span class="bar-label">' + entry.label + '</span>';
+        html += '</div>';
+      }
+      chart.innerHTML = html;
+    }
+
+    function animateTimeline() {
+      var bars = document.querySelectorAll('.bar[data-height]');
+      for (var i = 0; i < bars.length; i++) {
+        (function(bar) {
+          setTimeout(function() {
+            bar.style.height = bar.getAttribute('data-height') + '%';
+          }, 50);
+        })(bars[i]);
+      }
+    }
+
+    // --- Breakdown ---
+    function renderBreakdown() {
+      var list = document.getElementById('breakdownList');
+      var breakdown = DATA.type_breakdown || [];
+
+      if (breakdown.length === 0) {
+        list.innerHTML = '<div class="empty-state">無貢獻類型資料</div>';
+        return;
+      }
+
+      var html = '';
+      for (var i = 0; i < breakdown.length; i++) {
+        var entry = breakdown[i];
+        var typeClass = entry.commit_type || 'other';
+        html += '<div class="breakdown-row animate" style="transition-delay: ' + (i * 80) + 'ms;">';
+        html += '<span class="breakdown-label">' + escapeHtml(entry.label) + '（' + entry.count + '）</span>';
+        html += '<div class="breakdown-bar-track"><div class="breakdown-bar-fill" style="width: 0%; background: var(--' + typeClass + ');" data-width="' + entry.percentage + '"></div></div>';
+        html += '<span class="breakdown-pct">' + entry.percentage.toFixed(1) + '%</span>';
+        html += '</div>';
+      }
+      list.innerHTML = html;
+    }
+
+    function animateBreakdown() {
+      var fills = document.querySelectorAll('.breakdown-bar-fill[data-width]');
+      for (var i = 0; i < fills.length; i++) {
+        (function(fill, delay) {
+          setTimeout(function() {
+            fill.style.width = fill.getAttribute('data-width') + '%';
+          }, delay);
+        })(fills[i], i * 80);
+      }
+    }
+
+    // --- Projects ---
+    function renderProjects() {
+      var grid = document.getElementById('projectGrid');
+      var projects = DATA.projects || [];
+
+      if (projects.length === 0) {
+        grid.innerHTML = '<div class="empty-state">無專案資料</div>';
+        return;
+      }
+
+      var html = '';
+      for (var i = 0; i < projects.length; i++) {
+        var p = projects[i];
+        html += '<div class="project-card animate" style="transition-delay: ' + (i * 100) + 'ms;">';
+        html += '<h3 class="h2">' + escapeHtml(p.name) + '</h3>';
+        if (p.description) html += '<p class="small muted">' + escapeHtml(p.description) + '</p>';
+        html += '<div class="project-stats">';
+        html += '<span>' + p.commit_count + ' 次提交</span>';
+        html += '<span>' + p.proposal_count + ' 提案</span>';
+        html += '</div>';
+        html += '<div class="project-lines">';
+        html += '<span class="line-add">+' + (p.lines_added || 0).toLocaleString('zh-TW') + '</span> ';
+        html += '<span class="line-del">−' + (p.lines_removed || 0).toLocaleString('zh-TW') + '</span>';
+        html += '</div>';
+        if (p.top_types && p.top_types.length > 0) {
+          html += '<div class="type-badges">';
+          for (var t = 0; t < p.top_types.length; t++) {
+            var tt = p.top_types[t];
+            html += '<span class="badge badge-' + tt.commit_type + '">' + tt.label + '</span>';
+          }
+          html += '</div>';
+        }
+        html += '</div>';
+      }
+      grid.innerHTML = html;
+    }
+
+    // --- Proposals ---
+    function renderProposals() {
+      var container = document.getElementById('proposalContainer');
+      var proposals = DATA.proposals || [];
+
+      if (proposals.length === 0) {
+        container.innerHTML = '<div class="empty-state">無提案紀錄</div>';
+        return;
+      }
+
+      var html = '<table class="data-table"><thead><tr>';
+      html += '<th>專案</th><th>代稱</th><th>日期</th><th>說明</th><th>工作項</th>';
+      html += '</tr></thead><tbody>';
+
+      var lastProject = '';
+      for (var i = 0; i < proposals.length; i++) {
+        var p = proposals[i];
+        var showProject = p.project !== lastProject;
+        lastProject = p.project;
+        html += '<tr>';
+        html += '<td>' + (showProject ? escapeHtml(p.project) : '') + '</td>';
+        html += '<td class="mono">' + escapeHtml(p.slug) + '</td>';
+        html += '<td>' + escapeHtml(p.date) + '</td>';
+        html += '<td>' + escapeHtml(p.description) + '</td>';
+        html += '<td>' + (p.task_count || 0) + '</td>';
+        html += '</tr>';
+      }
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
+    // --- Commits ---
+    function renderCommits() {
+      var container = document.getElementById('commitContainer');
+      var commits = DATA.commits || [];
+
+      if (commits.length === 0) {
+        container.innerHTML = '<div class="empty-state">無提交紀錄</div>';
+        return;
+      }
+
+      var sorted = sortCommits(commits.slice());
+      var display = commitShowAll ? sorted : sorted.slice(0, COMMIT_LIMIT);
+
+      var html = '<table class="data-table" id="commitTable"><thead><tr>';
+      html += buildSortHeader('date', '日期');
+      html += buildSortHeader('project', '專案');
+      html += buildSortHeader('commit_type', '類型');
+      html += buildSortHeader('subject', '說明');
+      html += buildSortHeader('changes', '+/−');
+      html += '</tr></thead><tbody>';
+
+      for (var i = 0; i < display.length; i++) {
+        var c = display[i];
+        var typeClass = c.commit_type || 'other';
+        var subject = c.subject || '';
+        html += '<tr>';
+        html += '<td class="mono" style="white-space:nowrap;">' + escapeHtml(c.date) + '</td>';
+        html += '<td>' + escapeHtml(c.project) + '</td>';
+        html += '<td><span class="badge badge-' + typeClass + '">' + escapeHtml(c.commit_type || 'other') + '</span></td>';
+        html += '<td>' + escapeHtml(subject) + '</td>';
+        html += '<td class="mono"><span class="line-add">+' + (c.insertions || 0) + '</span> <span class="line-del">−' + (c.deletions || 0) + '</span></td>';
+        html += '</tr>';
+      }
+      html += '</tbody></table>';
+
+      if (commits.length > COMMIT_LIMIT) {
+        html += '<button class="show-more-btn" id="commitToggle">';
+        html += commitShowAll ? '收合' : '顯示全部（' + commits.length + ' 筆）';
+        html += '</button>';
+      }
+
+      container.innerHTML = html;
+
+      // Bind sort handlers
+      var sortBtns = container.querySelectorAll('[data-sort]');
+      for (var j = 0; j < sortBtns.length; j++) {
+        sortBtns[j].addEventListener('click', function() {
+          var col = this.getAttribute('data-sort');
+          if (commitSortCol === col) {
+            commitSortAsc = !commitSortAsc;
+          } else {
+            commitSortCol = col;
+            commitSortAsc = true;
+          }
+          renderCommits();
+        });
+      }
+
+      // Bind show more
+      var toggle = document.getElementById('commitToggle');
+      if (toggle) {
+        toggle.addEventListener('click', function() {
+          commitShowAll = !commitShowAll;
+          renderCommits();
+        });
+      }
+    }
+
+    function buildSortHeader(col, label) {
+      var arrow = '';
+      var ariaSort = 'none';
+      if (commitSortCol === col) {
+        arrow = commitSortAsc ? ' <span class="sort-arrow">▲</span>' : ' <span class="sort-arrow">▼</span>';
+        ariaSort = commitSortAsc ? 'ascending' : 'descending';
+      }
+      return '<th aria-sort="' + ariaSort + '"><button data-sort="' + col + '">' + label + arrow + '</button></th>';
+    }
+
+    function sortCommits(arr) {
+      if (!commitSortCol) return arr;
+      var col = commitSortCol;
+      var asc = commitSortAsc;
+      arr.sort(function(a, b) {
+        var va, vb;
+        if (col === 'changes') {
+          va = (a.insertions || 0) + (a.deletions || 0);
+          vb = (b.insertions || 0) + (b.deletions || 0);
+        } else {
+          va = a[col] || '';
+          vb = b[col] || '';
+        }
+        if (va < vb) return asc ? -1 : 1;
+        if (va > vb) return asc ? 1 : -1;
+        return 0;
+      });
+      return arr;
+    }
+
+    // --- Animations ---
+    function initAnimations() {
+      var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      if (reducedMotion) {
+        document.querySelectorAll('.animate').forEach(function(el) {
+          el.classList.add('in-view');
+        });
+        // Set all counters (including hero) to final values immediately
+        document.querySelectorAll('.counter').forEach(function(el) {
+          var target = parseFloat(el.getAttribute('data-target'));
+          el.textContent = target ? Math.round(target).toLocaleString('zh-TW') : '0';
+        });
+        animateTimeline();
+        animateBreakdown();
+        return;
+      }
+
+      var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('in-view');
+            observer.unobserve(entry.target);
+
+            // Trigger bar/fill animations when parent slide enters view
+            if (entry.target.closest('#slide-timeline') || entry.target.id === 'slide-timeline') {
+              animateTimeline();
+            }
+            if (entry.target.closest('#slide-breakdown') || entry.target.id === 'slide-breakdown') {
+              animateBreakdown();
+            }
+
+            // Counter animation for KPI cards
+            var counters = entry.target.querySelectorAll('.counter');
+            if (entry.target.classList.contains('counter')) {
+              animateCounter(entry.target);
+            }
+            for (var i = 0; i < counters.length; i++) {
+              animateCounter(counters[i]);
+            }
+          }
+        });
+      }, { threshold: 0.2 });
+
+      document.querySelectorAll('.animate').forEach(function(el) {
+        observer.observe(el);
       });
 
-      // Update header styles
-      var allTh = thead.querySelectorAll('th');
-      for (var i = 0; i < allTh.length; i++) {
-        allTh[i].className = '';
-        var sa = allTh[i].querySelector('.sort-arrow');
-        if (sa) sa.textContent = '\u25b2';
+      // Observe hero counter separately
+      var heroCounter = document.getElementById('heroCounter');
+      if (heroCounter) {
+        var heroObs = new IntersectionObserver(function(entries) {
+          if (entries[0].isIntersecting) {
+            animateCounter(heroCounter);
+            heroObs.unobserve(heroCounter);
+          }
+        }, { threshold: 0.5 });
+        heroObs.observe(heroCounter);
       }
-      th.className = 'sorted';
-      arrow.textContent = asc ? '\u25b2' : '\u25bc';
-
-      rebuildBody();
-    });
-    headRow.appendChild(th);
-  });
-  thead.appendChild(headRow);
-  table.appendChild(thead);
-
-  var tbody = el('tbody');
-  table.appendChild(tbody);
-  tableWrap.appendChild(table);
-  wrapper.appendChild(tableWrap);
-
-  // Show-all button
-  var btnContainer = el('div');
-  var btn = el('button', { className: 'show-all-btn' });
-  btnContainer.appendChild(btn);
-  wrapper.appendChild(btnContainer);
-
-  function rebuildBody() {
-    while (tbody.firstChild) tbody.removeChild(tbody.firstChild);
-
-    var visibleData = showAll ? currentData : currentData.slice(0, LIMIT);
-    visibleData.forEach(function(c) {
-      var tr = el('tr');
-
-      // Date (MM-DD)
-      var dateStr = c.date || '';
-      var parts = dateStr.split('-');
-      var shortDate = parts.length >= 3 ? parts[1] + '-' + parts[2] : dateStr;
-      tr.appendChild(el('td', { className: 'commit-date', textContent: shortDate }));
-
-      // Project
-      tr.appendChild(el('td', { className: 'commit-project', textContent: c.project || '' }));
-
-      // Type badge
-      var badgeCell = el('td');
-      badgeCell.appendChild(makeBadge(c.commit_type, c.commit_type, true));
-      tr.appendChild(badgeCell);
-
-      // Subject with optional scope
-      var subjectCell = el('td', { className: 'commit-subject' });
-      if (c.scope) {
-        subjectCell.appendChild(el('span', { className: 'commit-scope', textContent: '(' + c.scope + ') ' }));
-      }
-      subjectCell.appendChild(document.createTextNode(c.subject || ''));
-      tr.appendChild(subjectCell);
-
-      // +/-
-      var statsCell = el('td', { className: 'commit-stats' });
-      statsCell.appendChild(el('span', { className: 'stat-add', textContent: '+' + (c.insertions || 0) }));
-      statsCell.appendChild(document.createTextNode(' '));
-      statsCell.appendChild(el('span', { className: 'stat-del', textContent: '\u2212' + (c.deletions || 0) }));
-      tr.appendChild(statsCell);
-
-      tbody.appendChild(tr);
-    });
-
-    // Toggle button visibility
-    if (currentData.length > LIMIT) {
-      btn.textContent = showAll
-        ? '\u6536\u5408\u81f3 ' + LIMIT + ' \u7b46'
-        : '\u986f\u793a\u5168\u90e8 ' + formatNumber(currentData.length) + ' \u7b46';
-      btn.style.display = '';
-    } else {
-      btn.style.display = 'none';
     }
-  }
 
-  btn.addEventListener('click', function() {
-    showAll = !showAll;
-    rebuildBody();
-  });
+    function animateCounter(el) {
+      var target = parseFloat(el.getAttribute('data-target'));
+      if (!target || target === 0) { el.textContent = '0'; return; }
+      var duration = 1200;
+      var start = null;
 
-  rebuildBody();
-  root.appendChild(wrapper);
-}
+      function step(timestamp) {
+        if (!start) start = timestamp;
+        var progress = Math.min((timestamp - start) / duration, 1);
+        var eased = 1 - Math.pow(1 - progress, 3);
+        var current = eased * target;
+        el.textContent = Math.round(current).toLocaleString('zh-TW');
+        if (progress < 1) {
+          requestAnimationFrame(step);
+        } else {
+          el.textContent = Math.round(target).toLocaleString('zh-TW');
+        }
+      }
 
-function renderFooter(data) {
-  var root = document.getElementById('page-footer');
-  root.appendChild(document.createTextNode('\u7531 contribution-showcase \u7522\u751f \u00b7 ' + data.generated_at));
-}
+      requestAnimationFrame(step);
+    }
 
-// ── Main ───────────────────────────────────────────────────────
-function render() {
-  if (typeof DATA === 'string') {
-    document.body.appendChild(
-      el('p', {
-        style: 'text-align:center;padding:60px;color:var(--tertiary);font-size:1.1rem;',
-        textContent: '\u5c1a\u672a\u5d4c\u5165\u8cc7\u6599\u3002\u8acb\u900f\u904e CLI \u5de5\u5177\u7522\u751f\u5831\u544a\u3002'
-      })
-    );
-    return;
-  }
-  document.title = DATA.title || '\u8ca2\u737b\u7e3d\u89bd';
-  renderHero(DATA);
-  renderKPI(DATA);
-  renderCharts(DATA);
-  renderProjects(DATA);
-  renderProposals(DATA);
-  renderCommits(DATA);
-  renderFooter(DATA);
-}
+    // --- Keyboard ---
+    function initKeyboard() {
+      document.addEventListener('keydown', function(e) {
+        var tag = e.target.tagName.toLowerCase();
+        if (tag === 'input' || tag === 'textarea' || tag === 'select') return;
+        if (e.target.closest('.scroll-container')) return;
 
-render();
-</script>
+        var slides = document.querySelectorAll('.slide');
+        var currentIdx = getCurrentSlideIndex();
 
+        if (e.key === 'ArrowDown' || e.key === 'PageDown') {
+          e.preventDefault();
+          if (currentIdx < slides.length - 1) {
+            slides[currentIdx + 1].scrollIntoView({ behavior: 'smooth' });
+          }
+        } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+          e.preventDefault();
+          if (currentIdx > 0) {
+            slides[currentIdx - 1].scrollIntoView({ behavior: 'smooth' });
+          }
+        }
+      });
+    }
+
+    function getCurrentSlideIndex() {
+      var slides = document.querySelectorAll('.slide');
+      var mainEl = document.getElementById('main');
+      var scrollTop = mainEl.scrollTop;
+      var viewHeight = mainEl.clientHeight;
+
+      for (var i = slides.length - 1; i >= 0; i--) {
+        if (slides[i].offsetTop <= scrollTop + viewHeight * 0.5) {
+          return i;
+        }
+      }
+      return 0;
+    }
+
+    // --- Utilities ---
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // --- Boot ---
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
 </body>
 </html>

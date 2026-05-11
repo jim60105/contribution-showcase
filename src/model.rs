@@ -21,6 +21,7 @@ pub struct Summary {
     pub total_proposals: usize,
     pub lines_added: usize,
     pub lines_removed: usize,
+    pub avg_daily_lines: f64,
 }
 
 #[derive(Debug, Serialize)]
