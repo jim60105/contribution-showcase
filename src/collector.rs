@@ -273,7 +273,10 @@ fn collect_git_commits_filtered(
             }
             let parts: Vec<&str> = rest.splitn(4, "|||").collect();
             if parts.len() == 4 {
-                let (commit_type, scope) = parse_conventional_commit(parts[3]);
+                let (mut commit_type, scope) = parse_conventional_commit(parts[3]);
+                if project_name.ends_with(".wiki") {
+                    commit_type = "docs".to_string();
+                }
                 current = Some(CommitEntry {
                     hash: parts[0].to_string(),
                     date: parts[2][..10].to_string(),
@@ -1090,5 +1093,55 @@ mod tests {
         assert_eq!(data.top_types.len(), 5);
         // First should be the largest lines (style: 70, ci: 60, chore: 50, test: 40, docs: 30)
         assert!(data.top_types[0].lines >= data.top_types[1].lines);
+    }
+
+    // --- Wiki docs override tests ---
+
+    /// Helper that simulates the override logic in collect_git_commits_filtered.
+    fn apply_wiki_override(project_name: &str, subject: &str) -> (String, String) {
+        let (mut commit_type, scope) = parse_conventional_commit(subject);
+        if project_name.ends_with(".wiki") {
+            commit_type = "docs".to_string();
+        }
+        (commit_type, scope)
+    }
+
+    #[test]
+    fn test_wiki_override_feat_becomes_docs() {
+        let (t, s) = apply_wiki_override("VMS.wiki", "feat(nav): add sidebar");
+        assert_eq!(t, "docs");
+        assert_eq!(s, "nav");
+    }
+
+    #[test]
+    fn test_wiki_override_non_conventional_becomes_docs() {
+        let (t, s) = apply_wiki_override("VMS.wiki", "Update architecture page");
+        assert_eq!(t, "docs");
+        assert_eq!(s, "");
+    }
+
+    #[test]
+    fn test_wiki_override_already_docs_stays_docs() {
+        let (t, s) = apply_wiki_override("VMS.wiki", "docs: update readme");
+        assert_eq!(t, "docs");
+        assert_eq!(s, "");
+    }
+
+    #[test]
+    fn test_non_wiki_project_not_overridden() {
+        let (t, _) = apply_wiki_override("VMS-Frontend", "feat: add map");
+        assert_eq!(t, "feat");
+    }
+
+    #[test]
+    fn test_contains_wiki_but_not_suffix_not_overridden() {
+        let (t, _) = apply_wiki_override("VMS.wiki-tools", "feat: add parser");
+        assert_eq!(t, "feat");
+    }
+
+    #[test]
+    fn test_uppercase_wiki_not_overridden() {
+        let (t, _) = apply_wiki_override("VMS.WIKI", "feat: add page");
+        assert_eq!(t, "feat");
     }
 }
