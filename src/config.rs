@@ -45,7 +45,7 @@ impl Config {
 
         for project in &mut config.projects {
             let p = std::path::Path::new(&project.path);
-            if p.is_relative() {
+            if p.is_relative() && !p.has_root() {
                 project.path = config_dir.join(p).to_string_lossy().to_string();
             }
 
@@ -77,7 +77,7 @@ impl Config {
             && let Some(ref mut out_path) = output.path
         {
             let p = std::path::Path::new(out_path.as_str());
-            if p.is_relative() {
+            if p.is_relative() && !p.has_root() {
                 *out_path = config_dir.join(p).to_string_lossy().to_string();
             }
         }

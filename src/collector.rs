@@ -2317,7 +2317,12 @@ mod tests {
 
         let files = discover_test_files(dir.path(), "cargo test");
         assert_eq!(files.len(), 1);
-        assert!(files[0].to_str().unwrap().contains("src/main.rs"));
+        assert!(
+            files[0]
+                .strip_prefix(dir.path())
+                .unwrap()
+                .ends_with(Path::new("src").join("main.rs"))
+        );
     }
 
     #[test]
