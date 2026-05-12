@@ -89,10 +89,7 @@ fn collect_proposals(repo_path: &str, project_name: &str) -> Vec<ProposalEntry> 
         }
         let date = &dir_name[..10];
         // Validate date format loosely
-        if date.len() != 10
-            || date.as_bytes()[4] != b'-'
-            || date.as_bytes()[7] != b'-'
-        {
+        if date.len() != 10 || date.as_bytes()[4] != b'-' || date.as_bytes()[7] != b'-' {
             continue;
         }
         let slug = &dir_name[11..];
@@ -143,9 +140,7 @@ fn apply_filters(
         .iter()
         .filter(|c| {
             if let Some(ref author) = filters.author {
-                if !c.subject.is_empty()
-                    && !c.project.is_empty()
-                {
+                if !c.subject.is_empty() && !c.project.is_empty() {
                     // We need to re-check author from the git log.
                     // Actually, author info is not in CommitEntry. We need to filter during collection.
                     // For now, this filter is applied during collection in a wrapper.
@@ -234,11 +229,7 @@ fn collect_git_commits_filtered(
         return Ok(Vec::new());
     }
 
-    let mut args = vec![
-        "-C".to_string(),
-        repo_path.to_string(),
-        "log".to_string(),
-    ];
+    let mut args = vec!["-C".to_string(), repo_path.to_string(), "log".to_string()];
 
     if let Some(branch_name) = branch {
         args.push(branch_name.to_string());
@@ -378,10 +369,14 @@ fn build_project_data(
     commits: &[CommitEntry],
     proposals: &[ProposalEntry],
 ) -> ProjectData {
-    let project_commits: Vec<&CommitEntry> =
-        commits.iter().filter(|c| c.project == project_name).collect();
-    let project_proposals: Vec<&ProposalEntry> =
-        proposals.iter().filter(|p| p.project == project_name).collect();
+    let project_commits: Vec<&CommitEntry> = commits
+        .iter()
+        .filter(|c| c.project == project_name)
+        .collect();
+    let project_proposals: Vec<&ProposalEntry> = proposals
+        .iter()
+        .filter(|p| p.project == project_name)
+        .collect();
 
     let lines_added: usize = project_commits.iter().map(|c| c.insertions).sum();
     let lines_removed: usize = project_commits.iter().map(|c| c.deletions).sum();
@@ -390,7 +385,10 @@ fn build_project_data(
     for c in &project_commits {
         *type_lines.entry(c.commit_type.clone()).or_insert(0) += c.insertions + c.deletions;
     }
-    let total_lines: usize = project_commits.iter().map(|c| c.insertions + c.deletions).sum();
+    let total_lines: usize = project_commits
+        .iter()
+        .map(|c| c.insertions + c.deletions)
+        .sum();
     let mut top_types: Vec<TypeBreakdown> = type_lines
         .into_iter()
         .map(|(t, lines)| TypeBreakdown {
@@ -479,16 +477,14 @@ fn is_test_file(path: &Path, framework: &str) -> bool {
 
 fn discover_test_files(project_path: &Path, framework: &str) -> Vec<std::path::PathBuf> {
     let mut test_files = Vec::new();
-    let walker = WalkDir::new(project_path)
-        .into_iter()
-        .filter_entry(|e| {
-            if e.file_type().is_dir() {
-                let name = e.file_name().to_string_lossy();
-                !is_excluded_dir(&name)
-            } else {
-                true
-            }
-        });
+    let walker = WalkDir::new(project_path).into_iter().filter_entry(|e| {
+        if e.file_type().is_dir() {
+            let name = e.file_name().to_string_lossy();
+            !is_excluded_dir(&name)
+        } else {
+            true
+        }
+    });
     for entry in walker.filter_map(|e| e.ok()) {
         if entry.file_type().is_file() && is_test_file(entry.path(), framework) {
             // For Rust, only count files that contain #[test] or #[cfg(test)]
@@ -575,7 +571,6 @@ fn parse_istanbul_json(path: &Path) -> Option<f64> {
         .and_then(|p| p.as_f64())
 }
 
-
 fn discover_coverage(project_path: &Path, result_path: Option<&str>) -> Option<f64> {
     // If explicit path is provided, try that first
     if let Some(rel_path) = result_path {
@@ -621,7 +616,10 @@ fn collect_test_metrics(config: &Config) -> Vec<TestMetrics> {
                 .spawn()
             {
                 Ok(child) => children.push((i, child)),
-                Err(e) => eprintln!("  Warning: failed to start coverage for '{}': {}", project.name, e),
+                Err(e) => eprintln!(
+                    "  Warning: failed to start coverage for '{}': {}",
+                    project.name, e
+                ),
             }
         }
     }
@@ -661,7 +659,8 @@ fn collect_test_metrics(config: &Config) -> Vec<TestMetrics> {
         }
         let test_files = discover_test_files(project_path, &framework);
         let test_case_count = count_test_cases(&test_files, &framework);
-        let coverage_percent = discover_coverage(project_path, project.coverage_result_path.as_deref());
+        let coverage_percent =
+            discover_coverage(project_path, project.coverage_result_path.as_deref());
         metrics.push(TestMetrics {
             project: project.name.clone(),
             test_file_count: test_files.len(),
@@ -752,7 +751,10 @@ pub fn collect(config: &Config) -> Result<ShowcaseData> {
     let author = author_filter.unwrap_or("ALL").to_string();
 
     Ok(ShowcaseData {
-        title: config.title.clone().unwrap_or_else(|| "貢獻總覽".to_string()),
+        title: config
+            .title
+            .clone()
+            .unwrap_or_else(|| "貢獻總覽".to_string()),
         author,
         date_range,
         generated_at: Local::now().format("%Y-%m-%d %H:%M").to_string(),
@@ -869,7 +871,11 @@ mod tests {
         ];
         let breakdown = build_type_breakdown(&commits);
         let other_entries: Vec<_> = breakdown.iter().filter(|b| b.label == "其他").collect();
-        assert_eq!(other_entries.len(), 1, "Should have exactly one '其他' entry");
+        assert_eq!(
+            other_entries.len(),
+            1,
+            "Should have exactly one '其他' entry"
+        );
         assert_eq!(other_entries[0].lines, 10 + 5 + 20 + 3 + 7 + 2);
     }
 
@@ -1172,18 +1178,16 @@ mod tests {
 
     #[test]
     fn test_zero_stat_commits_contribute_zero_to_timeline() {
-        let commits = vec![
-            CommitEntry {
-                hash: "z1".to_string(),
-                date: "2024-03-01".to_string(),
-                commit_type: "feat".to_string(),
-                scope: String::new(),
-                subject: "feat: empty".to_string(),
-                project: "test".to_string(),
-                insertions: 0,
-                deletions: 0,
-            },
-        ];
+        let commits = vec![CommitEntry {
+            hash: "z1".to_string(),
+            date: "2024-03-01".to_string(),
+            commit_type: "feat".to_string(),
+            scope: String::new(),
+            subject: "feat: empty".to_string(),
+            project: "test".to_string(),
+            insertions: 0,
+            deletions: 0,
+        }];
         let timeline = build_timeline(&commits);
         assert_eq!(timeline.len(), 1);
         assert_eq!(timeline[0].lines, 0);
@@ -1215,7 +1219,10 @@ mod tests {
         ];
         let timeline = build_timeline(&commits);
         for entry in &timeline {
-            assert_eq!(entry.height, 0.0, "Height should be 0.0 when all lines are zero");
+            assert_eq!(
+                entry.height, 0.0,
+                "Height should be 0.0 when all lines are zero"
+            );
         }
     }
 
@@ -1245,7 +1252,10 @@ mod tests {
         ];
         let breakdown = build_type_breakdown(&commits);
         for entry in &breakdown {
-            assert_eq!(entry.percentage, 0.0, "Percentage should be 0.0 when all lines are zero");
+            assert_eq!(
+                entry.percentage, 0.0,
+                "Percentage should be 0.0 when all lines are zero"
+            );
         }
     }
 
@@ -1286,8 +1296,8 @@ mod tests {
         let breakdown = build_type_breakdown(&commits);
         assert_eq!(breakdown.len(), 3);
         assert_eq!(breakdown[0].lines, 150); // feat: 100+50
-        assert_eq!(breakdown[1].lines, 40);  // docs: 30+10
-        assert_eq!(breakdown[2].lines, 7);   // fix: 5+2
+        assert_eq!(breakdown[1].lines, 40); // docs: 30+10
+        assert_eq!(breakdown[2].lines, 7); // fix: 5+2
     }
 
     #[test]
@@ -1333,7 +1343,7 @@ mod tests {
         assert_eq!(data.top_types[1].lines, 60); // 50+10
         assert_eq!(data.top_types[2].commit_type, "docs");
         assert_eq!(data.top_types[2].lines, 25); // 20+5
-        // percentages based on total lines (385)
+                                                 // percentages based on total lines (385)
         let total = 385.0_f64;
         assert!((data.top_types[0].percentage - 300.0 / total * 100.0).abs() < 0.01);
     }
@@ -1496,18 +1506,16 @@ mod tests {
 
     #[test]
     fn test_apply_filters_retains_all_when_exclude_hashes_empty_vec() {
-        let commits = vec![
-            CommitEntry {
-                hash: "aaa111".to_string(),
-                date: "2024-01-01".to_string(),
-                commit_type: "feat".to_string(),
-                scope: String::new(),
-                subject: "feat: a".to_string(),
-                project: "test".to_string(),
-                insertions: 0,
-                deletions: 0,
-            },
-        ];
+        let commits = vec![CommitEntry {
+            hash: "aaa111".to_string(),
+            date: "2024-01-01".to_string(),
+            commit_type: "feat".to_string(),
+            scope: String::new(),
+            subject: "feat: a".to_string(),
+            project: "test".to_string(),
+            insertions: 0,
+            deletions: 0,
+        }];
         let proposals = vec![];
         let config = Config {
             title: None,
@@ -1522,7 +1530,11 @@ mod tests {
             }),
         };
         let (filtered, _) = apply_filters(&commits, &proposals, &config);
-        assert_eq!(filtered.len(), 1, "Empty exclude list should retain all commits");
+        assert_eq!(
+            filtered.len(),
+            1,
+            "Empty exclude list should retain all commits"
+        );
     }
 
     #[test]
@@ -1568,18 +1580,16 @@ mod tests {
 
     #[test]
     fn test_apply_filters_short_prefix_does_not_exclude() {
-        let commits = vec![
-            CommitEntry {
-                hash: "dd33ee63950bb49a284de835528343561f1a70d5".to_string(),
-                date: "2024-01-01".to_string(),
-                commit_type: "feat".to_string(),
-                scope: String::new(),
-                subject: "feat: a".to_string(),
-                project: "test".to_string(),
-                insertions: 0,
-                deletions: 0,
-            },
-        ];
+        let commits = vec![CommitEntry {
+            hash: "dd33ee63950bb49a284de835528343561f1a70d5".to_string(),
+            date: "2024-01-01".to_string(),
+            commit_type: "feat".to_string(),
+            scope: String::new(),
+            subject: "feat: a".to_string(),
+            project: "test".to_string(),
+            insertions: 0,
+            deletions: 0,
+        }];
         let proposals = vec![];
         let config = Config {
             title: None,
@@ -1725,5 +1735,855 @@ mod tests {
         )
         .unwrap();
         assert_eq!(discover_coverage(dir.path(), None), Some(78.0));
+    }
+
+    // ========================================================================
+    // collect_proposals() tests
+    // ========================================================================
+
+    #[test]
+    fn test_collect_proposals_empty_archive() {
+        let dir = tempfile::tempdir().unwrap();
+        let archive = dir.path().join("openspec/changes/archive");
+        std::fs::create_dir_all(&archive).unwrap();
+        let result = collect_proposals(dir.path().to_str().unwrap(), "proj");
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_collect_proposals_no_archive_dir() {
+        let dir = tempfile::tempdir().unwrap();
+        let result = collect_proposals(dir.path().to_str().unwrap(), "proj");
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_collect_proposals_with_valid_entries() {
+        let dir = tempfile::tempdir().unwrap();
+        let archive = dir.path().join("openspec/changes/archive");
+
+        // Create two archive entries
+        let entry1 = archive.join("2024-06-15-add-auth");
+        std::fs::create_dir_all(&entry1).unwrap();
+        std::fs::write(
+            entry1.join(".openspec.yaml"),
+            "description: \"Add authentication module\"",
+        )
+        .unwrap();
+        std::fs::write(
+            entry1.join("tasks.md"),
+            "- [x] task 1\n- [x] task 2\n- [ ] task 3\n",
+        )
+        .unwrap();
+
+        let entry2 = archive.join("2024-07-20-fix-bug");
+        std::fs::create_dir_all(&entry2).unwrap();
+        std::fs::write(
+            entry2.join(".openspec.yaml"),
+            "description: 'Fix critical bug'",
+        )
+        .unwrap();
+        std::fs::write(entry2.join("tasks.md"), "- [x] fix it\n").unwrap();
+
+        let result = collect_proposals(dir.path().to_str().unwrap(), "my-proj");
+        assert_eq!(result.len(), 2);
+        // Sorted most recent first
+        assert_eq!(result[0].date, "2024-07-20");
+        assert_eq!(result[0].slug, "fix-bug");
+        assert_eq!(result[0].project, "my-proj");
+        assert_eq!(result[0].description, "Fix critical bug");
+        assert_eq!(result[0].task_count, 1);
+
+        assert_eq!(result[1].date, "2024-06-15");
+        assert_eq!(result[1].slug, "add-auth");
+        assert_eq!(result[1].task_count, 2); // only [x] tasks
+        assert_eq!(result[1].description, "Add authentication module");
+    }
+
+    #[test]
+    fn test_collect_proposals_non_date_prefixed_skipped() {
+        let dir = tempfile::tempdir().unwrap();
+        let archive = dir.path().join("openspec/changes/archive");
+        let bad_entry = archive.join("not-a-date-slug");
+        std::fs::create_dir_all(&bad_entry).unwrap();
+        std::fs::write(bad_entry.join(".openspec.yaml"), "description: nope").unwrap();
+        let result = collect_proposals(dir.path().to_str().unwrap(), "proj");
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_collect_proposals_missing_openspec_yaml() {
+        let dir = tempfile::tempdir().unwrap();
+        let archive = dir.path().join("openspec/changes/archive");
+        let entry = archive.join("2024-01-01-no-yaml");
+        std::fs::create_dir_all(&entry).unwrap();
+        std::fs::write(entry.join("tasks.md"), "- [x] done\n").unwrap();
+
+        let result = collect_proposals(dir.path().to_str().unwrap(), "proj");
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].description, "");
+        assert_eq!(result[0].task_count, 1);
+    }
+
+    #[test]
+    fn test_collect_proposals_missing_tasks_md() {
+        let dir = tempfile::tempdir().unwrap();
+        let archive = dir.path().join("openspec/changes/archive");
+        let entry = archive.join("2024-05-10-no-tasks");
+        std::fs::create_dir_all(&entry).unwrap();
+        std::fs::write(entry.join(".openspec.yaml"), "description: hello").unwrap();
+
+        let result = collect_proposals(dir.path().to_str().unwrap(), "proj");
+        assert_eq!(result.len(), 1);
+        assert_eq!(result[0].task_count, 0);
+        assert_eq!(result[0].description, "hello");
+    }
+
+    #[test]
+    fn test_collect_proposals_non_directory_entries_skipped() {
+        let dir = tempfile::tempdir().unwrap();
+        let archive = dir.path().join("openspec/changes/archive");
+        std::fs::create_dir_all(&archive).unwrap();
+        // Create a file (not a directory)
+        std::fs::write(archive.join("2024-01-01-file-not-dir"), "content").unwrap();
+        let result = collect_proposals(dir.path().to_str().unwrap(), "proj");
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_collect_proposals_sorting_most_recent_first() {
+        let dir = tempfile::tempdir().unwrap();
+        let archive = dir.path().join("openspec/changes/archive");
+        for date in &["2024-01-01", "2024-12-31", "2024-06-15"] {
+            let entry = archive.join(format!("{}-slug", date));
+            std::fs::create_dir_all(&entry).unwrap();
+        }
+        let result = collect_proposals(dir.path().to_str().unwrap(), "proj");
+        assert_eq!(result.len(), 3);
+        assert_eq!(result[0].date, "2024-12-31");
+        assert_eq!(result[1].date, "2024-06-15");
+        assert_eq!(result[2].date, "2024-01-01");
+    }
+
+    // ========================================================================
+    // collect_git_commits_filtered() tests
+    // ========================================================================
+
+    fn init_temp_git_repo() -> tempfile::TempDir {
+        let dir = tempfile::tempdir().unwrap();
+        let repo = dir.path();
+        let run = |args: &[&str]| {
+            Command::new("git")
+                .args(args)
+                .current_dir(repo)
+                .env("GIT_AUTHOR_NAME", "Test User")
+                .env("GIT_AUTHOR_EMAIL", "test@example.com")
+                .env("GIT_COMMITTER_NAME", "Test User")
+                .env("GIT_COMMITTER_EMAIL", "test@example.com")
+                .output()
+                .unwrap()
+        };
+        run(&["init", "--initial-branch", "main"]);
+        run(&["config", "user.email", "test@example.com"]);
+        run(&["config", "user.name", "Test User"]);
+        dir
+    }
+
+    fn git_commit(repo: &Path, filename: &str, content: &str, message: &str) {
+        std::fs::write(repo.join(filename), content).unwrap();
+        Command::new("git")
+            .args(["add", "."])
+            .current_dir(repo)
+            .env("GIT_AUTHOR_NAME", "Test User")
+            .env("GIT_AUTHOR_EMAIL", "test@example.com")
+            .env("GIT_COMMITTER_NAME", "Test User")
+            .env("GIT_COMMITTER_EMAIL", "test@example.com")
+            .output()
+            .unwrap();
+        Command::new("git")
+            .args(["commit", "-m", message])
+            .current_dir(repo)
+            .env("GIT_AUTHOR_NAME", "Test User")
+            .env("GIT_AUTHOR_EMAIL", "test@example.com")
+            .env("GIT_COMMITTER_NAME", "Test User")
+            .env("GIT_COMMITTER_EMAIL", "test@example.com")
+            .output()
+            .unwrap();
+    }
+
+    #[test]
+    fn test_collect_git_commits_basic() {
+        let dir = init_temp_git_repo();
+        let repo = dir.path();
+        git_commit(repo, "file.txt", "hello", "feat: initial commit");
+
+        let commits =
+            collect_git_commits_filtered(repo.to_str().unwrap(), "test-proj", None, Some("main"))
+                .unwrap();
+        assert_eq!(commits.len(), 1);
+        assert_eq!(commits[0].commit_type, "feat");
+        assert_eq!(commits[0].subject, "feat: initial commit");
+        assert_eq!(commits[0].project, "test-proj");
+        assert!(!commits[0].hash.is_empty());
+        assert_eq!(commits[0].date.len(), 10); // YYYY-MM-DD
+    }
+
+    #[test]
+    fn test_collect_git_commits_parses_shortstat() {
+        let dir = init_temp_git_repo();
+        let repo = dir.path();
+        git_commit(repo, "a.txt", "line1\nline2\nline3\n", "feat: add file");
+
+        let commits =
+            collect_git_commits_filtered(repo.to_str().unwrap(), "proj", None, Some("main"))
+                .unwrap();
+        assert_eq!(commits.len(), 1);
+        assert!(commits[0].insertions > 0, "Should have insertions");
+    }
+
+    #[test]
+    fn test_collect_git_commits_multiple() {
+        let dir = init_temp_git_repo();
+        let repo = dir.path();
+        git_commit(repo, "a.txt", "hello", "feat: add a");
+        git_commit(repo, "b.txt", "world", "fix: add b");
+        git_commit(repo, "c.txt", "test", "docs: add c");
+
+        let commits =
+            collect_git_commits_filtered(repo.to_str().unwrap(), "proj", None, Some("main"))
+                .unwrap();
+        assert_eq!(commits.len(), 3);
+    }
+
+    #[test]
+    fn test_collect_git_commits_wiki_override() {
+        let dir = init_temp_git_repo();
+        let repo = dir.path();
+        git_commit(repo, "page.md", "# Hello", "feat: add page");
+
+        let commits = collect_git_commits_filtered(
+            repo.to_str().unwrap(),
+            "project.wiki",
+            None,
+            Some("main"),
+        )
+        .unwrap();
+        assert_eq!(commits.len(), 1);
+        assert_eq!(commits[0].commit_type, "docs");
+    }
+
+    #[test]
+    fn test_collect_git_commits_nonexistent_path() {
+        let result = collect_git_commits_filtered(
+            "/nonexistent/path/that/does/not/exist",
+            "proj",
+            None,
+            None,
+        )
+        .unwrap();
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_collect_git_commits_path_without_git() {
+        let dir = tempfile::tempdir().unwrap();
+        // No .git directory
+        let result =
+            collect_git_commits_filtered(dir.path().to_str().unwrap(), "proj", None, None).unwrap();
+        assert!(result.is_empty());
+    }
+
+    #[test]
+    fn test_collect_git_commits_author_filter() {
+        let dir = init_temp_git_repo();
+        let repo = dir.path();
+        git_commit(repo, "a.txt", "hello", "feat: add a");
+
+        // Filter by matching author
+        let commits = collect_git_commits_filtered(
+            repo.to_str().unwrap(),
+            "proj",
+            Some("Test User"),
+            Some("main"),
+        )
+        .unwrap();
+        assert_eq!(commits.len(), 1);
+
+        // Filter by non-matching author
+        let commits = collect_git_commits_filtered(
+            repo.to_str().unwrap(),
+            "proj",
+            Some("Nobody"),
+            Some("main"),
+        )
+        .unwrap();
+        assert!(commits.is_empty());
+    }
+
+    #[test]
+    fn test_collect_git_commits_all_branches_when_no_branch() {
+        let dir = init_temp_git_repo();
+        let repo = dir.path();
+        git_commit(repo, "a.txt", "hello", "feat: on main");
+
+        // No branch specified → --all
+        let commits =
+            collect_git_commits_filtered(repo.to_str().unwrap(), "proj", None, None).unwrap();
+        assert!(!commits.is_empty());
+    }
+
+    #[test]
+    fn test_collect_git_commits_branch_filter() {
+        let dir = init_temp_git_repo();
+        let repo = dir.path();
+        git_commit(repo, "a.txt", "hello", "feat: on main");
+
+        // Create a new branch with an extra commit
+        Command::new("git")
+            .args(["checkout", "-b", "feature"])
+            .current_dir(repo)
+            .output()
+            .unwrap();
+        git_commit(repo, "b.txt", "world", "fix: on feature");
+
+        // main should have 1 commit
+        let main_commits =
+            collect_git_commits_filtered(repo.to_str().unwrap(), "proj", None, Some("main"))
+                .unwrap();
+        assert_eq!(main_commits.len(), 1);
+
+        // feature should have 2 commits
+        let feat_commits =
+            collect_git_commits_filtered(repo.to_str().unwrap(), "proj", None, Some("feature"))
+                .unwrap();
+        assert_eq!(feat_commits.len(), 2);
+    }
+
+    #[test]
+    fn test_collect_git_commits_invalid_branch() {
+        let dir = init_temp_git_repo();
+        let repo = dir.path();
+        git_commit(repo, "a.txt", "hello", "feat: initial");
+
+        let commits = collect_git_commits_filtered(
+            repo.to_str().unwrap(),
+            "proj",
+            None,
+            Some("nonexistent-branch"),
+        )
+        .unwrap();
+        assert!(commits.is_empty());
+    }
+
+    // ========================================================================
+    // detect_framework() tests
+    // ========================================================================
+
+    #[test]
+    fn test_detect_framework_cargo() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("Cargo.toml"), "[package]\nname = \"x\"").unwrap();
+        assert_eq!(detect_framework(dir.path()), "cargo test");
+    }
+
+    #[test]
+    fn test_detect_framework_vitest() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("package.json"),
+            r#"{"devDependencies":{"vitest":"^1.0"}}"#,
+        )
+        .unwrap();
+        assert_eq!(detect_framework(dir.path()), "vitest");
+    }
+
+    #[test]
+    fn test_detect_framework_jest() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("package.json"),
+            r#"{"devDependencies":{"jest":"^29"}}"#,
+        )
+        .unwrap();
+        assert_eq!(detect_framework(dir.path()), "jest");
+    }
+
+    #[test]
+    fn test_detect_framework_pyproject_without_pytest() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("pyproject.toml"),
+            "[project]\nname = \"x\"\ndependencies = [\"requests\"]",
+        )
+        .unwrap();
+        // pyproject.toml without pytest — falls through. No Cargo.toml, no package.json.
+        assert_eq!(detect_framework(dir.path()), "none");
+    }
+
+    #[test]
+    fn test_detect_framework_priority_pytest_over_cargo() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("pyproject.toml"),
+            "[tool.pytest]\n[project]\ndependencies = [\"pytest\"]",
+        )
+        .unwrap();
+        std::fs::write(dir.path().join("Cargo.toml"), "[package]\nname = \"x\"").unwrap();
+        assert_eq!(detect_framework(dir.path()), "pytest");
+    }
+
+    #[test]
+    fn test_detect_framework_priority_cargo_over_vitest() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("Cargo.toml"), "[package]\nname = \"x\"").unwrap();
+        std::fs::write(
+            dir.path().join("package.json"),
+            r#"{"devDependencies":{"vitest":"^1.0"}}"#,
+        )
+        .unwrap();
+        assert_eq!(detect_framework(dir.path()), "cargo test");
+    }
+
+    #[test]
+    fn test_detect_framework_priority_vitest_over_jest() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("package.json"),
+            r#"{"devDependencies":{"vitest":"^1.0","jest":"^29"}}"#,
+        )
+        .unwrap();
+        assert_eq!(detect_framework(dir.path()), "vitest");
+    }
+
+    // ========================================================================
+    // is_excluded_dir() tests
+    // ========================================================================
+
+    #[test]
+    fn test_is_excluded_dir_all_excluded() {
+        let excluded = [
+            "node_modules",
+            "target",
+            ".venv",
+            "__pycache__",
+            ".git",
+            "dist",
+            ".tox",
+        ];
+        for name in &excluded {
+            assert!(is_excluded_dir(name), "'{}' should be excluded", name);
+        }
+    }
+
+    #[test]
+    fn test_is_excluded_dir_non_excluded() {
+        let allowed = ["src", "tests", "lib", "docs", "build", "bin"];
+        for name in &allowed {
+            assert!(!is_excluded_dir(name), "'{}' should not be excluded", name);
+        }
+    }
+
+    // ========================================================================
+    // is_test_file() tests
+    // ========================================================================
+
+    #[test]
+    fn test_is_test_file_pytest_patterns() {
+        assert!(is_test_file(Path::new("test_foo.py"), "pytest"));
+        assert!(is_test_file(Path::new("foo_test.py"), "pytest"));
+        assert!(!is_test_file(Path::new("foo.py"), "pytest"));
+        assert!(!is_test_file(Path::new("test_foo.rs"), "pytest"));
+    }
+
+    #[test]
+    fn test_is_test_file_vitest_jest_patterns() {
+        assert!(is_test_file(Path::new("foo.test.ts"), "vitest"));
+        assert!(is_test_file(Path::new("bar.spec.js"), "jest"));
+        assert!(is_test_file(Path::new("baz.test.tsx"), "vitest"));
+        assert!(!is_test_file(Path::new("foo.ts"), "vitest"));
+        assert!(!is_test_file(Path::new("foo.ts"), "jest"));
+    }
+
+    #[test]
+    fn test_is_test_file_cargo_patterns() {
+        assert!(is_test_file(Path::new("foo.rs"), "cargo test"));
+        assert!(!is_test_file(Path::new("foo.py"), "cargo test"));
+        // No extension → false
+        assert!(!is_test_file(Path::new("Makefile"), "cargo test"));
+    }
+
+    #[test]
+    fn test_is_test_file_unknown_framework() {
+        assert!(!is_test_file(Path::new("test_foo.py"), "unknown"));
+        assert!(!is_test_file(Path::new("foo.rs"), "none"));
+    }
+
+    // ========================================================================
+    // discover_test_files() tests
+    // ========================================================================
+
+    #[test]
+    fn test_discover_test_files_cargo() {
+        let dir = tempfile::tempdir().unwrap();
+        let src = dir.path().join("src");
+        std::fs::create_dir(&src).unwrap();
+        // File with #[test] → should be discovered
+        std::fs::write(
+            src.join("lib.rs"),
+            "fn foo() {}\n#[cfg(test)]\nmod tests {\n#[test]\nfn it_works() {}\n}\n",
+        )
+        .unwrap();
+        // File without tests → should NOT be discovered
+        std::fs::write(src.join("utils.rs"), "pub fn helper() -> i32 { 42 }\n").unwrap();
+        let files = discover_test_files(dir.path(), "cargo test");
+        assert_eq!(files.len(), 1);
+        assert!(files[0].to_str().unwrap().contains("lib.rs"));
+    }
+
+    #[test]
+    fn test_discover_test_files_skips_excluded_dirs() {
+        let dir = tempfile::tempdir().unwrap();
+        // Put a .rs file with #[test] in target/ — should be excluded
+        let target_dir = dir.path().join("target/debug");
+        std::fs::create_dir_all(&target_dir).unwrap();
+        std::fs::write(
+            target_dir.join("test.rs"),
+            "#[test]\nfn t() {}\n",
+        )
+        .unwrap();
+        // And one in src/ — should be found
+        let src = dir.path().join("src");
+        std::fs::create_dir(&src).unwrap();
+        std::fs::write(src.join("main.rs"), "#[test]\nfn t() {}\n").unwrap();
+
+        let files = discover_test_files(dir.path(), "cargo test");
+        assert_eq!(files.len(), 1);
+        assert!(files[0].to_str().unwrap().contains("src/main.rs"));
+    }
+
+    #[test]
+    fn test_discover_test_files_vitest() {
+        let dir = tempfile::tempdir().unwrap();
+        let src = dir.path().join("src");
+        std::fs::create_dir(&src).unwrap();
+        std::fs::write(src.join("app.test.ts"), "test('works', () => {})").unwrap();
+        std::fs::write(src.join("app.ts"), "export const foo = 1;").unwrap();
+        // node_modules should be excluded
+        let nm = dir.path().join("node_modules/pkg");
+        std::fs::create_dir_all(&nm).unwrap();
+        std::fs::write(nm.join("index.test.js"), "test('x', () => {})").unwrap();
+
+        let files = discover_test_files(dir.path(), "vitest");
+        assert_eq!(files.len(), 1);
+    }
+
+    // ========================================================================
+    // count_test_cases() tests
+    // ========================================================================
+
+    #[test]
+    fn test_count_test_cases_cargo() {
+        let dir = tempfile::tempdir().unwrap();
+        let test_file = dir.path().join("tests.rs");
+        std::fs::write(
+            &test_file,
+            "#[test]\nfn a() {}\n#[test]\nfn b() {}\n#[tokio::test]\nasync fn c() {}\n#[rstest]\nfn d() {}\n",
+        )
+        .unwrap();
+        let files = vec![test_file];
+        assert_eq!(count_test_cases(&files, "cargo test"), 4);
+    }
+
+    #[test]
+    fn test_count_test_cases_vitest_each() {
+        let dir = tempfile::tempdir().unwrap();
+        let test_file = dir.path().join("app.test.ts");
+        std::fs::write(
+            &test_file,
+            "it.each([1,2])('works %d', (n) => {});\ntest.each([3])('t', () => {});\n",
+        )
+        .unwrap();
+        let files = vec![test_file];
+        assert_eq!(count_test_cases(&files, "vitest"), 2);
+    }
+
+    #[test]
+    fn test_count_test_cases_vitest_excludes_comments() {
+        let dir = tempfile::tempdir().unwrap();
+        let test_file = dir.path().join("a.test.ts");
+        std::fs::write(
+            &test_file,
+            "// it('commented out', () => {});\n* test('also excluded', () => {});\nit('real', () => {});\n",
+        )
+        .unwrap();
+        let files = vec![test_file];
+        assert_eq!(count_test_cases(&files, "vitest"), 1);
+    }
+
+    #[test]
+    fn test_count_test_cases_pytest_async() {
+        let dir = tempfile::tempdir().unwrap();
+        let test_file = dir.path().join("test_async.py");
+        std::fs::write(
+            &test_file,
+            "async def test_a():\n    pass\ndef test_b():\n    pass\ndef helper():\n    pass\n",
+        )
+        .unwrap();
+        let files = vec![test_file];
+        assert_eq!(count_test_cases(&files, "pytest"), 2);
+    }
+
+    #[test]
+    fn test_count_test_cases_unknown_framework() {
+        let dir = tempfile::tempdir().unwrap();
+        let test_file = dir.path().join("test_file.py");
+        std::fs::write(&test_file, "def test_a():\n    pass\n").unwrap();
+        let files = vec![test_file];
+        assert_eq!(count_test_cases(&files, "unknown"), 0);
+    }
+
+    // ========================================================================
+    // discover_coverage() edge cases
+    // ========================================================================
+
+    #[test]
+    fn test_discover_coverage_explicit_nonexistent_file() {
+        let dir = tempfile::tempdir().unwrap();
+        assert_eq!(discover_coverage(dir.path(), Some("nonexistent.xml")), None);
+    }
+
+    #[test]
+    fn test_discover_coverage_explicit_unsupported_extension() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("report.txt"), "some text").unwrap();
+        assert_eq!(discover_coverage(dir.path(), Some("report.txt")), None);
+    }
+
+    #[test]
+    fn test_discover_coverage_auto_fallback_to_istanbul() {
+        let dir = tempfile::tempdir().unwrap();
+        // No coverage.xml, only Istanbul JSON
+        let cov_dir = dir.path().join("coverage");
+        std::fs::create_dir(&cov_dir).unwrap();
+        std::fs::write(
+            cov_dir.join("coverage-summary.json"),
+            r#"{"total":{"lines":{"pct":55.5}}}"#,
+        )
+        .unwrap();
+        assert_eq!(discover_coverage(dir.path(), None), Some(55.5));
+    }
+
+    #[test]
+    fn test_discover_coverage_auto_neither_found() {
+        let dir = tempfile::tempdir().unwrap();
+        // No coverage files at all
+        assert_eq!(discover_coverage(dir.path(), None), None);
+    }
+
+    // ========================================================================
+    // parse_conventional_commit() edge cases
+    // ========================================================================
+
+    #[test]
+    fn test_parse_conventional_commit_empty_scope() {
+        let (t, s) = parse_conventional_commit("docs(): update");
+        assert_eq!(t, "docs");
+        assert_eq!(s, "");
+    }
+
+    #[test]
+    fn test_parse_conventional_commit_breaking_with_scope() {
+        let (t, s) = parse_conventional_commit("refactor(core)!: restructure");
+        assert_eq!(t, "refactor");
+        assert_eq!(s, "core");
+    }
+
+    #[test]
+    fn test_parse_conventional_commit_empty_string() {
+        let (t, s) = parse_conventional_commit("");
+        assert_eq!(t, "other");
+        assert_eq!(s, "");
+    }
+
+    // ========================================================================
+    // build_timeline() edge cases
+    // ========================================================================
+
+    #[test]
+    fn test_build_timeline_empty_commits() {
+        let timeline = build_timeline(&[]);
+        assert!(timeline.is_empty());
+    }
+
+    // ========================================================================
+    // build_type_breakdown() edge cases
+    // ========================================================================
+
+    #[test]
+    fn test_build_type_breakdown_empty_commits() {
+        let breakdown = build_type_breakdown(&[]);
+        assert!(breakdown.is_empty());
+    }
+
+    #[test]
+    fn test_build_type_breakdown_single_type() {
+        let commits = vec![CommitEntry {
+            hash: "a".to_string(),
+            date: "2024-01-01".to_string(),
+            commit_type: "feat".to_string(),
+            scope: String::new(),
+            subject: "feat: thing".to_string(),
+            project: "p".to_string(),
+            insertions: 10,
+            deletions: 5,
+        }];
+        let breakdown = build_type_breakdown(&commits);
+        assert_eq!(breakdown.len(), 1);
+        assert_eq!(breakdown[0].commit_type, "feat");
+        assert!((breakdown[0].percentage - 100.0).abs() < f64::EPSILON);
+    }
+
+    // ========================================================================
+    // parse_shortstat() edge cases
+    // ========================================================================
+
+    #[test]
+    fn test_parse_shortstat_empty_string() {
+        let (ins, del) = parse_shortstat("");
+        assert_eq!(ins, 0);
+        assert_eq!(del, 0);
+    }
+
+    #[test]
+    fn test_parse_shortstat_whitespace_only() {
+        let (ins, del) = parse_shortstat("   ");
+        assert_eq!(ins, 0);
+        assert_eq!(del, 0);
+    }
+
+    // ========================================================================
+    // apply_filters() — proposal date filtering
+    // ========================================================================
+
+    #[test]
+    fn test_apply_filters_proposals_date_range() {
+        let commits = vec![];
+        let proposals = vec![
+            ProposalEntry {
+                slug: "early".to_string(),
+                date: "2024-01-01".to_string(),
+                project: "proj".to_string(),
+                description: "early".to_string(),
+                task_count: 1,
+            },
+            ProposalEntry {
+                slug: "mid".to_string(),
+                date: "2024-06-15".to_string(),
+                project: "proj".to_string(),
+                description: "mid".to_string(),
+                task_count: 2,
+            },
+            ProposalEntry {
+                slug: "late".to_string(),
+                date: "2024-12-31".to_string(),
+                project: "proj".to_string(),
+                description: "late".to_string(),
+                task_count: 3,
+            },
+        ];
+        let config = Config {
+            title: None,
+            output: None,
+            projects: vec![],
+            filters: Some(crate::config::FilterConfig {
+                author: None,
+                since: Some("2024-03-01".to_string()),
+                until: Some("2024-09-01".to_string()),
+                types: None,
+                exclude_hashes: None,
+            }),
+        };
+        let (_, filtered_proposals) = apply_filters(&commits, &proposals, &config);
+        assert_eq!(filtered_proposals.len(), 1);
+        assert_eq!(filtered_proposals[0].slug, "mid");
+    }
+
+    #[test]
+    fn test_apply_filters_no_filters() {
+        let commits = vec![CommitEntry {
+            hash: "a".to_string(),
+            date: "2024-01-01".to_string(),
+            commit_type: "feat".to_string(),
+            scope: String::new(),
+            subject: "feat: a".to_string(),
+            project: "test".to_string(),
+            insertions: 0,
+            deletions: 0,
+        }];
+        let proposals = vec![];
+        let config = Config {
+            title: None,
+            output: None,
+            projects: vec![],
+            filters: None,
+        };
+        let (filtered, _) = apply_filters(&commits, &proposals, &config);
+        assert_eq!(filtered.len(), 1);
+    }
+
+    // ========================================================================
+    // build_project_data() tests
+    // ========================================================================
+
+    #[test]
+    fn test_build_project_data_filters_by_project() {
+        let commits = vec![
+            CommitEntry {
+                hash: "a".to_string(),
+                date: "2024-01-01".to_string(),
+                commit_type: "feat".to_string(),
+                scope: String::new(),
+                subject: "feat: a".to_string(),
+                project: "proj-a".to_string(),
+                insertions: 10,
+                deletions: 5,
+            },
+            CommitEntry {
+                hash: "b".to_string(),
+                date: "2024-01-02".to_string(),
+                commit_type: "fix".to_string(),
+                scope: String::new(),
+                subject: "fix: b".to_string(),
+                project: "proj-b".to_string(),
+                insertions: 20,
+                deletions: 3,
+            },
+        ];
+        let data = build_project_data("proj-a", "Project A", &commits, &[]);
+        assert_eq!(data.commit_count, 1);
+        assert_eq!(data.lines_added, 10);
+        assert_eq!(data.lines_removed, 5);
+    }
+
+    #[test]
+    fn test_build_project_data_counts_proposals() {
+        let proposals = vec![
+            ProposalEntry {
+                slug: "a".to_string(),
+                date: "2024-01-01".to_string(),
+                project: "proj".to_string(),
+                description: "".to_string(),
+                task_count: 1,
+            },
+            ProposalEntry {
+                slug: "b".to_string(),
+                date: "2024-02-01".to_string(),
+                project: "other".to_string(),
+                description: "".to_string(),
+                task_count: 2,
+            },
+        ];
+        let data = build_project_data("proj", "Proj", &[], &proposals);
+        assert_eq!(data.proposal_count, 1);
     }
 }

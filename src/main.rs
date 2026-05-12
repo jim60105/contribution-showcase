@@ -1,10 +1,10 @@
-use clap::{Parser, Subcommand};
 use anyhow::Result;
+use clap::{Parser, Subcommand};
 use std::io::Write;
 
+mod collector;
 mod config;
 mod model;
-mod collector;
 
 #[derive(Parser)]
 #[command(name = "contribution-showcase", about = "產生貢獻總覽靜態網頁")]
@@ -76,19 +76,28 @@ fn run_generate(args: Generate) -> Result<()> {
     }
 
     // Validate date range after CLI overrides are merged
-    let final_filters = config.filters.as_ref().map(|f| f.clone()).unwrap_or_default();
+    let final_filters = config
+        .filters
+        .as_ref()
+        .map(|f| f.clone())
+        .unwrap_or_default();
     config::validate_date_range(
         final_filters.since.as_deref(),
         final_filters.until.as_deref(),
     )?;
 
-    let output_path = args.output.as_deref().unwrap_or_else(|| config.output_path());
+    let output_path = args
+        .output
+        .as_deref()
+        .unwrap_or_else(|| config.output_path());
 
     eprintln!("Scanning repositories...");
     let data = collector::collect(&config)?;
 
-    eprintln!("Summary: {} commits across {} repos, {} OpenSpec proposals",
-        data.summary.total_commits, data.summary.total_repos, data.summary.total_proposals);
+    eprintln!(
+        "Summary: {} commits across {} repos, {} OpenSpec proposals",
+        data.summary.total_commits, data.summary.total_repos, data.summary.total_proposals
+    );
 
     // Generate HTML
     let template = include_str!("../templates/page.html");
@@ -265,9 +274,8 @@ mod tests {
 
     #[test]
     fn test_init_subcommand_parses_custom_output() {
-        let cli =
-            Cli::try_parse_from(["contribution-showcase", "init", "--output", "custom.toml"])
-                .unwrap();
+        let cli = Cli::try_parse_from(["contribution-showcase", "init", "--output", "custom.toml"])
+            .unwrap();
         match cli.command {
             Command::Init(i) => assert_eq!(i.output, "custom.toml"),
             _ => panic!("Expected Init subcommand"),
@@ -286,7 +294,11 @@ mod tests {
     fn test_template_parses_as_valid_config() {
         let template = include_str!("../showcase.example.toml");
         let result = toml::from_str::<crate::config::Config>(template);
-        assert!(result.is_ok(), "Template failed to parse: {:?}", result.err());
+        assert!(
+            result.is_ok(),
+            "Template failed to parse: {:?}",
+            result.err()
+        );
     }
 
     #[test]
@@ -294,7 +306,157 @@ mod tests {
         let template = include_str!("../showcase.example.toml");
         assert!(template.contains("title"), "Missing 'title' field");
         assert!(template.contains("[output]"), "Missing '[output]' section");
-        assert!(template.contains("[filters]"), "Missing '[filters]' section");
-        assert!(template.contains("[[projects]]"), "Missing '[[projects]]' section");
+        assert!(
+            template.contains("[filters]"),
+            "Missing '[filters]' section"
+        );
+        assert!(
+            template.contains("[[projects]]"),
+            "Missing '[[projects]]' section"
+        );
+    }
+
+    // --- run_generate() integration tests ---
+
+    fn init_temp_git_repo_for_main() -> tempfile::TempDir {
+        let dir = tempfile::tempdir().unwrap();
+        let repo = dir.path();
+        let run = |args: &[&str]| {
+            std::process::Command::new("git")
+                .args(args)
+                .current_dir(repo)
+                .env("GIT_AUTHOR_NAME", "Test User")
+                .env("GIT_AUTHOR_EMAIL", "test@example.com")
+                .env("GIT_COMMITTER_NAME", "Test User")
+                .env("GIT_COMMITTER_EMAIL", "test@example.com")
+                .output()
+                .unwrap()
+        };
+        run(&["init", "--initial-branch", "main"]);
+        run(&["config", "user.email", "test@example.com"]);
+        run(&["config", "user.name", "Test User"]);
+        std::fs::write(repo.join("file.txt"), "hello world\n").unwrap();
+        run(&["add", "."]);
+        run(&["commit", "-m", "feat: initial commit"]);
+        dir
+    }
+
+    #[test]
+    fn test_run_generate_basic() {
+        let repo_dir = init_temp_git_repo_for_main();
+        let config_dir = tempfile::tempdir().unwrap();
+        let output_path = config_dir.path().join("dist/output.html");
+        let config_content = format!(
+            "title = \"Test\"\n[output]\npath = \"{}\"\n[[projects]]\nname = \"test-project\"\npath = \"{}\"\nbranch = \"main\"\n",
+            output_path.display(),
+            repo_dir.path().display()
+        );
+        let config_path = config_dir.path().join("showcase.toml");
+        std::fs::write(&config_path, config_content).unwrap();
+
+        let args = Generate {
+            config: config_path.to_str().unwrap().to_string(),
+            output: None,
+            author: None,
+            since: None,
+            until: None,
+        };
+        run_generate(args).unwrap();
+        assert!(output_path.exists());
+        let html = std::fs::read_to_string(&output_path).unwrap();
+        assert!(html.contains("test-project"));
+    }
+
+    #[test]
+    fn test_run_generate_with_output_override() {
+        let repo_dir = init_temp_git_repo_for_main();
+        let config_dir = tempfile::tempdir().unwrap();
+        let config_content = format!(
+            "title = \"Test\"\n[output]\npath = \"default.html\"\n[[projects]]\nname = \"proj\"\npath = \"{}\"\nbranch = \"main\"\n",
+            repo_dir.path().display()
+        );
+        let config_path = config_dir.path().join("showcase.toml");
+        std::fs::write(&config_path, config_content).unwrap();
+
+        let override_output = config_dir.path().join("override/out.html");
+        let args = Generate {
+            config: config_path.to_str().unwrap().to_string(),
+            output: Some(override_output.to_str().unwrap().to_string()),
+            author: None,
+            since: None,
+            until: None,
+        };
+        run_generate(args).unwrap();
+        assert!(override_output.exists());
+    }
+
+    #[test]
+    fn test_run_generate_with_author_filter() {
+        let repo_dir = init_temp_git_repo_for_main();
+        let config_dir = tempfile::tempdir().unwrap();
+        let output_path = config_dir.path().join("dist/out.html");
+        let config_content = format!(
+            "title = \"Test\"\n[output]\npath = \"{}\"\n[[projects]]\nname = \"proj\"\npath = \"{}\"\nbranch = \"main\"\n",
+            output_path.display(),
+            repo_dir.path().display()
+        );
+        let config_path = config_dir.path().join("showcase.toml");
+        std::fs::write(&config_path, config_content).unwrap();
+
+        let args = Generate {
+            config: config_path.to_str().unwrap().to_string(),
+            output: None,
+            author: Some("Test User".to_string()),
+            since: None,
+            until: None,
+        };
+        run_generate(args).unwrap();
+        assert!(output_path.exists());
+    }
+
+    #[test]
+    fn test_run_generate_with_date_filters() {
+        let repo_dir = init_temp_git_repo_for_main();
+        let config_dir = tempfile::tempdir().unwrap();
+        let output_path = config_dir.path().join("dist/out.html");
+        let config_content = format!(
+            "title = \"Test\"\n[output]\npath = \"{}\"\n[[projects]]\nname = \"proj\"\npath = \"{}\"\nbranch = \"main\"\n",
+            output_path.display(),
+            repo_dir.path().display()
+        );
+        let config_path = config_dir.path().join("showcase.toml");
+        std::fs::write(&config_path, config_content).unwrap();
+
+        let args = Generate {
+            config: config_path.to_str().unwrap().to_string(),
+            output: None,
+            author: None,
+            since: Some("2020-01-01".to_string()),
+            until: Some("2030-12-31".to_string()),
+        };
+        run_generate(args).unwrap();
+        assert!(output_path.exists());
+    }
+
+    #[test]
+    fn test_run_init_default_path_returns_ok() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("showcase.toml");
+        let args = Init {
+            output: path.to_str().unwrap().to_string(),
+        };
+        assert!(run_init(args).is_ok());
+        assert!(path.exists());
+    }
+
+    #[test]
+    fn test_run_init_custom_path_returns_ok() {
+        let dir = tempfile::tempdir().unwrap();
+        let path = dir.path().join("custom/dir/my.toml");
+        let args = Init {
+            output: path.to_str().unwrap().to_string(),
+        };
+        assert!(run_init(args).is_ok());
+        assert!(path.exists());
     }
 }

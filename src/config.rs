@@ -54,10 +54,15 @@ impl Config {
                 if branch.starts_with('-') {
                     anyhow::bail!(
                         "branch name must not start with '-' for project '{}': {}",
-                        project.name, branch
+                        project.name,
+                        branch
                     );
                 }
-                if branch.contains("..") || branch.contains('^') || branch.contains('~') || branch.contains(' ') {
+                if branch.contains("..")
+                    || branch.contains('^')
+                    || branch.contains('~')
+                    || branch.contains(' ')
+                {
                     anyhow::bail!(
                         "branch name contains invalid characters for project '{}': '{}' (revspec operators like '..', '^', '~' are not allowed)",
                         project.name, branch
@@ -87,13 +92,15 @@ impl Config {
     }
 
     pub fn filters(&self) -> FilterConfig {
-        self.filters.as_ref().map_or_else(FilterConfig::default, |f| FilterConfig {
-            author: f.author.clone(),
-            since: f.since.clone(),
-            until: f.until.clone(),
-            types: f.types.clone(),
-            exclude_hashes: f.exclude_hashes.clone(),
-        })
+        self.filters
+            .as_ref()
+            .map_or_else(FilterConfig::default, |f| FilterConfig {
+                author: f.author.clone(),
+                since: f.since.clone(),
+                until: f.until.clone(),
+                types: f.types.clone(),
+                exclude_hashes: f.exclude_hashes.clone(),
+            })
     }
 }
 
@@ -103,10 +110,19 @@ pub fn validate_date_range(since: Option<&str>, until: Option<&str>) -> Result<(
     let strict_date = |d: &str, label: &str| -> Result<()> {
         // Enforce exactly YYYY-MM-DD (10 chars, zero-padded)
         if d.len() != 10 {
-            anyhow::bail!("invalid '{}' date '{}': expected YYYY-MM-DD format", label, d);
+            anyhow::bail!(
+                "invalid '{}' date '{}': expected YYYY-MM-DD format",
+                label,
+                d
+            );
         }
-        NaiveDate::parse_from_str(d, "%Y-%m-%d")
-            .map_err(|_| anyhow::anyhow!("invalid '{}' date '{}': expected YYYY-MM-DD format", label, d))?;
+        NaiveDate::parse_from_str(d, "%Y-%m-%d").map_err(|_| {
+            anyhow::anyhow!(
+                "invalid '{}' date '{}': expected YYYY-MM-DD format",
+                label,
+                d
+            )
+        })?;
         Ok(())
     };
 
@@ -256,21 +272,24 @@ mod tests {
         fs::write(
             &config_file,
             "[[projects]]\nname = \"test\"\npath = \"/tmp/test\"\nbranch = \"main..feature\"\n",
-        ).unwrap();
+        )
+        .unwrap();
         assert!(Config::load(config_file.to_str().unwrap()).is_err());
 
         // Test "^" (exclusion)
         fs::write(
             &config_file,
             "[[projects]]\nname = \"test\"\npath = \"/tmp/test\"\nbranch = \"^main\"\n",
-        ).unwrap();
+        )
+        .unwrap();
         assert!(Config::load(config_file.to_str().unwrap()).is_err());
 
         // Test "~" (ancestor)
         fs::write(
             &config_file,
             "[[projects]]\nname = \"test\"\npath = \"/tmp/test\"\nbranch = \"HEAD~10\"\n",
-        ).unwrap();
+        )
+        .unwrap();
         assert!(Config::load(config_file.to_str().unwrap()).is_err());
     }
 
@@ -300,7 +319,8 @@ mod tests {
         fs::write(
             &config_file,
             "[[projects]]\nname = \"test\"\npath = \"/tmp/test\"\n\n[filters]\nauthor = \"Jim\"\n",
-        ).unwrap();
+        )
+        .unwrap();
         let config = Config::load(config_file.to_str().unwrap()).unwrap();
         let filters = config.filters();
         assert!(filters.exclude_hashes.is_none());
