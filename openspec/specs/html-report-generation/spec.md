@@ -81,17 +81,14 @@ scroll-snap, replacing the previous continuous scroll layout.
 - **THEN** each section occupies the full viewport height and the browser
   snaps between sections on scroll
 
-### Requirement: 7-Slide Dashboard Flow
+### Requirement: 8-Slide Dashboard Flow
 
-The system SHALL render the following 7 dashboard slides in order: Cover
-(hero), KPI Dashboard (6 metric cards), Timeline (weekly bar chart), Type
-Breakdown, Project Cards, Proposals Table, and Commit Log.
+The system SHALL render 8 dashboard slides in order: Cover (hero), KPI Dashboard (6 metric cards), Timeline (weekly bar chart), Type Breakdown, Project Cards, Test Metrics, Proposals Table, and Commit Log.
 
 #### Scenario: All slides present
-- **GIVEN** a `ShowcaseData` instance with commits, proposals, and projects
+- **GIVEN** a `ShowcaseData` instance with commits, proposals, projects, and test metrics
 - **WHEN** the HTML report is generated
-- **THEN** the output contains 7 slide sections: Cover, KPI Dashboard,
-  Timeline, Type Breakdown, Projects, Proposals, and Commit Log
+- **THEN** the output contains 8 slide sections in the specified order
 
 ### Requirement: KPI Dashboard with 6 Metrics
 
@@ -250,14 +247,19 @@ Traditional Chinese (zh-TW).
 - **WHEN** reading section headings and labels
 - **THEN** all UI text is in Traditional Chinese
 
-### Requirement: Commit Hash Column
+### Requirement: Commit Table Column Order
 
-The commit log table SHALL include a "Hash" column as the first column. The column SHALL display the first 8 characters of the commit hash rendered in a monospace font (`font-family: var(--font-mono)`).
+The commit log table columns SHALL be ordered: 日期, 專案, Hash, 類型, 說明, +/−. The Hash column SHALL display the first 8 characters of the commit hash rendered in a monospace font (`font-family: var(--font-mono)`).
+
+#### Scenario: Commit table column order
+- **GIVEN** the commit log table is rendered
+- **WHEN** viewing the table headers
+- **THEN** the column order is 日期, 專案, Hash, 類型, 說明, +/−
 
 #### Scenario: Commit hash displayed as short hash
 - **GIVEN** a commit with hash `"dd33ee63950bb49a284de835528343561f1a70d5"`
 - **WHEN** the commit log table is rendered
-- **THEN** the first column of that row displays `"dd33ee63"` in monospace font
+- **THEN** the Hash column of that row displays `"dd33ee63"` in monospace font
 
 ### Requirement: Emoji Favicon
 
@@ -270,9 +272,81 @@ The HTML page SHALL include a favicon `<link>` tag in `<head>` using a percent-e
 
 ### Requirement: Proposal Table Layout
 
-The OpenSpec proposals table SHALL remove the "說明" (description) column. The remaining columns SHALL be: 專案, 代稱, 日期, 工作項.
+The OpenSpec proposals table columns SHALL be ordered: 日期, 專案, 代稱, 工作項.
 
-#### Scenario: Proposal with description is rendered without description column
-- **GIVEN** a proposal entry that includes a description field
-- **WHEN** the proposals table is rendered
-- **THEN** the table contains only the columns 專案, 代稱, 日期, 工作項 and the description is not displayed
+#### Scenario: Proposals table column order
+- **GIVEN** the proposals table is rendered
+- **WHEN** viewing the table headers
+- **THEN** the column order is 日期, 專案, 代稱, 工作項
+
+### Requirement: Project Cards Grid Layout
+
+The project cards grid SHALL use a 3-column layout at desktop widths (≥901px), 2 columns at tablet widths (601–900px), and 1 column at mobile widths (≤600px). The CSS SHALL use a mobile-first `min-width` approach.
+
+#### Scenario: Desktop viewport
+- **GIVEN** a viewport width ≥901px
+- **WHEN** the project cards section is rendered
+- **THEN** the grid displays 3 columns
+
+#### Scenario: Tablet viewport
+- **GIVEN** a viewport width between 601px and 900px
+- **WHEN** the project cards section is rendered
+- **THEN** the grid displays 2 columns
+
+#### Scenario: Mobile viewport
+- **GIVEN** a viewport width ≤600px
+- **WHEN** the project cards section is rendered
+- **THEN** the grid displays 1 column
+
+### Requirement: Date Column Width in Data Tables
+
+The date cells in both the proposals table and the commit log table SHALL apply `white-space: nowrap` and `min-width: calc(10ch + var(--gap-sm) + var(--gap-sm))` via a shared `.date-cell` CSS class, so that `YYYY-MM-DD` dates always render on a single line without wrapping.
+
+#### Scenario: Proposals date displays on one line
+- **GIVEN** a proposals table with a date value "2026-05-08"
+- **WHEN** the table is rendered at any supported viewport width
+- **THEN** the date displays on a single line without wrapping
+
+#### Scenario: Commits date displays on one line
+- **GIVEN** a commit log table with a date value "2026-05-08"
+- **WHEN** the table is rendered at any supported viewport width
+- **THEN** the date displays on a single line without wrapping
+
+#### Scenario: Date column minimum width
+- **GIVEN** either the proposals or commit log table is rendered
+- **WHEN** the table layout algorithm distributes column widths
+- **THEN** the date column is at least `calc(10ch + var(--gap-sm) + var(--gap-sm))` wide
+
+### Requirement: Test Metrics Slide
+
+The dashboard SHALL include a "測試" slide displaying test metrics for each project. The slide SHALL contain a table with columns: 專案, 框架, 測試檔案, 測試案例, 覆蓋率. Below the table, a KPI card row SHALL show totals: 總測試檔案 (sum of all test_file_count), 總測試案例 (sum of all test_case_count), 平均覆蓋率 (arithmetic mean of coverage_percent values from projects where coverage is not null; display "—" if no project has coverage data).
+
+#### Scenario: Test metrics table rendered
+- **GIVEN** test metrics data for 3 projects with varying coverage
+- **WHEN** the test metrics slide is rendered
+- **THEN** the table displays one row per project with framework, file count, case count, and coverage percentage
+
+#### Scenario: Coverage progress bar colors
+- **GIVEN** a project with coverage ≥80%
+- **WHEN** the coverage cell is rendered
+- **THEN** the progress bar uses the green color (#2f7d4a)
+
+#### Scenario: Coverage unavailable
+- **GIVEN** a project with no coverage data (coverage_percent is null)
+- **WHEN** the coverage cell is rendered
+- **THEN** the cell displays "—" with no progress bar
+
+#### Scenario: No test metrics
+- **GIVEN** zero test metrics entries
+- **WHEN** the test metrics slide is rendered
+- **THEN** the slide displays an empty-state message "無測試資料"
+
+#### Scenario: Framework detected but zero test files
+- **GIVEN** a project with framework "pytest" but no files matching test patterns
+- **WHEN** the project row is rendered
+- **THEN** test_file_count and test_case_count display 0
+
+#### Scenario: Test files found but zero test cases
+- **GIVEN** a project with 3 test files but no lines matching test function patterns
+- **WHEN** the project row is rendered
+- **THEN** test_file_count displays 3 and test_case_count displays 0
