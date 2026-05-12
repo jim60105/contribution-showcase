@@ -44,11 +44,12 @@ fn parse_conventional_commit(subject: &str) -> (String, String) {
     // Optional scope in parens
     let mut scope = String::new();
     let mut j = i;
-    if j < bytes.len() && bytes[j] == b'(' {
-        if let Some(close) = subject[j..].find(')') {
-            scope = subject[j + 1..j + close].to_string();
-            j += close + 1;
-        }
+    if j < bytes.len()
+        && bytes[j] == b'('
+        && let Some(close) = subject[j..].find(')')
+    {
+        scope = subject[j + 1..j + close].to_string();
+        j += close + 1;
     }
 
     // Optional ! before :
@@ -139,35 +140,36 @@ fn apply_filters(
     let filtered_commits: Vec<CommitEntry> = commits
         .iter()
         .filter(|c| {
-            if let Some(ref author) = filters.author {
-                if !c.subject.is_empty() && !c.project.is_empty() {
-                    // We need to re-check author from the git log.
-                    // Actually, author info is not in CommitEntry. We need to filter during collection.
-                    // For now, this filter is applied during collection in a wrapper.
-                    // But we stored author filtering needs to happen at collection time.
-                    // Let's keep this as a pass-through; author filtering happens in collect().
-                    let _ = author;
-                }
+            if let Some(ref author) = filters.author
+                && !c.subject.is_empty()
+                && !c.project.is_empty()
+            {
+                // We need to re-check author from the git log.
+                // Actually, author info is not in CommitEntry. We need to filter during collection.
+                // For now, this filter is applied during collection in a wrapper.
+                // But we stored author filtering needs to happen at collection time.
+                // Let's keep this as a pass-through; author filtering happens in collect().
+                let _ = author;
             }
-            if let Some(ref hashes) = filters.exclude_hashes {
-                if hashes.iter().any(|h| h == &c.hash) {
-                    return false;
-                }
+            if let Some(ref hashes) = filters.exclude_hashes
+                && hashes.iter().any(|h| h == &c.hash)
+            {
+                return false;
             }
-            if let Some(ref since) = filters.since {
-                if c.date < *since {
-                    return false;
-                }
+            if let Some(ref since) = filters.since
+                && c.date < *since
+            {
+                return false;
             }
-            if let Some(ref until) = filters.until {
-                if c.date > *until {
-                    return false;
-                }
+            if let Some(ref until) = filters.until
+                && c.date > *until
+            {
+                return false;
             }
-            if let Some(ref types) = filters.types {
-                if !types.contains(&c.commit_type) {
-                    return false;
-                }
+            if let Some(ref types) = filters.types
+                && !types.contains(&c.commit_type)
+            {
+                return false;
             }
             true
         })
@@ -177,15 +179,15 @@ fn apply_filters(
     let filtered_proposals: Vec<ProposalEntry> = proposals
         .iter()
         .filter(|p| {
-            if let Some(ref since) = filters.since {
-                if p.date < *since {
-                    return false;
-                }
+            if let Some(ref since) = filters.since
+                && p.date < *since
+            {
+                return false;
             }
-            if let Some(ref until) = filters.until {
-                if p.date > *until {
-                    return false;
-                }
+            if let Some(ref until) = filters.until
+                && p.date > *until
+            {
+                return false;
             }
             true
         })
@@ -208,10 +210,10 @@ fn parse_shortstat(line: &str) -> (usize, usize) {
             if let Some(n) = part.split_whitespace().next() {
                 insertions = n.parse().unwrap_or(0);
             }
-        } else if part.contains("deletion") {
-            if let Some(n) = part.split_whitespace().next() {
-                deletions = n.parse().unwrap_or(0);
-            }
+        } else if part.contains("deletion")
+            && let Some(n) = part.split_whitespace().next()
+        {
+            deletions = n.parse().unwrap_or(0);
         }
     }
     (insertions, deletions)
@@ -359,7 +361,7 @@ fn build_type_breakdown(commits: &[CommitEntry]) -> Vec<TypeBreakdown> {
         })
         .collect();
 
-    breakdown.sort_by(|a, b| b.lines.cmp(&a.lines));
+    breakdown.sort_by_key(|b| std::cmp::Reverse(b.lines));
     breakdown
 }
 
@@ -402,7 +404,7 @@ fn build_project_data(
             },
         })
         .collect();
-    top_types.sort_by(|a, b| b.lines.cmp(&a.lines));
+    top_types.sort_by_key(|b| std::cmp::Reverse(b.lines));
     top_types.truncate(5);
 
     ProjectData {
@@ -419,12 +421,11 @@ fn build_project_data(
 fn detect_framework(project_path: &Path) -> String {
     // Check pyproject.toml for pytest
     let pyproject = project_path.join("pyproject.toml");
-    if pyproject.exists() {
-        if let Ok(content) = std::fs::read_to_string(&pyproject) {
-            if content.contains("pytest") {
-                return "pytest".to_string();
-            }
-        }
+    if pyproject.exists()
+        && let Ok(content) = std::fs::read_to_string(&pyproject)
+        && content.contains("pytest")
+    {
+        return "pytest".to_string();
     }
     // Check Cargo.toml
     if project_path.join("Cargo.toml").exists() {
@@ -432,14 +433,14 @@ fn detect_framework(project_path: &Path) -> String {
     }
     // Check package.json for vitest or jest
     let pkg = project_path.join("package.json");
-    if pkg.exists() {
-        if let Ok(content) = std::fs::read_to_string(&pkg) {
-            if content.contains("vitest") {
-                return "vitest".to_string();
-            }
-            if content.contains("jest") {
-                return "jest".to_string();
-            }
+    if pkg.exists()
+        && let Ok(content) = std::fs::read_to_string(&pkg)
+    {
+        if content.contains("vitest") {
+            return "vitest".to_string();
+        }
+        if content.contains("jest") {
+            return "jest".to_string();
         }
     }
     "none".to_string()
@@ -489,14 +490,13 @@ fn discover_test_files(project_path: &Path, framework: &str) -> Vec<std::path::P
         if entry.file_type().is_file() && is_test_file(entry.path(), framework) {
             // For Rust, only count files that contain #[test] or #[cfg(test)]
             if framework == "cargo test" {
-                if let Ok(content) = std::fs::read_to_string(entry.path()) {
-                    if content.contains("#[test]")
+                if let Ok(content) = std::fs::read_to_string(entry.path())
+                    && (content.contains("#[test]")
                         || content.contains("#[cfg(test)]")
                         || content.contains("#[tokio::test")
-                        || content.contains("#[rstest")
-                    {
-                        test_files.push(entry.path().to_path_buf());
-                    }
+                        || content.contains("#[rstest"))
+                {
+                    test_files.push(entry.path().to_path_buf());
                 }
             } else {
                 test_files.push(entry.path().to_path_buf());
@@ -513,31 +513,28 @@ fn count_test_cases(test_files: &[std::path::PathBuf], framework: &str) -> usize
             for line in content.lines() {
                 let trimmed = line.trim();
                 match framework {
-                    "pytest" => {
-                        if trimmed.starts_with("def test_")
-                            || trimmed.starts_with("async def test_")
-                        {
-                            count += 1;
-                        }
+                    "pytest"
+                        if (trimmed.starts_with("def test_")
+                            || trimmed.starts_with("async def test_")) =>
+                    {
+                        count += 1;
                     }
-                    "vitest" | "jest" => {
+                    "vitest" | "jest"
                         if (trimmed.contains("it(")
                             || trimmed.contains("it.each(")
                             || trimmed.contains("test(")
                             || trimmed.contains("test.each("))
                             && !trimmed.starts_with("//")
-                            && !trimmed.starts_with("*")
-                        {
-                            count += 1;
-                        }
+                            && !trimmed.starts_with("*") =>
+                    {
+                        count += 1;
                     }
-                    "cargo test" => {
-                        if trimmed.contains("#[test]")
+                    "cargo test"
+                        if (trimmed.contains("#[test]")
                             || trimmed.contains("#[tokio::test")
-                            || trimmed.contains("#[rstest")
-                        {
-                            count += 1;
-                        }
+                            || trimmed.contains("#[rstest")) =>
+                    {
+                        count += 1;
                     }
                     _ => {}
                 }
@@ -1086,7 +1083,7 @@ mod tests {
 
     #[test]
     fn test_avg_daily_lines_multiple_dates() {
-        let commits = vec![
+        let commits = [
             CommitEntry {
                 hash: "a1".to_string(),
                 date: "2025-01-01".to_string(),
@@ -1130,7 +1127,7 @@ mod tests {
 
     #[test]
     fn test_avg_daily_lines_same_date() {
-        let commits = vec![
+        let commits = [
             CommitEntry {
                 hash: "b1".to_string(),
                 date: "2025-03-15".to_string(),
@@ -1343,7 +1340,7 @@ mod tests {
         assert_eq!(data.top_types[1].lines, 60); // 50+10
         assert_eq!(data.top_types[2].commit_type, "docs");
         assert_eq!(data.top_types[2].lines, 25); // 20+5
-                                                 // percentages based on total lines (385)
+        // percentages based on total lines (385)
         let total = 385.0_f64;
         assert!((data.top_types[0].percentage - 300.0 / total * 100.0).abs() < 0.01);
     }
@@ -2246,11 +2243,7 @@ mod tests {
         // Put a .rs file with #[test] in target/ — should be excluded
         let target_dir = dir.path().join("target/debug");
         std::fs::create_dir_all(&target_dir).unwrap();
-        std::fs::write(
-            target_dir.join("test.rs"),
-            "#[test]\nfn t() {}\n",
-        )
-        .unwrap();
+        std::fs::write(target_dir.join("test.rs"), "#[test]\nfn t() {}\n").unwrap();
         // And one in src/ — should be found
         let src = dir.path().join("src");
         std::fs::create_dir(&src).unwrap();

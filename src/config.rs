@@ -65,19 +65,20 @@ impl Config {
                 {
                     anyhow::bail!(
                         "branch name contains invalid characters for project '{}': '{}' (revspec operators like '..', '^', '~' are not allowed)",
-                        project.name, branch
+                        project.name,
+                        branch
                     );
                 }
             }
         }
 
         // Resolve output path
-        if let Some(ref mut output) = config.output {
-            if let Some(ref mut out_path) = output.path {
-                let p = std::path::Path::new(out_path.as_str());
-                if p.is_relative() {
-                    *out_path = config_dir.join(p).to_string_lossy().to_string();
-                }
+        if let Some(ref mut output) = config.output
+            && let Some(ref mut out_path) = output.path
+        {
+            let p = std::path::Path::new(out_path.as_str());
+            if p.is_relative() {
+                *out_path = config_dir.join(p).to_string_lossy().to_string();
             }
         }
 
@@ -132,10 +133,10 @@ pub fn validate_date_range(since: Option<&str>, until: Option<&str>) -> Result<(
     if let Some(u) = until {
         strict_date(u, "until")?;
     }
-    if let (Some(s), Some(u)) = (since, until) {
-        if s > u {
-            anyhow::bail!("'since' ({}) must not be after 'until' ({})", s, u);
-        }
+    if let (Some(s), Some(u)) = (since, until)
+        && s > u
+    {
+        anyhow::bail!("'since' ({}) must not be after 'until' ({})", s, u);
     }
     Ok(())
 }

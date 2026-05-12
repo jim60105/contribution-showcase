@@ -1,13 +1,16 @@
 [package]
 name = "contribution-showcase"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
+description = "A CLI tool that generates self-contained HTML reports summarizing Git contributions across multiple repositories"
+license = "GPL-3.0-only"
+repository = "https://github.com/jim60105/contribution-showcase"
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-toml = "0.8"
+toml = "1"
 chrono = { version = "0.4", features = ["serde"] }
 anyhow = "1"
 walkdir = "2"

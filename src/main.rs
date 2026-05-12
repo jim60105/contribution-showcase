@@ -76,11 +76,7 @@ fn run_generate(args: Generate) -> Result<()> {
     }
 
     // Validate date range after CLI overrides are merged
-    let final_filters = config
-        .filters
-        .as_ref()
-        .map(|f| f.clone())
-        .unwrap_or_default();
+    let final_filters = config.filters.clone().unwrap_or_default();
     config::validate_date_range(
         final_filters.since.as_deref(),
         final_filters.until.as_deref(),
@@ -120,10 +116,10 @@ fn run_init(args: Init) -> Result<()> {
 
     let path = &args.output;
 
-    if let Some(parent) = std::path::Path::new(path).parent() {
-        if !parent.as_os_str().is_empty() {
-            std::fs::create_dir_all(parent)?;
-        }
+    if let Some(parent) = std::path::Path::new(path).parent()
+        && !parent.as_os_str().is_empty()
+    {
+        std::fs::create_dir_all(parent)?;
     }
 
     match std::fs::OpenOptions::new()
