@@ -154,6 +154,9 @@ fn main() -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    fn toml_literal(value: &str) -> String {
+        format!("'{}'", value.replace('\'', "''"))
+    }
 
     #[test]
     fn test_escape_script_close_tag() {
@@ -340,9 +343,9 @@ mod tests {
         let config_dir = tempfile::tempdir().unwrap();
         let output_path = config_dir.path().join("dist/output.html");
         let config_content = format!(
-            "title = \"Test\"\n[output]\npath = \"{}\"\n[[projects]]\nname = \"test-project\"\npath = \"{}\"\nbranch = \"main\"\n",
-            output_path.display(),
-            repo_dir.path().display()
+            "title = \"Test\"\n[output]\npath = {}\n[[projects]]\nname = \"test-project\"\npath = {}\nbranch = \"main\"\n",
+            toml_literal(&output_path.to_string_lossy()),
+            toml_literal(&repo_dir.path().to_string_lossy())
         );
         let config_path = config_dir.path().join("showcase.toml");
         std::fs::write(&config_path, config_content).unwrap();
@@ -365,8 +368,8 @@ mod tests {
         let repo_dir = init_temp_git_repo_for_main();
         let config_dir = tempfile::tempdir().unwrap();
         let config_content = format!(
-            "title = \"Test\"\n[output]\npath = \"default.html\"\n[[projects]]\nname = \"proj\"\npath = \"{}\"\nbranch = \"main\"\n",
-            repo_dir.path().display()
+            "title = \"Test\"\n[output]\npath = \"default.html\"\n[[projects]]\nname = \"proj\"\npath = {}\nbranch = \"main\"\n",
+            toml_literal(&repo_dir.path().to_string_lossy())
         );
         let config_path = config_dir.path().join("showcase.toml");
         std::fs::write(&config_path, config_content).unwrap();
@@ -389,9 +392,9 @@ mod tests {
         let config_dir = tempfile::tempdir().unwrap();
         let output_path = config_dir.path().join("dist/out.html");
         let config_content = format!(
-            "title = \"Test\"\n[output]\npath = \"{}\"\n[[projects]]\nname = \"proj\"\npath = \"{}\"\nbranch = \"main\"\n",
-            output_path.display(),
-            repo_dir.path().display()
+            "title = \"Test\"\n[output]\npath = {}\n[[projects]]\nname = \"proj\"\npath = {}\nbranch = \"main\"\n",
+            toml_literal(&output_path.to_string_lossy()),
+            toml_literal(&repo_dir.path().to_string_lossy())
         );
         let config_path = config_dir.path().join("showcase.toml");
         std::fs::write(&config_path, config_content).unwrap();
@@ -413,9 +416,9 @@ mod tests {
         let config_dir = tempfile::tempdir().unwrap();
         let output_path = config_dir.path().join("dist/out.html");
         let config_content = format!(
-            "title = \"Test\"\n[output]\npath = \"{}\"\n[[projects]]\nname = \"proj\"\npath = \"{}\"\nbranch = \"main\"\n",
-            output_path.display(),
-            repo_dir.path().display()
+            "title = \"Test\"\n[output]\npath = {}\n[[projects]]\nname = \"proj\"\npath = {}\nbranch = \"main\"\n",
+            toml_literal(&output_path.to_string_lossy()),
+            toml_literal(&repo_dir.path().to_string_lossy())
         );
         let config_path = config_dir.path().join("showcase.toml");
         std::fs::write(&config_path, config_content).unwrap();
