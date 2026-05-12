@@ -22,4 +22,5 @@ target/
 ### Project ###
 /showcase.toml
 /dist
+/cobertura.xml
 tmp/**
