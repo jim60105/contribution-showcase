@@ -85,11 +85,16 @@ impl Config {
         Ok(config)
     }
 
-    pub fn output_path(&self) -> &str {
-        self.output
-            .as_ref()
-            .and_then(|o| o.path.as_deref())
-            .unwrap_or("dist/index.html")
+    pub fn output_path(&self) -> String {
+        if let Some(ref output) = self.output
+            && let Some(ref path) = output.path
+        {
+            return path.clone();
+        }
+        format!(
+            "dist/{}",
+            sanitize_title_for_filename(self.title.as_deref())
+        )
     }
 
     pub fn filters(&self) -> FilterConfig {
@@ -102,6 +107,46 @@ impl Config {
                 types: f.types.clone(),
                 exclude_hashes: f.exclude_hashes.clone(),
             })
+    }
+}
+
+pub fn sanitize_title_for_filename(title: Option<&str>) -> String {
+    let title = match title {
+        Some(t) if !t.is_empty() => t,
+        _ => return "index.html".to_string(),
+    };
+
+    let sanitized: String = title
+        .chars()
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || c == '-' || c == '_' {
+                c.to_ascii_lowercase()
+            } else {
+                '-'
+            }
+        })
+        .collect();
+
+    // Collapse consecutive hyphens
+    let mut collapsed = String::with_capacity(sanitized.len());
+    let mut prev_hyphen = false;
+    for c in sanitized.chars() {
+        if c == '-' {
+            if !prev_hyphen {
+                collapsed.push('-');
+            }
+            prev_hyphen = true;
+        } else {
+            collapsed.push(c);
+            prev_hyphen = false;
+        }
+    }
+
+    let trimmed = collapsed.trim_matches('-');
+    if trimmed.is_empty() {
+        "index.html".to_string()
+    } else {
+        format!("{}.html", trimmed)
     }
 }
 
@@ -218,6 +263,19 @@ mod tests {
     }
 
     #[test]
+    fn test_config_output_path_with_title() {
+        let dir = temp_dir_unique("title-output");
+        let config_file = dir.join("showcase.toml");
+        fs::write(
+            &config_file,
+            "title = \"My Report\"\n[[projects]]\nname = \"test\"\npath = \"/tmp/test\"\n",
+        )
+        .unwrap();
+        let config = Config::load(config_file.to_str().unwrap()).unwrap();
+        assert_eq!(config.output_path(), "dist/my-report.html");
+    }
+
+    #[test]
     fn test_config_output_path_custom() {
         let dir = temp_dir_unique("custom-output");
         let config_file = dir.join("showcase.toml");
@@ -325,5 +383,56 @@ mod tests {
         let config = Config::load(config_file.to_str().unwrap()).unwrap();
         let filters = config.filters();
         assert!(filters.exclude_hashes.is_none());
+    }
+
+    // --- sanitize_title_for_filename tests ---
+
+    #[test]
+    fn test_sanitize_normal_ascii() {
+        assert_eq!(
+            sanitize_title_for_filename(Some("My Report")),
+            "my-report.html"
+        );
+    }
+
+    #[test]
+    fn test_sanitize_special_chars() {
+        assert_eq!(
+            sanitize_title_for_filename(Some("My Team's Showcase")),
+            "my-team-s-showcase.html"
+        );
+    }
+
+    #[test]
+    fn test_sanitize_cjk_only_fallback() {
+        assert_eq!(sanitize_title_for_filename(Some("專案報告")), "index.html");
+    }
+
+    #[test]
+    fn test_sanitize_empty_string() {
+        assert_eq!(sanitize_title_for_filename(Some("")), "index.html");
+    }
+
+    #[test]
+    fn test_sanitize_none() {
+        assert_eq!(sanitize_title_for_filename(None), "index.html");
+    }
+
+    #[test]
+    fn test_sanitize_leading_trailing_hyphens() {
+        assert_eq!(sanitize_title_for_filename(Some("---test---")), "test.html");
+    }
+
+    #[test]
+    fn test_sanitize_consecutive_special_chars() {
+        assert_eq!(sanitize_title_for_filename(Some("a!!!b")), "a-b.html");
+    }
+
+    #[test]
+    fn test_sanitize_mixed() {
+        assert_eq!(
+            sanitize_title_for_filename(Some("Report #1: Q2 (2025)")),
+            "report-1-q2-2025.html"
+        );
     }
 }

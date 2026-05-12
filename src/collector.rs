@@ -304,30 +304,96 @@ fn collect_git_commits_filtered(
 }
 
 fn build_timeline(commits: &[CommitEntry]) -> Vec<TimelineEntry> {
-    let mut week_lines: HashMap<String, usize> = HashMap::new();
+    use chrono::Datelike;
 
-    for c in commits {
-        if let Ok(date) = chrono::NaiveDate::parse_from_str(&c.date, "%Y-%m-%d") {
-            let iso_week = date.format("%G-W%V").to_string();
-            *week_lines.entry(iso_week).or_insert(0) += c.insertions + c.deletions;
-        }
+    let dates: Vec<(chrono::NaiveDate, usize)> = commits
+        .iter()
+        .filter_map(|c| {
+            chrono::NaiveDate::parse_from_str(&c.date, "%Y-%m-%d")
+                .ok()
+                .map(|d| (d, c.insertions + c.deletions))
+        })
+        .collect();
+
+    if dates.is_empty() {
+        return vec![];
     }
 
-    let mut weeks: Vec<(String, usize)> = week_lines.into_iter().collect();
-    weeks.sort_by(|a, b| a.0.cmp(&b.0));
+    let min_date = dates.iter().map(|(d, _)| *d).min().unwrap();
+    let max_date = dates.iter().map(|(d, _)| *d).max().unwrap();
+    let span_days = (max_date - min_date).num_days();
 
-    let max_lines = weeks.iter().map(|(_, l)| *l).max().unwrap_or(0);
+    // Aggregate commit lines into buckets
+    let mut bucket_lines: HashMap<String, usize> = HashMap::new();
+    for (date, lines) in &dates {
+        let label = if span_days <= 13 {
+            date.format("%Y-%m-%d").to_string()
+        } else if span_days <= 60 {
+            date.format("%G-W%V").to_string()
+        } else {
+            date.format("%Y-%m").to_string()
+        };
+        *bucket_lines.entry(label).or_insert(0) += lines;
+    }
 
-    weeks
+    // Generate contiguous bucket labels from min_date to max_date
+    let all_labels: Vec<String> = if span_days <= 13 {
+        // Daily: enumerate every day
+        let mut labels = Vec::new();
+        let mut d = min_date;
+        while d <= max_date {
+            labels.push(d.format("%Y-%m-%d").to_string());
+            d += chrono::Duration::days(1);
+        }
+        labels
+    } else if span_days <= 60 {
+        // Weekly: enumerate every ISO week
+        let mut labels = Vec::new();
+        let mut d = min_date;
+        let mut last_label = String::new();
+        while d <= max_date {
+            let label = d.format("%G-W%V").to_string();
+            if label != last_label {
+                labels.push(label.clone());
+                last_label = label;
+            }
+            d += chrono::Duration::days(1);
+        }
+        labels
+    } else {
+        // Monthly: enumerate every month
+        let mut labels = Vec::new();
+        let (mut y, mut m) = (min_date.year(), min_date.month());
+        let (end_y, end_m) = (max_date.year(), max_date.month());
+        loop {
+            labels.push(format!("{:04}-{:02}", y, m));
+            if y == end_y && m == end_m {
+                break;
+            }
+            m += 1;
+            if m > 12 {
+                m = 1;
+                y += 1;
+            }
+        }
+        labels
+    };
+
+    let max_lines = bucket_lines.values().copied().max().unwrap_or(0);
+
+    all_labels
         .into_iter()
-        .map(|(label, lines)| TimelineEntry {
-            label,
-            lines,
-            height: if max_lines == 0 {
-                0.0
-            } else {
-                (lines as f64 / max_lines as f64) * 100.0
-            },
+        .map(|label| {
+            let lines = *bucket_lines.get(&label).unwrap_or(&0);
+            TimelineEntry {
+                label,
+                lines,
+                height: if max_lines == 0 {
+                    0.0
+                } else {
+                    (lines as f64 / max_lines as f64) * 100.0
+                },
+            }
         })
         .collect()
 }
@@ -2406,6 +2472,144 @@ mod tests {
     fn test_build_timeline_empty_commits() {
         let timeline = build_timeline(&[]);
         assert!(timeline.is_empty());
+    }
+
+    fn make_commit(date: &str, insertions: usize, deletions: usize) -> CommitEntry {
+        CommitEntry {
+            hash: "abc123".to_string(),
+            date: date.to_string(),
+            commit_type: "feat".to_string(),
+            scope: String::new(),
+            subject: "test".to_string(),
+            project: "test".to_string(),
+            insertions,
+            deletions,
+        }
+    }
+
+    #[test]
+    fn test_build_timeline_daily_granularity() {
+        let commits = vec![
+            make_commit("2025-03-10", 10, 5),
+            make_commit("2025-03-12", 20, 3),
+            make_commit("2025-03-15", 7, 2),
+        ];
+        let timeline = build_timeline(&commits);
+        // Contiguous daily buckets from 03-10 to 03-15 = 6 days
+        assert_eq!(timeline.len(), 6);
+        assert!(timeline.iter().all(|t| t.label.len() == 10)); // %Y-%m-%d
+        assert_eq!(timeline[0].label, "2025-03-10");
+        assert_eq!(timeline[0].lines, 15); // 10+5
+        assert_eq!(timeline[1].label, "2025-03-11");
+        assert_eq!(timeline[1].lines, 0); // gap day
+        assert_eq!(timeline[2].label, "2025-03-12");
+        assert_eq!(timeline[2].lines, 23); // 20+3
+        assert_eq!(timeline[5].label, "2025-03-15");
+        assert_eq!(timeline[5].lines, 9); // 7+2
+    }
+
+    #[test]
+    fn test_build_timeline_weekly_granularity() {
+        let commits = vec![
+            make_commit("2025-03-01", 10, 5),
+            make_commit("2025-03-15", 20, 3),
+            make_commit("2025-03-31", 7, 2),
+        ];
+        let timeline = build_timeline(&commits);
+        assert!(timeline.iter().all(|t| t.label.contains("-W")));
+        let total: usize = timeline.iter().map(|t| t.lines).sum();
+        assert_eq!(total, 10 + 5 + 20 + 3 + 7 + 2);
+    }
+
+    #[test]
+    fn test_build_timeline_monthly_granularity() {
+        let commits = vec![
+            make_commit("2025-01-15", 10, 5),
+            make_commit("2025-03-01", 20, 3),
+            make_commit("2025-04-15", 7, 2),
+        ];
+        let timeline = build_timeline(&commits);
+        // Contiguous monthly buckets from 2025-01 to 2025-04
+        assert_eq!(timeline.len(), 4);
+        assert!(timeline.iter().all(|t| t.label.len() == 7)); // %Y-%m
+        assert_eq!(timeline[0].label, "2025-01");
+        assert_eq!(timeline[0].lines, 15);
+        assert_eq!(timeline[1].label, "2025-02");
+        assert_eq!(timeline[1].lines, 0); // gap month
+        assert_eq!(timeline[2].label, "2025-03");
+        assert_eq!(timeline[2].lines, 23);
+        assert_eq!(timeline[3].label, "2025-04");
+        assert_eq!(timeline[3].lines, 9);
+    }
+
+    #[test]
+    fn test_build_timeline_boundary_14_days() {
+        // 14 days span → weekly
+        let commits = vec![
+            make_commit("2025-03-01", 10, 0),
+            make_commit("2025-03-15", 5, 0),
+        ];
+        let timeline = build_timeline(&commits);
+        assert!(timeline.iter().all(|t| t.label.contains("-W")));
+    }
+
+    #[test]
+    fn test_build_timeline_boundary_60_days() {
+        // 60 days span → weekly
+        let commits = vec![
+            make_commit("2025-01-01", 10, 0),
+            make_commit("2025-03-02", 5, 0),
+        ];
+        let timeline = build_timeline(&commits);
+        assert!(timeline.iter().all(|t| t.label.contains("-W")));
+    }
+
+    #[test]
+    fn test_build_timeline_boundary_61_days() {
+        // 61 days span → monthly
+        let commits = vec![
+            make_commit("2025-01-01", 10, 0),
+            make_commit("2025-03-03", 5, 0),
+        ];
+        let timeline = build_timeline(&commits);
+        assert!(timeline.iter().all(|t| t.label.len() == 7));
+        // Contiguous: 2025-01, 2025-02, 2025-03
+        assert_eq!(timeline.len(), 3);
+        assert_eq!(timeline[0].label, "2025-01");
+        assert_eq!(timeline[1].label, "2025-02");
+        assert_eq!(timeline[1].lines, 0); // gap month
+        assert_eq!(timeline[2].label, "2025-03");
+    }
+
+    #[test]
+    fn test_build_timeline_single_day() {
+        let commits = vec![
+            make_commit("2025-06-01", 10, 5),
+            make_commit("2025-06-01", 20, 3),
+        ];
+        let timeline = build_timeline(&commits);
+        assert_eq!(timeline.len(), 1);
+        assert_eq!(timeline[0].label, "2025-06-01");
+        assert_eq!(timeline[0].lines, 10 + 5 + 20 + 3);
+        assert_eq!(timeline[0].height, 100.0);
+    }
+
+    #[test]
+    fn test_build_timeline_boundary_13_days() {
+        // 13 days span → daily
+        let commits = vec![
+            make_commit("2025-03-01", 10, 0),
+            make_commit("2025-03-14", 5, 0),
+        ];
+        let timeline = build_timeline(&commits);
+        // Contiguous daily buckets: 03-01 through 03-14 = 14 days
+        assert_eq!(timeline.len(), 14);
+        assert_eq!(timeline[0].label, "2025-03-01");
+        assert_eq!(timeline[0].lines, 10);
+        assert_eq!(timeline[13].label, "2025-03-14");
+        assert_eq!(timeline[13].lines, 5);
+        // Gap days should have 0 lines
+        assert_eq!(timeline[1].lines, 0);
     }
 
     // ========================================================================

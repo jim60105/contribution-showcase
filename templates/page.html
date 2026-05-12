@@ -538,7 +538,7 @@
     .test-kpi-row {
       display: flex;
       gap: var(--gap-md);
-      margin-top: var(--gap-lg);
+      margin-bottom: var(--gap-lg);
       flex-wrap: wrap;
     }
 
@@ -633,10 +633,12 @@
       </div>
     </section>
 
-    <section class="slide" id="slide-projects">
+    <section class="slide slide--scrollable" id="slide-projects">
       <div class="slide-inner">
         <h2 class="h1 animate">專案</h2>
-        <div class="project-grid" id="projectGrid"></div>
+        <div class="scroll-container" id="projectGridContainer">
+          <div class="project-grid" id="projectGrid"></div>
+        </div>
       </div>
     </section>
 
@@ -913,10 +915,7 @@
         return;
       }
 
-      var html = '<table class="data-table"><thead><tr>';
-      html += '<th>專案</th><th>框架</th><th>測試檔案</th><th>測試案例</th><th>覆蓋率</th>';
-      html += '</tr></thead><tbody>';
-
+      // First pass: compute totals for KPI
       var totalFiles = 0;
       var totalCases = 0;
       var coverageSum = 0;
@@ -926,7 +925,27 @@
         var m = metrics[i];
         totalFiles += m.test_file_count || 0;
         totalCases += m.test_case_count || 0;
+        if (m.coverage_percent != null) {
+          coverageSum += m.coverage_percent;
+          coverageCount++;
+        }
+      }
 
+      // Build KPI row FIRST
+      var avgCoverage = coverageCount > 0 ? (coverageSum / coverageCount) : null;
+      var html = '<div class="test-kpi-row">';
+      html += '<div class="test-kpi-card"><div class="test-kpi-value">' + totalFiles + '</div><div class="test-kpi-label">總測試檔案</div></div>';
+      html += '<div class="test-kpi-card"><div class="test-kpi-value">' + totalCases + '</div><div class="test-kpi-label">總測試案例</div></div>';
+      html += '<div class="test-kpi-card"><div class="test-kpi-value">' + (avgCoverage != null ? avgCoverage.toFixed(1) + '%' : '—') + '</div><div class="test-kpi-label">平均覆蓋率</div></div>';
+      html += '</div>';
+
+      // Build table SECOND
+      html += '<table class="data-table"><thead><tr>';
+      html += '<th>專案</th><th>框架</th><th>測試檔案</th><th>測試案例</th><th>覆蓋率</th>';
+      html += '</tr></thead><tbody>';
+
+      for (var i = 0; i < metrics.length; i++) {
+        var m = metrics[i];
         html += '<tr>';
         html += '<td>' + escapeHtml(m.project) + '</td>';
         html += '<td class="mono">' + escapeHtml(m.framework) + '</td>';
@@ -935,8 +954,6 @@
 
         if (m.coverage_percent != null) {
           var pct = m.coverage_percent;
-          coverageSum += pct;
-          coverageCount++;
           var color = pct >= 80 ? 'var(--feat)' : pct >= 50 ? 'var(--refactor)' : 'var(--fix)';
           html += '<td><div class="coverage-cell">';
           html += '<div class="coverage-bar-track"><div class="coverage-bar-fill" style="width:' + pct.toFixed(0) + '%;background:' + color + '"></div></div>';
@@ -948,14 +965,6 @@
         html += '</tr>';
       }
       html += '</tbody></table>';
-
-      // KPI summary row
-      var avgCoverage = coverageCount > 0 ? (coverageSum / coverageCount) : null;
-      html += '<div class="test-kpi-row">';
-      html += '<div class="test-kpi-card"><div class="test-kpi-value">' + totalFiles + '</div><div class="test-kpi-label">總測試檔案</div></div>';
-      html += '<div class="test-kpi-card"><div class="test-kpi-value">' + totalCases + '</div><div class="test-kpi-label">總測試案例</div></div>';
-      html += '<div class="test-kpi-card"><div class="test-kpi-value">' + (avgCoverage != null ? avgCoverage.toFixed(1) + '%' : '—') + '</div><div class="test-kpi-label">平均覆蓋率</div></div>';
-      html += '</div>';
 
       container.innerHTML = html;
     }

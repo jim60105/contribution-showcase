@@ -82,10 +82,7 @@ fn run_generate(args: Generate) -> Result<()> {
         final_filters.until.as_deref(),
     )?;
 
-    let output_path = args
-        .output
-        .as_deref()
-        .unwrap_or_else(|| config.output_path());
+    let output_path = args.output.clone().unwrap_or_else(|| config.output_path());
 
     eprintln!("Scanning repositories...");
     let data = collector::collect(&config)?;
@@ -102,10 +99,10 @@ fn run_generate(args: Generate) -> Result<()> {
     let html = template.replace("\"__SHOWCASE_DATA__\"", &json_data);
 
     // Write output
-    if let Some(parent) = std::path::Path::new(output_path).parent() {
+    if let Some(parent) = std::path::Path::new(&output_path).parent() {
         std::fs::create_dir_all(parent)?;
     }
-    std::fs::write(output_path, &html)?;
+    std::fs::write(&output_path, &html)?;
 
     eprintln!("Generated: {}", output_path);
     Ok(())
