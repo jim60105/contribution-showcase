@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>貢獻總覽</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%8A%3C/text%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@400;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
@@ -94,6 +95,7 @@
       max-width: var(--container);
       max-height: calc(100vh - 120px);
       overflow-y: auto;
+      overflow-x: auto;
       padding-right: var(--gap-xs);
     }
 
@@ -806,7 +808,7 @@
       }
 
       var html = '<table class="data-table"><thead><tr>';
-      html += '<th>專案</th><th>代稱</th><th>日期</th><th>說明</th><th>工作項</th>';
+      html += '<th>專案</th><th>代稱</th><th>日期</th><th>工作項</th>';
       html += '</tr></thead><tbody>';
 
       var lastProject = '';
@@ -818,7 +820,6 @@
         html += '<td>' + (showProject ? escapeHtml(p.project) : '') + '</td>';
         html += '<td class="mono">' + escapeHtml(p.slug) + '</td>';
         html += '<td>' + escapeHtml(p.date) + '</td>';
-        html += '<td>' + escapeHtml(p.description) + '</td>';
         html += '<td>' + (p.task_count || 0) + '</td>';
         html += '</tr>';
       }
@@ -840,6 +841,7 @@
       var display = commitShowAll ? sorted : sorted.slice(0, COMMIT_LIMIT);
 
       var html = '<table class="data-table" id="commitTable"><thead><tr>';
+      html += '<th>Hash</th>';
       html += buildSortHeader('date', '日期');
       html += buildSortHeader('project', '專案');
       html += buildSortHeader('commit_type', '類型');
@@ -852,6 +854,7 @@
         var typeClass = c.commit_type || 'other';
         var subject = c.subject || '';
         html += '<tr>';
+        html += '<td class="mono">' + escapeHtml(c.hash.substring(0, 8)) + '</td>';
         html += '<td class="mono" style="white-space:nowrap;">' + escapeHtml(c.date) + '</td>';
         html += '<td>' + escapeHtml(c.project) + '</td>';
         html += '<td><span class="badge badge-' + typeClass + '">' + escapeHtml(c.commit_type || 'other') + '</span></td>';

@@ -28,6 +28,7 @@ pub struct FilterConfig {
     pub since: Option<String>,
     pub until: Option<String>,
     pub types: Option<Vec<String>>,
+    pub exclude_hashes: Option<Vec<String>>,
 }
 
 impl Config {
@@ -89,6 +90,7 @@ impl Config {
             since: f.since.clone(),
             until: f.until.clone(),
             types: f.types.clone(),
+            exclude_hashes: f.exclude_hashes.clone(),
         })
     }
 }
@@ -274,5 +276,31 @@ mod tests {
     fn test_date_validation_none_passes() {
         // No dates at all should pass (empty filter)
         assert!(validate_date_range(None, None).is_ok());
+    }
+
+    #[test]
+    fn test_config_exclude_hashes_parsed() {
+        let dir = temp_dir_unique("exclude-hashes");
+        let config_file = dir.join("showcase.toml");
+        fs::write(
+            &config_file,
+            "[[projects]]\nname = \"test\"\npath = \"/tmp/test\"\n\n[filters]\nexclude_hashes = [\"abc123\"]\n",
+        ).unwrap();
+        let config = Config::load(config_file.to_str().unwrap()).unwrap();
+        let filters = config.filters();
+        assert_eq!(filters.exclude_hashes, Some(vec!["abc123".to_string()]));
+    }
+
+    #[test]
+    fn test_config_exclude_hashes_absent_is_none() {
+        let dir = temp_dir_unique("no-exclude-hashes");
+        let config_file = dir.join("showcase.toml");
+        fs::write(
+            &config_file,
+            "[[projects]]\nname = \"test\"\npath = \"/tmp/test\"\n\n[filters]\nauthor = \"Jim\"\n",
+        ).unwrap();
+        let config = Config::load(config_file.to_str().unwrap()).unwrap();
+        let filters = config.filters();
+        assert!(filters.exclude_hashes.is_none());
     }
 }

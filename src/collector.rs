@@ -153,6 +153,11 @@ fn apply_filters(
                     let _ = author;
                 }
             }
+            if let Some(ref hashes) = filters.exclude_hashes {
+                if hashes.iter().any(|h| h == &c.hash) {
+                    return false;
+                }
+            }
             if let Some(ref since) = filters.since {
                 if c.date < *since {
                     return false;
@@ -694,6 +699,7 @@ mod tests {
                 since: Some("2024-03-01".to_string()),
                 until: Some("2024-09-01".to_string()),
                 types: None,
+                exclude_hashes: None,
             }),
         };
         let (filtered, _) = apply_filters(&commits, &proposals, &config);
@@ -735,6 +741,7 @@ mod tests {
                 since: Some("2024-01-01".to_string()),
                 until: Some("2024-12-31".to_string()),
                 types: None,
+                exclude_hashes: None,
             }),
         };
         let (filtered, _) = apply_filters(&commits, &proposals, &config);
@@ -785,6 +792,7 @@ mod tests {
                 since: None,
                 until: None,
                 types: Some(vec!["feat".to_string(), "fix".to_string()]),
+                exclude_hashes: None,
             }),
         };
         let (filtered, _) = apply_filters(&commits, &proposals, &config);
@@ -1143,5 +1151,191 @@ mod tests {
     fn test_uppercase_wiki_not_overridden() {
         let (t, _) = apply_wiki_override("VMS.WIKI", "feat: add page");
         assert_eq!(t, "feat");
+    }
+
+    #[test]
+    fn test_apply_filters_excludes_hash() {
+        let commits = vec![
+            CommitEntry {
+                hash: "aaa111".to_string(),
+                date: "2024-01-01".to_string(),
+                commit_type: "feat".to_string(),
+                scope: String::new(),
+                subject: "feat: keep".to_string(),
+                project: "test".to_string(),
+                insertions: 0,
+                deletions: 0,
+            },
+            CommitEntry {
+                hash: "bbb222".to_string(),
+                date: "2024-01-02".to_string(),
+                commit_type: "fix".to_string(),
+                scope: String::new(),
+                subject: "fix: drop".to_string(),
+                project: "test".to_string(),
+                insertions: 0,
+                deletions: 0,
+            },
+        ];
+        let proposals = vec![];
+        let config = Config {
+            title: None,
+            output: None,
+            projects: vec![],
+            filters: Some(crate::config::FilterConfig {
+                author: None,
+                since: None,
+                until: None,
+                types: None,
+                exclude_hashes: Some(vec!["bbb222".to_string()]),
+            }),
+        };
+        let (filtered, _) = apply_filters(&commits, &proposals, &config);
+        assert_eq!(filtered.len(), 1);
+        assert_eq!(filtered[0].hash, "aaa111");
+    }
+
+    #[test]
+    fn test_apply_filters_retains_all_when_exclude_hashes_none() {
+        let commits = vec![
+            CommitEntry {
+                hash: "aaa111".to_string(),
+                date: "2024-01-01".to_string(),
+                commit_type: "feat".to_string(),
+                scope: String::new(),
+                subject: "feat: a".to_string(),
+                project: "test".to_string(),
+                insertions: 0,
+                deletions: 0,
+            },
+            CommitEntry {
+                hash: "bbb222".to_string(),
+                date: "2024-01-02".to_string(),
+                commit_type: "fix".to_string(),
+                scope: String::new(),
+                subject: "fix: b".to_string(),
+                project: "test".to_string(),
+                insertions: 0,
+                deletions: 0,
+            },
+        ];
+        let proposals = vec![];
+        let config = Config {
+            title: None,
+            output: None,
+            projects: vec![],
+            filters: Some(crate::config::FilterConfig {
+                author: None,
+                since: None,
+                until: None,
+                types: None,
+                exclude_hashes: None,
+            }),
+        };
+        let (filtered, _) = apply_filters(&commits, &proposals, &config);
+        assert_eq!(filtered.len(), 2);
+    }
+
+    #[test]
+    fn test_apply_filters_retains_all_when_exclude_hashes_empty_vec() {
+        let commits = vec![
+            CommitEntry {
+                hash: "aaa111".to_string(),
+                date: "2024-01-01".to_string(),
+                commit_type: "feat".to_string(),
+                scope: String::new(),
+                subject: "feat: a".to_string(),
+                project: "test".to_string(),
+                insertions: 0,
+                deletions: 0,
+            },
+        ];
+        let proposals = vec![];
+        let config = Config {
+            title: None,
+            output: None,
+            projects: vec![],
+            filters: Some(crate::config::FilterConfig {
+                author: None,
+                since: None,
+                until: None,
+                types: None,
+                exclude_hashes: Some(vec![]),
+            }),
+        };
+        let (filtered, _) = apply_filters(&commits, &proposals, &config);
+        assert_eq!(filtered.len(), 1, "Empty exclude list should retain all commits");
+    }
+
+    #[test]
+    fn test_apply_filters_retains_all_when_no_matching_hash() {
+        let commits = vec![
+            CommitEntry {
+                hash: "aaa111".to_string(),
+                date: "2024-01-01".to_string(),
+                commit_type: "feat".to_string(),
+                scope: String::new(),
+                subject: "feat: a".to_string(),
+                project: "test".to_string(),
+                insertions: 0,
+                deletions: 0,
+            },
+            CommitEntry {
+                hash: "bbb222".to_string(),
+                date: "2024-01-02".to_string(),
+                commit_type: "fix".to_string(),
+                scope: String::new(),
+                subject: "fix: b".to_string(),
+                project: "test".to_string(),
+                insertions: 0,
+                deletions: 0,
+            },
+        ];
+        let proposals = vec![];
+        let config = Config {
+            title: None,
+            output: None,
+            projects: vec![],
+            filters: Some(crate::config::FilterConfig {
+                author: None,
+                since: None,
+                until: None,
+                types: None,
+                exclude_hashes: Some(vec!["zzz999".to_string()]),
+            }),
+        };
+        let (filtered, _) = apply_filters(&commits, &proposals, &config);
+        assert_eq!(filtered.len(), 2);
+    }
+
+    #[test]
+    fn test_apply_filters_short_prefix_does_not_exclude() {
+        let commits = vec![
+            CommitEntry {
+                hash: "dd33ee63950bb49a284de835528343561f1a70d5".to_string(),
+                date: "2024-01-01".to_string(),
+                commit_type: "feat".to_string(),
+                scope: String::new(),
+                subject: "feat: a".to_string(),
+                project: "test".to_string(),
+                insertions: 0,
+                deletions: 0,
+            },
+        ];
+        let proposals = vec![];
+        let config = Config {
+            title: None,
+            output: None,
+            projects: vec![],
+            filters: Some(crate::config::FilterConfig {
+                author: None,
+                since: None,
+                until: None,
+                types: None,
+                exclude_hashes: Some(vec!["dd33ee63".to_string()]),
+            }),
+        };
+        let (filtered, _) = apply_filters(&commits, &proposals, &config);
+        assert_eq!(filtered.len(), 1, "Short prefix should not match full hash");
     }
 }
