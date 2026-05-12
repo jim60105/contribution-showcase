@@ -1,7 +1,7 @@
 ## Why
 
 Projects whose name ends in `.wiki` are pure documentation repositories (e.g.
-`VMS.wiki`). Their commits overwhelmingly describe documentation work, yet
+`my-project.wiki`). Their commits overwhelmingly describe documentation work, yet
 `parse_conventional_commit()` still classifies them by their subject-line prefix
 — which in a wiki repo is inconsistent or absent, causing many commits to land
 in the "其他" (other) bucket. This distorts the Type Breakdown chart and

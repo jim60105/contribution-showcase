@@ -197,7 +197,7 @@ manipulation. The branch is passed as a direct revision argument to `git log`.
 # showcase.toml
 [[projects]]
 name = "Platform Core"
-path = "../VMS-Platform-Core"
+path = "../my-backend"
 branch = "dev"   # optional — omit to scan all refs
 ```
 

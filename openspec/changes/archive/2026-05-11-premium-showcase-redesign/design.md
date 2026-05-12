@@ -17,7 +17,7 @@ that treats contributor data as a story rather than a dump.
 
 | Constraint | Detail |
 |---|---|
-| **Modern browsers** | Standalone HTML tool opened in a regular browser. Target: Chrome 90+, Firefox 90+, Safari 15+. Not embedded in Nx Desktop's Chromium 77 webview (that constraint applies to VMS-Frontend only). |
+| **Modern browsers** | Standalone HTML tool opened in a regular browser. Target: Chrome 90+, Firefox 90+, Safari 15+. Not embedded in the desktop client's Chromium 77 webview (that constraint applies to my-frontend only). |
 | **Self-contained** | Single HTML file, no external network requests. All CSS and JS inline. |
 | **Air-gapped** | No CDN fonts, no analytics, no external resources of any kind. |
 | **Rust template** | The HTML is generated from Rust string templates — changes affect `templates/page.html` (loaded via `include_str!("../templates/page.html")`). |
@@ -677,7 +677,7 @@ data.
 │    Projects                                 │  ← .h1, serif
 │                                             │
 │   ┌─────────────────┐  ┌─────────────────┐  │
-│   │ VMS-Platform-    │  │ VMS-Frontend    │  │
+│   │ my-project-Platform-    │  │ my-frontend    │  │
 │   │ Core             │  │                 │  │
 │   │                  │  │                 │  │
 │   │ 423 commits      │  │ 312 commits     │  │

@@ -63,7 +63,7 @@
 
 ## 7. Default Configuration (`showcase.toml`)
 
-- [x] Configure 7 VMS repositories with relative paths and zh-TW descriptions: VMS-Platform-Core (後端整合平台), VMS-Frontend (監控儀表板前端), VMS-Custom-Function-Bridge (AI 分析橋接器), VMS-Template-AI-Module (AI 模組範本（上游）), VMS-Template-Downstream-Module (AI 模組範本（下游）), VMS (部署編排與腳本), VMS.wiki (專案文件與 Wiki)
+- [x] Configure 7 my-project repositories with relative paths and zh-TW descriptions: my-backend (後端整合平台), my-frontend (監控儀表板前端), my-ai-bridge (AI 分析橋接器), my-ai-module-template (AI 模組範本（上游）), my-downstream-template (AI 模組範本（下游）), my-project (部署編排與腳本), my-project.wiki (專案文件與 Wiki)
 - [x] Set author filter to `"Jim"` (passed to `git log --author=Jim`, which Git interprets as an author pattern matching both "Jim Chen" and "陳鈞 Jim")
 - [x] Set output path to `dist/index.html`
 

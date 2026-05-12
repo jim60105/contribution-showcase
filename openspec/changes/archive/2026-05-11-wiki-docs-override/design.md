@@ -5,14 +5,14 @@ repositories configured in `showcase.toml`. Each commit's subject line is parsed
 by `parse_conventional_commit()` to extract a commit type (feat, fix, docs,
 etc.). Non-matching subjects fall back to `"other"`.
 
-One of the configured projects is `VMS.wiki` — the Azure DevOps wiki repository
+One of the configured projects is `my-project.wiki` — the Azure DevOps wiki repository
 containing authoritative design and requirements documents. Its commits are
 purely documentation work but do not consistently use the `docs:` prefix.
 
-Currently, many VMS.wiki commits end up classified as "other", which:
+Currently, many my-project.wiki commits end up classified as "other", which:
 1. Inflates the "其他" slice in the Type Breakdown chart.
 2. Under-reports documentation effort in global and per-project views.
-3. Creates misleading `top_types` on the VMS.wiki project card.
+3. Creates misleading `top_types` on the my-project.wiki project card.
 
 ## Goals / Non-Goals
 

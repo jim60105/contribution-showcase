@@ -1,6 +1,6 @@
 ## Context
 
-The MapSight VMS workspace contains 7+ independently versioned Git repositories. During project reviews, stakeholders need a consolidated view of development contributions — commit counts, conventional commit breakdowns, OpenSpec proposal history, and line-change statistics — across all repos, presented as a single portfolio-style HTML dashboard.
+The the workspace workspace contains 7+ independently versioned Git repositories. During project reviews, stakeholders need a consolidated view of development contributions — commit counts, conventional commit breakdowns, OpenSpec proposal history, and line-change statistics — across all repos, presented as a single portfolio-style HTML dashboard.
 
 No existing tool in the workspace addresses this. Generic tools like `git-stats` or GitHub contribution graphs are unsuitable: the platform runs in air-gapped environments (no GitHub/GitLab access), reports must be fully self-contained HTML (no CDN, no external fonts), and the output must understand workspace-specific conventions (Conventional Commits, OpenSpec archive structure).
 
@@ -18,7 +18,7 @@ No existing tool in the workspace addresses this. Generic tools like `git-stats`
 ### Non-Goals
 - Real-time or incremental dashboard updates (batch tool, runs on demand).
 - Integration with any CI/CD pipeline or automated publishing.
-- Replacing the VMS.wiki as the authoritative project documentation source.
+- Replacing the my-project.wiki as the authoritative project documentation source.
 - Supporting non-Git version control systems.
 - Providing interactive editing or annotation of the generated report.
 

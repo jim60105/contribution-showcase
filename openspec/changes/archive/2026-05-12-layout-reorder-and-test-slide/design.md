@@ -100,7 +100,7 @@ fn detect_framework(project_path: &Path) -> String {
 }
 ```
 
-**Why:** The order matches the VMS workspace composition — most repos are
+**Why:** The order matches the my-project workspace composition — most repos are
 Python (Platform Core, Custom Function Bridge, AI templates), one is Rust
 (this tool), and one is Node/TypeScript (Frontend). Checking Python first
 avoids false positives from Node projects that might also have a
@@ -110,7 +110,7 @@ table's "框架" column.
 **Alternatives considered:**
 
 - *Check all manifests and pick the one with the most tests*: Unnecessary
-  complexity — VMS projects are single-framework.
+  complexity — my-project projects are single-framework.
 - *User-specified framework in `showcase.toml`*: Adds config burden for
   information that can be reliably auto-detected.
 
@@ -272,7 +272,7 @@ Test file discovery patterns:
 
 Exclusions: `node_modules/`, `target/`, `.venv/`, `__pycache__/`, `dist/`.
 
-**Why:** These patterns match the conventions used across VMS repositories.
+**Why:** These patterns match the conventions used across my-project repositories.
 The patterns are intentionally simple — a regex over source lines — rather
 than AST-based, to keep the implementation lightweight and avoid adding
 parser dependencies to a Rust CLI tool.
@@ -329,7 +329,7 @@ line-breaking regardless of table layout algorithm pressure.
 Grep-based counting cannot distinguish commented-out test functions, test
 functions inside `#[ignore]` blocks, or dynamically generated tests (e.g.,
 pytest parametrize, Vitest `it.each` with array expansion). **Mitigation:**
-The metric is labelled as approximate in the dashboard context. For the VMS
+The metric is labelled as approximate in the dashboard context. For the my-project
 project set, manual spot-checks show <5% variance from actual counts.
 
 ### R2 — Coverage files may be stale
@@ -342,7 +342,7 @@ and operators can re-run tests to refresh the files.
 
 ### R3 — 3-column grid may feel cramped with long project names
 
-Some VMS project names are long (e.g., "VMS-Template-Downstream-Module").
+Some my-project project names are long (e.g., "my-downstream-template").
 At 3 columns on a 1280px viewport, each card is ~400px wide. **Mitigation:**
 The 900px breakpoint falls back to 2 columns before cards become too narrow.
 Project names already use `word-break: break-word` in the card CSS. At 1920px

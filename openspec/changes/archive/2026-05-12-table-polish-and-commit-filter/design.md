@@ -153,7 +153,7 @@ attribute, ensuring robust parsing across all HTML parsers.
 
 **Alternatives considered:**
 
-- *🗺️ (map)*: Represents MapSight specifically but not the tool's function
+- *🗺️ (map)*: Represents the project specifically but not the tool's function
   (contribution reporting).
 - *🏗️ (building)*: Too generic; could mean anything under construction.
 - *🔬 (microscope)*: Implies research rather than reporting.

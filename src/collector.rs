@@ -1374,40 +1374,40 @@ mod tests {
 
     #[test]
     fn test_wiki_override_feat_becomes_docs() {
-        let (t, s) = apply_wiki_override("VMS.wiki", "feat(nav): add sidebar");
+        let (t, s) = apply_wiki_override("my-project.wiki", "feat(nav): add sidebar");
         assert_eq!(t, "docs");
         assert_eq!(s, "nav");
     }
 
     #[test]
     fn test_wiki_override_non_conventional_becomes_docs() {
-        let (t, s) = apply_wiki_override("VMS.wiki", "Update architecture page");
+        let (t, s) = apply_wiki_override("my-project.wiki", "Update architecture page");
         assert_eq!(t, "docs");
         assert_eq!(s, "");
     }
 
     #[test]
     fn test_wiki_override_already_docs_stays_docs() {
-        let (t, s) = apply_wiki_override("VMS.wiki", "docs: update readme");
+        let (t, s) = apply_wiki_override("my-project.wiki", "docs: update readme");
         assert_eq!(t, "docs");
         assert_eq!(s, "");
     }
 
     #[test]
     fn test_non_wiki_project_not_overridden() {
-        let (t, _) = apply_wiki_override("VMS-Frontend", "feat: add map");
+        let (t, _) = apply_wiki_override("my-frontend", "feat: add map");
         assert_eq!(t, "feat");
     }
 
     #[test]
     fn test_contains_wiki_but_not_suffix_not_overridden() {
-        let (t, _) = apply_wiki_override("VMS.wiki-tools", "feat: add parser");
+        let (t, _) = apply_wiki_override("my-project.wiki-tools", "feat: add parser");
         assert_eq!(t, "feat");
     }
 
     #[test]
     fn test_uppercase_wiki_not_overridden() {
-        let (t, _) = apply_wiki_override("VMS.WIKI", "feat: add page");
+        let (t, _) = apply_wiki_override("my-project.WIKI", "feat: add page");
         assert_eq!(t, "feat");
     }
 

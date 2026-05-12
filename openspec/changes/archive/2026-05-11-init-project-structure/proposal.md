@@ -1,10 +1,10 @@
 ## Summary
 
-Set up the complete project structure, CLI interface, git log parser, OpenSpec scanner, data model, and self-contained HTML report generator for the `contribution-showcase` Rust CLI tool. This establishes a standalone developer utility that aggregates conventional commits and archived OpenSpec proposals across all MapSight VMS repositories into a single-file interactive HTML dashboard — providing a consolidated contribution overview without requiring internet access or external services.
+Set up the complete project structure, CLI interface, git log parser, OpenSpec scanner, data model, and self-contained HTML report generator for the `contribution-showcase` Rust CLI tool. This establishes a standalone developer utility that aggregates conventional commits and archived OpenSpec proposals across all the workspace repositories into a single-file interactive HTML dashboard — providing a consolidated contribution overview without requiring internet access or external services.
 
 ## Motivation
 
-The MapSight VMS workspace spans seven-plus independent Git repositories, each with its own commit history and OpenSpec change archive. Understanding the overall contribution landscape — who built what, when features landed, how work distributes across projects — requires manually running `git log` in each repository and cross-referencing OpenSpec archives by hand. This is tedious, error-prone, and produces no shareable artifact. A dedicated CLI tool that scans all repositories in one pass, parses conventional commit messages into structured categories, collects archived OpenSpec proposal metadata, and renders a polished HTML dashboard eliminates this manual aggregation. The output is a single self-contained HTML file with no external dependencies, suitable for air-gapped environments and offline sharing with stakeholders.
+The the workspace workspace spans seven-plus independent Git repositories, each with its own commit history and OpenSpec change archive. Understanding the overall contribution landscape — who built what, when features landed, how work distributes across projects — requires manually running `git log` in each repository and cross-referencing OpenSpec archives by hand. This is tedious, error-prone, and produces no shareable artifact. A dedicated CLI tool that scans all repositories in one pass, parses conventional commit messages into structured categories, collects archived OpenSpec proposal metadata, and renders a polished HTML dashboard eliminates this manual aggregation. The output is a single self-contained HTML file with no external dependencies, suitable for air-gapped environments and offline sharing with stakeholders.
 
 ## New Capabilities
 
@@ -28,4 +28,4 @@ The MapSight VMS workspace spans seven-plus independent Git repositories, each w
 - OpenSpec archive filesystem scanning
 - Data model serialization (ShowcaseData → JSON)
 - HTML template and "Soft Paper" visual theme
-- Default TOML configuration for VMS workspace repositories
+- Default TOML configuration for my-project workspace repositories
