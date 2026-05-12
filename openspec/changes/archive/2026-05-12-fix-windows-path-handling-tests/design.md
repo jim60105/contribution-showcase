@@ -24,4 +24,4 @@ Windows CI failures are caused by a combination of rooted-path detection differe
 ## Risks / Trade-offs
 
 - `has_root()` broadens the set of paths treated as anchored; this is intentional for Windows compatibility.
-- TOML literal strings cannot contain single quotes in values; temp paths in CI are not expected to include them.
+- TOML literal strings require single quotes in values to be escaped as `''`; test fixtures apply this escaping.

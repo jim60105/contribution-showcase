@@ -154,6 +154,9 @@ fn main() -> Result<()> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Encode a value as a TOML literal string, escaping single quotes as `''`.
+    /// This keeps Windows-style paths (with backslashes) parseable in test fixtures.
     fn toml_literal(value: &str) -> String {
         format!("'{}'", value.replace('\'', "''"))
     }
