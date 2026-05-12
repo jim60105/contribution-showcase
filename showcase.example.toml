@@ -1,0 +1,104 @@
+# =============================================================================
+# Contribution Showcase — Example Configuration
+# =============================================================================
+#
+# Copy this file to `showcase.toml` and edit to match your workspace.
+# All paths are relative to where you run the CLI tool.
+#
+# Reference: every field maps to the Config struct used by the application.
+# Fields marked [optional] can be omitted entirely; the tool will use defaults.
+
+# --------------------------------------------------------------------------
+# title [optional]
+# --------------------------------------------------------------------------
+# A human-readable title displayed at the top of the generated report.
+title = "My Team's Contribution Showcase"
+
+# --------------------------------------------------------------------------
+# [output] [optional]
+# --------------------------------------------------------------------------
+# Controls where the generated report is written.
+[output]
+
+# path [optional] — File path for the rendered HTML report.
+# Defaults to "dist/index.html" when omitted.
+path = "dist/index.html"
+
+# --------------------------------------------------------------------------
+# [filters] [optional]
+# --------------------------------------------------------------------------
+# Global filters applied to every project when collecting commits.
+# All fields below are optional; uncomment and edit as needed.
+[filters]
+
+# author [optional] — Only include commits whose author name matches this
+# value (exact, case-sensitive match against the Git author name).
+# author = "Jane Doe"
+
+# since [optional] — Only include commits on or after this date (ISO 8601,
+# YYYY-MM-DD format).
+# since = "2025-01-01"
+
+# until [optional] — Only include commits on or before this date (ISO 8601,
+# YYYY-MM-DD format).
+# until = "2025-06-30"
+
+# types [optional] — A list of Conventional Commit types to include in the
+# report. Commits whose type is not in this list are excluded.
+# Common types: "feat", "fix", "docs", "style", "refactor", "perf",
+#               "test", "build", "ci", "chore", "revert"
+# types = ["feat", "fix", "docs", "refactor", "test"]
+
+# exclude_hashes [optional] — A list of full 40-character commit SHA hashes
+# to unconditionally exclude (e.g. merge-only commits, reverted mistakes).
+# Always use the full hash, not abbreviated forms.
+# exclude_hashes = [
+#     "e3b0c44298fc1c149afbf4c8996fb92427ae41e4",
+#     "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+# ]
+
+# ==========================================================================
+# [[projects]] — One or more project entries (at least one is required)
+# ==========================================================================
+#
+# Each [[projects]] block describes a Git repository whose commits should
+# appear in the report. Add as many entries as you need.
+
+# --- Project 1 ---------------------------------------------------------------
+[[projects]]
+
+# name [required] — Short identifier shown in the report header / tabs.
+name = "my-backend"
+
+# path [required] — Relative (or absolute) path to the Git repository root.
+path = "../my-backend"
+
+# description [optional] — A brief sentence explaining what this project does.
+# Displayed as a subtitle under the project name in the report.
+description = "REST API server and background workers"
+
+# branch [optional] — The Git branch to analyse. When omitted the tool uses
+# the repository's current HEAD (usually "main" or "master").
+branch = "main"
+
+# coverage_command [optional] — Shell command that produces a test-coverage
+# report. The tool runs this command inside the project directory and then
+# reads the result file specified by coverage_result_path.
+# coverage_command = "cargo llvm-cov --html"
+
+# coverage_result_path [optional] — Path (relative to the project root) where
+# the coverage report is written after running coverage_command.
+# coverage_result_path = "target/llvm-cov/html/index.html"
+
+# --- Project 2 ---------------------------------------------------------------
+[[projects]]
+
+name = "my-frontend"
+path = "../my-frontend"
+description = "Single-page application for the operator console"
+
+# branch is omitted here — the tool will use whatever branch is checked out.
+
+# Coverage example for a Node.js / Vitest project:
+# coverage_command = "npx vitest run --coverage"
+# coverage_result_path = "coverage/index.html"
