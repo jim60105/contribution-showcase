@@ -2,84 +2,101 @@
 
 ## Purpose
 
-Provide a well-structured Rust CLI entry point for the contribution-showcase tool, using `clap` 4 for argument parsing and `anyhow` for error handling. The CLI accepts flags that control configuration, output destination, and commit filtering, with CLI flags always taking precedence over values loaded from the TOML config file.
+Provide a well-structured Rust CLI entry point for the contribution-showcase tool, using `clap` 4 with subcommands (`generate` and `init`) and `anyhow` for error handling. The `generate` subcommand accepts flags that control configuration, output destination, and commit filtering, with CLI flags always taking precedence over values loaded from the TOML config file. The `init` subcommand bootstraps a template configuration file.
 
 ## Requirements
 
 ### Requirement: CLI Argument Parsing
 
-The system SHALL parse command-line arguments using `clap` 4, accepting `--config`, `--output`, `--author`, `--since`, and `--until` flags.
+The system SHALL use clap 4 subcommands. The binary SHALL accept two subcommands: `generate` and `init`. The `generate` subcommand SHALL accept `--config`, `--output`, `--author`, `--since`, and `--until` flags. The `init` subcommand SHALL accept an optional `--output` flag (default: `showcase.toml`). Invoking the binary with no subcommand SHALL print help text and exit with a zero status.
 
-#### Scenario: All flags provided
-- **GIVEN** the binary is invoked with `--config custom.toml --output out.html --author "Alice" --since 2024-01-01 --until 2024-12-31`
+#### Scenario: Generate with all flags provided
+
+- **GIVEN** the binary is invoked with `generate --config custom.toml --output out.html --author "Alice" --since 2024-01-01 --until 2024-12-31`
 - **WHEN** argument parsing completes
-- **THEN** each flag value is available to the application with the exact values supplied
+- **THEN** each flag value is available to the generate subcommand with the exact values supplied
 
-#### Scenario: No flags provided
+#### Scenario: Init subcommand recognized
+
+- **GIVEN** the binary is invoked with `init`
+- **WHEN** argument parsing completes
+- **THEN** the init subcommand is selected and the `--output` flag defaults to `showcase.toml`
+
+#### Scenario: No subcommand prints help
+
 - **GIVEN** the binary is invoked with no arguments
 - **WHEN** argument parsing completes
-- **THEN** all optional flags are `None` and the application proceeds with defaults
+- **THEN** help text is printed to stdout and the process exits with status zero
 
-#### Scenario: Unknown flag provided
-- **GIVEN** the binary is invoked with `--unknown-flag`
-- **WHEN** `clap` attempts to parse arguments
-- **THEN** the process exits with a non-zero status and an error message is printed to stderr
+#### Scenario: Unknown subcommand error
+
+- **GIVEN** the binary is invoked with an unrecognized subcommand (e.g. `foobar`)
+- **WHEN** argument parsing runs
+- **THEN** an error message is written to stderr and the process exits with a non-zero status
 
 ### Requirement: Default Config File Path
 
-The system SHALL use `showcase.toml` as the default config file path when `--config` is not specified.
+The system SHALL use `showcase.toml` as the default config file path when `--config` is not specified under the `generate` subcommand.
 
-#### Scenario: Config flag omitted
-- **GIVEN** the binary is invoked without `--config`
-- **WHEN** config loading begins
-- **THEN** the application attempts to load `showcase.toml` from the current working directory
+#### Scenario: Config flag omitted under generate
 
-#### Scenario: Config flag provided
-- **GIVEN** the binary is invoked with `--config path/to/my-config.toml`
-- **WHEN** config loading begins
-- **THEN** the application loads the config from `path/to/my-config.toml`
+- **GIVEN** the binary is invoked with `generate` and no `--config` flag
+- **WHEN** the config path is resolved
+- **THEN** the effective config path is `showcase.toml`
+
+#### Scenario: Config flag provided under generate
+
+- **GIVEN** the binary is invoked with `generate --config custom.toml`
+- **WHEN** the config path is resolved
+- **THEN** the effective config path is `custom.toml`
 
 ### Requirement: CLI Flags Override Config Values
 
-The system SHALL give CLI flag values precedence over values loaded from the TOML config file.
+Under the `generate` subcommand, CLI flag values SHALL take precedence over values loaded from the TOML config file.
 
-#### Scenario: Output path overridden by CLI
-- **GIVEN** the config file sets `output = "config-output.html"`
-- **WHEN** the binary is invoked with `--output cli-output.html`
+#### Scenario: Output path overridden under generate
+
+- **GIVEN** the TOML config file sets `path = "config-output.html"` under the `[output]` section
+- **WHEN** the binary is invoked with `generate --output cli-output.html`
 - **THEN** the effective output path is `cli-output.html`
 
-#### Scenario: Author filter overridden by CLI
-- **GIVEN** the config file sets `author = "ConfigAuthor"`
-- **WHEN** the binary is invoked with `--author "CliAuthor"`
-- **THEN** the effective author filter is `"CliAuthor"`
+#### Scenario: Author overridden under generate
 
-#### Scenario: Config value used when CLI flag absent
-- **GIVEN** the config file sets `since = "2024-06-01"`
-- **WHEN** the binary is invoked without `--since`
-- **THEN** the effective since date is `2024-06-01`
+- **GIVEN** the TOML config file sets `author = "Config Author"` under the `[filters]` section
+- **WHEN** the binary is invoked with `generate --author "CLI Author"`
+- **THEN** the effective author value is `"CLI Author"`
+
+#### Scenario: Config value used when CLI flag absent under generate
+
+- **GIVEN** the TOML config file sets `author = "Config Author"` under the `[filters]` section
+- **WHEN** the binary is invoked with `generate` and no `--author` flag
+- **THEN** the effective author value is `"Config Author"`
 
 ### Requirement: Error Output to Stderr
 
-The system SHALL write all error and diagnostic messages to stderr, never to stdout.
+Both `generate` and `init` subcommands SHALL write all error and diagnostic messages to stderr.
 
-#### Scenario: Config file not found
-- **GIVEN** the specified config file does not exist
-- **WHEN** the application attempts to load it
-- **THEN** an error message is printed to stderr and the process exits with a non-zero status
+#### Scenario: Generate config file not found
 
-#### Scenario: Invalid CLI argument value
-- **GIVEN** the binary is invoked with `--since not-a-date`
-- **WHEN** argument parsing or validation runs
-- **THEN** an error message is printed to stderr and the process exits with a non-zero status
+- **GIVEN** the binary is invoked with `generate --config nonexistent.toml`
+- **WHEN** the config file cannot be found
+- **THEN** an error message is written to stderr and the process exits with a non-zero status
+
+#### Scenario: Init target file already exists
+
+- **GIVEN** a file named `showcase.toml` already exists in the current directory
+- **WHEN** the binary is invoked with `init`
+- **THEN** an error or warning message is written to stderr indicating the file already exists
 
 ### Requirement: HTML Output to File
 
-The system SHALL write generated HTML output to the file specified by the effective output path, not to stdout.
+The `generate` subcommand SHALL write generated HTML output to the file specified by the effective output path.
 
-#### Scenario: Successful generation
-- **GIVEN** all configuration and inputs are valid
-- **WHEN** the application completes HTML generation
-- **THEN** the HTML content is written to the effective output file path
+#### Scenario: Successful generation under generate
+
+- **GIVEN** a valid config file exists and commit data is available
+- **WHEN** the binary is invoked with `generate`
+- **THEN** an HTML file is written to the effective output path and nothing is written to stdout
 
 ### Requirement: Average Daily Lines in Data Model
 
