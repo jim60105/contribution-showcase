@@ -551,44 +551,97 @@ fn count_test_cases(test_files: &[std::path::PathBuf], framework: &str) -> usize
     count
 }
 
-fn discover_coverage(project_path: &Path) -> Option<f64> {
-    // Try coverage.xml (Cobertura format)
-    let coverage_xml = project_path.join("coverage.xml");
-    if coverage_xml.exists() {
-        if let Ok(content) = std::fs::read_to_string(&coverage_xml) {
-            // Parse line-rate from <coverage line-rate="0.85" ...>
-            if let Some(pos) = content.find("line-rate=\"") {
-                let start = pos + "line-rate=\"".len();
-                if let Some(end) = content[start..].find('"') {
-                    if let Ok(rate) = content[start..start + end].parse::<f64>() {
-                        return Some(rate * 100.0);
-                    }
-                }
+fn parse_cobertura_xml(path: &Path) -> Option<f64> {
+    if !path.exists() {
+        return None;
+    }
+    let content = std::fs::read_to_string(path).ok()?;
+    let pos = content.find("line-rate=\"")?;
+    let start = pos + "line-rate=\"".len();
+    let end = content[start..].find('"')?;
+    let rate = content[start..start + end].parse::<f64>().ok()?;
+    Some(rate * 100.0)
+}
+
+fn parse_istanbul_json(path: &Path) -> Option<f64> {
+    if !path.exists() {
+        return None;
+    }
+    let content = std::fs::read_to_string(path).ok()?;
+    let json: serde_json::Value = serde_json::from_str(&content).ok()?;
+    json.get("total")
+        .and_then(|t| t.get("lines"))
+        .and_then(|l| l.get("pct"))
+        .and_then(|p| p.as_f64())
+}
+
+
+fn discover_coverage(project_path: &Path, result_path: Option<&str>) -> Option<f64> {
+    // If explicit path is provided, try that first
+    if let Some(rel_path) = result_path {
+        let full_path = project_path.join(rel_path);
+        if full_path.exists() {
+            let filename = full_path.file_name().and_then(|n| n.to_str()).unwrap_or("");
+            if filename.ends_with(".xml") {
+                return parse_cobertura_xml(&full_path);
+            } else if filename.ends_with(".json") {
+                return parse_istanbul_json(&full_path);
             }
         }
+        return None;
     }
 
-    // Try coverage/coverage-summary.json (Istanbul format)
-    let istanbul = project_path.join("coverage/coverage-summary.json");
-    if istanbul.exists() {
-        if let Ok(content) = std::fs::read_to_string(&istanbul) {
-            if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
-                if let Some(pct) = json
-                    .get("total")
-                    .and_then(|t| t.get("lines"))
-                    .and_then(|l| l.get("pct"))
-                    .and_then(|p| p.as_f64())
-                {
-                    return Some(pct);
-                }
-            }
-        }
+    // Auto-discovery fallback
+    if let Some(pct) = parse_cobertura_xml(&project_path.join("coverage.xml")) {
+        return Some(pct);
     }
-
-    None
+    parse_istanbul_json(&project_path.join("coverage/coverage-summary.json"))
 }
 
 fn collect_test_metrics(config: &Config) -> Vec<TestMetrics> {
+    // Phase 1: Spawn all coverage commands in parallel
+    let mut children: Vec<(usize, std::process::Child)> = Vec::new();
+    for (i, project) in config.projects.iter().enumerate() {
+        if let Some(ref cmd) = project.coverage_command {
+            let project_path = Path::new(&project.path);
+            if !project_path.exists() {
+                continue;
+            }
+            let framework = detect_framework(project_path);
+            if framework == "none" {
+                continue;
+            }
+            eprintln!("  Starting coverage: {} ({})", project.name, cmd);
+            match Command::new("sh")
+                .arg("-c")
+                .arg(cmd)
+                .current_dir(project_path)
+                .stdout(std::process::Stdio::null())
+                .stderr(std::process::Stdio::inherit())
+                .spawn()
+            {
+                Ok(child) => children.push((i, child)),
+                Err(e) => eprintln!("  Warning: failed to start coverage for '{}': {}", project.name, e),
+            }
+        }
+    }
+
+    // Phase 2: Wait for all coverage commands to finish
+    for (idx, mut child) in children {
+        let name = &config.projects[idx].name;
+        match child.wait() {
+            Ok(status) => {
+                if status.success() {
+                    eprintln!("  Coverage done: {}", name);
+                } else {
+                    eprintln!("  Warning: coverage failed for '{}'", name);
+                }
+            }
+            Err(e) => eprintln!("  Warning: coverage wait error for '{}': {}", name, e),
+        }
+    }
+
+    // Phase 3: Collect metrics (file discovery + parse coverage results)
     let mut metrics = Vec::new();
     for project in &config.projects {
         let project_path = Path::new(&project.path);
@@ -608,7 +661,7 @@ fn collect_test_metrics(config: &Config) -> Vec<TestMetrics> {
         }
         let test_files = discover_test_files(project_path, &framework);
         let test_case_count = count_test_cases(&test_files, &framework);
-        let coverage_percent = discover_coverage(project_path);
+        let coverage_percent = discover_coverage(project_path, project.coverage_result_path.as_deref());
         metrics.push(TestMetrics {
             project: project.name.clone(),
             test_file_count: test_files.len(),
@@ -1603,6 +1656,74 @@ mod tests {
     #[test]
     fn test_discover_coverage_none() {
         let dir = tempfile::tempdir().unwrap();
-        assert_eq!(discover_coverage(dir.path()), None);
+        assert_eq!(discover_coverage(dir.path(), None), None);
+    }
+
+    #[test]
+    fn test_parse_cobertura_xml() {
+        let dir = tempfile::tempdir().unwrap();
+        let xml_path = dir.path().join("coverage.xml");
+        std::fs::write(
+            &xml_path,
+            r#"<?xml version="1.0" ?><coverage line-rate="0.85" branch-rate="0.70"></coverage>"#,
+        )
+        .unwrap();
+        assert_eq!(parse_cobertura_xml(&xml_path), Some(85.0));
+    }
+
+    #[test]
+    fn test_parse_istanbul_json() {
+        let dir = tempfile::tempdir().unwrap();
+        let json_dir = dir.path().join("coverage");
+        std::fs::create_dir(&json_dir).unwrap();
+        let json_path = json_dir.join("coverage-summary.json");
+        std::fs::write(
+            &json_path,
+            r#"{"total":{"lines":{"pct":72.5},"statements":{"pct":70.0}}}"#,
+        )
+        .unwrap();
+        assert_eq!(parse_istanbul_json(&json_path), Some(72.5));
+    }
+
+    #[test]
+    fn test_discover_coverage_with_explicit_xml_path() {
+        let dir = tempfile::tempdir().unwrap();
+        let xml_path = dir.path().join("coverage.xml");
+        std::fs::write(
+            &xml_path,
+            r#"<?xml version="1.0" ?><coverage line-rate="0.92"></coverage>"#,
+        )
+        .unwrap();
+        assert_eq!(
+            discover_coverage(dir.path(), Some("coverage.xml")),
+            Some(92.0)
+        );
+    }
+
+    #[test]
+    fn test_discover_coverage_with_explicit_json_path() {
+        let dir = tempfile::tempdir().unwrap();
+        let cov_dir = dir.path().join("coverage");
+        std::fs::create_dir(&cov_dir).unwrap();
+        std::fs::write(
+            cov_dir.join("coverage-summary.json"),
+            r#"{"total":{"lines":{"pct":66.3}}}"#,
+        )
+        .unwrap();
+        assert_eq!(
+            discover_coverage(dir.path(), Some("coverage/coverage-summary.json")),
+            Some(66.3)
+        );
+    }
+
+    #[test]
+    fn test_discover_coverage_auto_fallback() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("coverage.xml"),
+            r#"<coverage line-rate="0.78"></coverage>"#,
+        )
+        .unwrap();
+        assert_eq!(discover_coverage(dir.path(), None), Some(78.0));
     }
 }

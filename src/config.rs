@@ -20,6 +20,8 @@ pub struct ProjectConfig {
     pub path: String,
     pub description: Option<String>,
     pub branch: Option<String>,
+    pub coverage_command: Option<String>,
+    pub coverage_result_path: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Default, Clone)]
