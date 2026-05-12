@@ -63,6 +63,12 @@ The system SHALL resolve relative paths in the config file against the config fi
 - **WHEN** path resolution runs
 - **THEN** the resolved path remains `/srv/repos/my-project`
 
+#### Scenario: Rooted project path on Windows semantics
+- **GIVEN** a project entry has a rooted path like `/opt/repos/foo` on Windows semantics
+- **WHEN** path resolution runs
+- **THEN** the loader treats it as already anchored
+- **AND** the resolved path remains `/opt/repos/foo`
+
 #### Scenario: Relative output path
 - **GIVEN** the config file is at `/opt/configs/showcase.toml` and `output = "build/out.html"`
 - **WHEN** path resolution runs

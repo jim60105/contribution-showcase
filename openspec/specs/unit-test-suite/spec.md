@@ -81,3 +81,21 @@ All test inputs SHALL use inline mock data or fixtures.
 - **GIVEN** the unit test suite
 - **WHEN** `cargo test` is executed
 - **THEN** no `git` child process is spawned
+
+### Requirement: Cross-Platform Path Fixtures
+
+Tests that generate TOML fixtures with filesystem paths SHALL encode path values in a way that parses correctly on Linux, macOS, and Windows.
+
+#### Scenario: Windows path in TOML fixture parses successfully
+- **GIVEN** a runtime filesystem path containing backslashes on Windows
+- **WHEN** the test writes it into a TOML path field
+- **THEN** the fixture parses successfully without invalid unicode escape errors
+
+### Requirement: Path Separator-Agnostic Assertions
+
+Tests that validate discovered file paths SHALL use path-separator-agnostic assertions.
+
+#### Scenario: Source path assertion on Windows
+- **GIVEN** a discovered source path rendered with `\\` separators
+- **WHEN** the test compares it to the expected location
+- **THEN** the assertion passes without requiring `/` separators
