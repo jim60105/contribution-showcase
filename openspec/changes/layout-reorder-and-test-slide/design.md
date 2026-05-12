@@ -295,7 +295,7 @@ lines.
 ```css
 .data-table .date-cell {
     white-space: nowrap;
-    min-width: calc(10ch + 2 * var(--gap-sm));
+    min-width: calc(10ch + var(--gap-sm) + var(--gap-sm));
 }
 ```
 

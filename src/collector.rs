@@ -4,6 +4,7 @@ use std::process::Command;
 
 use anyhow::Result;
 use chrono::Local;
+use walkdir::WalkDir;
 
 use crate::config::Config;
 use crate::model::*;
@@ -417,6 +418,208 @@ fn build_project_data(
     }
 }
 
+fn detect_framework(project_path: &Path) -> String {
+    // Check pyproject.toml for pytest
+    let pyproject = project_path.join("pyproject.toml");
+    if pyproject.exists() {
+        if let Ok(content) = std::fs::read_to_string(&pyproject) {
+            if content.contains("pytest") {
+                return "pytest".to_string();
+            }
+        }
+    }
+    // Check Cargo.toml
+    if project_path.join("Cargo.toml").exists() {
+        return "cargo test".to_string();
+    }
+    // Check package.json for vitest or jest
+    let pkg = project_path.join("package.json");
+    if pkg.exists() {
+        if let Ok(content) = std::fs::read_to_string(&pkg) {
+            if content.contains("vitest") {
+                return "vitest".to_string();
+            }
+            if content.contains("jest") {
+                return "jest".to_string();
+            }
+        }
+    }
+    "none".to_string()
+}
+
+fn is_excluded_dir(name: &str) -> bool {
+    matches!(
+        name,
+        "node_modules" | "target" | ".venv" | "__pycache__" | ".git" | "dist" | ".tox"
+    )
+}
+
+fn is_test_file(path: &Path, framework: &str) -> bool {
+    let file_name = match path.file_name().and_then(|n| n.to_str()) {
+        Some(n) => n,
+        None => return false,
+    };
+    match framework {
+        "pytest" => {
+            file_name.starts_with("test_") && file_name.ends_with(".py")
+                || file_name.ends_with("_test.py")
+        }
+        "vitest" | "jest" => file_name.contains(".test.") || file_name.contains(".spec."),
+        "cargo test" => {
+            // For Rust, test files in tests/ dir, or any .rs file — we'll check content
+            if let Some(ext) = path.extension() {
+                ext == "rs"
+            } else {
+                false
+            }
+        }
+        _ => false,
+    }
+}
+
+fn discover_test_files(project_path: &Path, framework: &str) -> Vec<std::path::PathBuf> {
+    let mut test_files = Vec::new();
+    let walker = WalkDir::new(project_path)
+        .into_iter()
+        .filter_entry(|e| {
+            if e.file_type().is_dir() {
+                let name = e.file_name().to_string_lossy();
+                !is_excluded_dir(&name)
+            } else {
+                true
+            }
+        });
+    for entry in walker.filter_map(|e| e.ok()) {
+        if entry.file_type().is_file() && is_test_file(entry.path(), framework) {
+            // For Rust, only count files that contain #[test] or #[cfg(test)]
+            if framework == "cargo test" {
+                if let Ok(content) = std::fs::read_to_string(entry.path()) {
+                    if content.contains("#[test]")
+                        || content.contains("#[cfg(test)]")
+                        || content.contains("#[tokio::test")
+                        || content.contains("#[rstest")
+                    {
+                        test_files.push(entry.path().to_path_buf());
+                    }
+                }
+            } else {
+                test_files.push(entry.path().to_path_buf());
+            }
+        }
+    }
+    test_files
+}
+
+fn count_test_cases(test_files: &[std::path::PathBuf], framework: &str) -> usize {
+    let mut count = 0;
+    for path in test_files {
+        if let Ok(content) = std::fs::read_to_string(path) {
+            for line in content.lines() {
+                let trimmed = line.trim();
+                match framework {
+                    "pytest" => {
+                        if trimmed.starts_with("def test_")
+                            || trimmed.starts_with("async def test_")
+                        {
+                            count += 1;
+                        }
+                    }
+                    "vitest" | "jest" => {
+                        if (trimmed.contains("it(")
+                            || trimmed.contains("it.each(")
+                            || trimmed.contains("test(")
+                            || trimmed.contains("test.each("))
+                            && !trimmed.starts_with("//")
+                            && !trimmed.starts_with("*")
+                        {
+                            count += 1;
+                        }
+                    }
+                    "cargo test" => {
+                        if trimmed.contains("#[test]")
+                            || trimmed.contains("#[tokio::test")
+                            || trimmed.contains("#[rstest")
+                        {
+                            count += 1;
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+    }
+    count
+}
+
+fn discover_coverage(project_path: &Path) -> Option<f64> {
+    // Try coverage.xml (Cobertura format)
+    let coverage_xml = project_path.join("coverage.xml");
+    if coverage_xml.exists() {
+        if let Ok(content) = std::fs::read_to_string(&coverage_xml) {
+            // Parse line-rate from <coverage line-rate="0.85" ...>
+            if let Some(pos) = content.find("line-rate=\"") {
+                let start = pos + "line-rate=\"".len();
+                if let Some(end) = content[start..].find('"') {
+                    if let Ok(rate) = content[start..start + end].parse::<f64>() {
+                        return Some(rate * 100.0);
+                    }
+                }
+            }
+        }
+    }
+
+    // Try coverage/coverage-summary.json (Istanbul format)
+    let istanbul = project_path.join("coverage/coverage-summary.json");
+    if istanbul.exists() {
+        if let Ok(content) = std::fs::read_to_string(&istanbul) {
+            if let Ok(json) = serde_json::from_str::<serde_json::Value>(&content) {
+                if let Some(pct) = json
+                    .get("total")
+                    .and_then(|t| t.get("lines"))
+                    .and_then(|l| l.get("pct"))
+                    .and_then(|p| p.as_f64())
+                {
+                    return Some(pct);
+                }
+            }
+        }
+    }
+
+    None
+}
+
+fn collect_test_metrics(config: &Config) -> Vec<TestMetrics> {
+    let mut metrics = Vec::new();
+    for project in &config.projects {
+        let project_path = Path::new(&project.path);
+        if !project_path.exists() {
+            continue;
+        }
+        let framework = detect_framework(project_path);
+        if framework == "none" {
+            metrics.push(TestMetrics {
+                project: project.name.clone(),
+                test_file_count: 0,
+                test_case_count: 0,
+                coverage_percent: None,
+                framework,
+            });
+            continue;
+        }
+        let test_files = discover_test_files(project_path, &framework);
+        let test_case_count = count_test_cases(&test_files, &framework);
+        let coverage_percent = discover_coverage(project_path);
+        metrics.push(TestMetrics {
+            project: project.name.clone(),
+            test_file_count: test_files.len(),
+            test_case_count,
+            coverage_percent,
+            framework,
+        });
+    }
+    metrics
+}
+
 pub fn collect(config: &Config) -> Result<ShowcaseData> {
     let filters = config.filters();
     let author_filter = filters.author.as_deref();
@@ -492,6 +695,7 @@ pub fn collect(config: &Config) -> Result<ShowcaseData> {
         .filter(|p| p.commit_count > 0 || p.proposal_count > 0)
         .collect();
 
+    let test_metrics = collect_test_metrics(config);
     let author = author_filter.unwrap_or("ALL").to_string();
 
     Ok(ShowcaseData {
@@ -511,6 +715,7 @@ pub fn collect(config: &Config) -> Result<ShowcaseData> {
         type_breakdown,
         projects,
         proposals: all_proposals,
+        test_metrics,
         commits: all_commits,
     })
 }
@@ -1337,5 +1542,67 @@ mod tests {
         };
         let (filtered, _) = apply_filters(&commits, &proposals, &config);
         assert_eq!(filtered.len(), 1, "Short prefix should not match full hash");
+    }
+
+    #[test]
+    fn test_detect_framework_pytest() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("pyproject.toml"),
+            "[tool.pytest]\n[project]\ndependencies = [\"pytest\"]",
+        )
+        .unwrap();
+        assert_eq!(detect_framework(dir.path()), "pytest");
+    }
+
+    #[test]
+    fn test_detect_framework_none() {
+        let dir = tempfile::tempdir().unwrap();
+        // Empty dir, no manifest files
+        assert_eq!(detect_framework(dir.path()), "none");
+    }
+
+    #[test]
+    fn test_discover_test_files_pytest() {
+        let dir = tempfile::tempdir().unwrap();
+        let tests_dir = dir.path().join("tests");
+        std::fs::create_dir(&tests_dir).unwrap();
+        std::fs::write(tests_dir.join("test_auth.py"), "def test_login(): pass").unwrap();
+        std::fs::write(tests_dir.join("test_api.py"), "def test_get(): pass").unwrap();
+        std::fs::write(tests_dir.join("utils.py"), "# not a test").unwrap();
+        let files = discover_test_files(dir.path(), "pytest");
+        assert_eq!(files.len(), 2);
+    }
+
+    #[test]
+    fn test_count_test_cases_python() {
+        let dir = tempfile::tempdir().unwrap();
+        let test_file = dir.path().join("test_example.py");
+        std::fs::write(
+            &test_file,
+            "def test_a():\n    pass\n\nasync def test_b():\n    pass\n\ndef helper():\n    pass\n",
+        )
+        .unwrap();
+        let files = vec![test_file];
+        assert_eq!(count_test_cases(&files, "pytest"), 2);
+    }
+
+    #[test]
+    fn test_count_test_cases_js() {
+        let dir = tempfile::tempdir().unwrap();
+        let test_file = dir.path().join("app.test.ts");
+        std::fs::write(
+            &test_file,
+            "describe('app', () => {\n  it('should work', () => {});\n  test('another', () => {});\n});",
+        )
+        .unwrap();
+        let files = vec![test_file];
+        assert_eq!(count_test_cases(&files, "vitest"), 2);
+    }
+
+    #[test]
+    fn test_discover_coverage_none() {
+        let dir = tempfile::tempdir().unwrap();
+        assert_eq!(discover_coverage(dir.path()), None);
     }
 }

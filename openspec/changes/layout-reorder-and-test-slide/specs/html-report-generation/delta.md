@@ -32,7 +32,7 @@ The OpenSpec proposals table columns SHALL be ordered: 日期, 專案, 代稱, �
 
 ### Requirement: Date Column Width in Data Tables
 
-The date cells in both the proposals table and the commit log table SHALL apply `white-space: nowrap` and `min-width: calc(10ch + 2 * var(--gap-sm))` via a shared `.date-cell` CSS class, so that `YYYY-MM-DD` dates always render on a single line without wrapping.
+The date cells in both the proposals table and the commit log table SHALL apply `white-space: nowrap` and `min-width: calc(10ch + var(--gap-sm) + var(--gap-sm))` via a shared `.date-cell` CSS class, so that `YYYY-MM-DD` dates always render on a single line without wrapping.
 
 #### Scenario: Proposals date displays on one line
 - **GIVEN** a proposals table with a date value "2026-05-08"
@@ -47,7 +47,7 @@ The date cells in both the proposals table and the commit log table SHALL apply 
 #### Scenario: Date column minimum width
 - **GIVEN** either the proposals or commit log table is rendered
 - **WHEN** the table layout algorithm distributes column widths
-- **THEN** the date column is at least `calc(10ch + 2 * var(--gap-sm))` wide
+- **THEN** the date column is at least `calc(10ch + var(--gap-sm) + var(--gap-sm))` wide
 
 ### Requirement: Commit Table Column Order
 

@@ -11,6 +11,7 @@ pub struct ShowcaseData {
     pub type_breakdown: Vec<TypeBreakdown>,
     pub projects: Vec<ProjectData>,
     pub proposals: Vec<ProposalEntry>,
+    pub test_metrics: Vec<TestMetrics>,
     pub commits: Vec<CommitEntry>,
 }
 
@@ -48,6 +49,15 @@ pub struct ProjectData {
     pub lines_added: usize,
     pub lines_removed: usize,
     pub top_types: Vec<TypeBreakdown>,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub struct TestMetrics {
+    pub project: String,
+    pub test_file_count: usize,
+    pub test_case_count: usize,
+    pub coverage_percent: Option<f64>,
+    pub framework: String,
 }
 
 #[derive(Debug, Serialize, Clone)]

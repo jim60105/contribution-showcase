@@ -326,7 +326,7 @@
     /* Projects */
     .project-grid {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
+      grid-template-columns: 1fr;
       gap: var(--gap-md);
       width: 100%;
       max-width: var(--container);
@@ -422,6 +422,11 @@
       vertical-align: top;
     }
 
+    .data-table .date-cell {
+      white-space: nowrap;
+      min-width: calc(10ch + var(--gap-sm) + var(--gap-sm));
+    }
+
     .data-table tr:nth-child(even) td { background: var(--bg); }
     .data-table tr:hover td { background: var(--border); }
 
@@ -504,7 +509,71 @@
       font-size: var(--fs-body);
     }
 
+    /* Coverage bars */
+    .coverage-bar-track {
+      width: 100%;
+      max-width: 120px;
+      height: 18px;
+      background: var(--bg);
+      border-radius: 4px;
+      overflow: hidden;
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    .coverage-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.6s ease;
+    }
+
+    .coverage-cell {
+      display: flex;
+      align-items: center;
+      gap: var(--gap-xs);
+      font-family: var(--font-mono);
+      font-size: var(--fs-xs);
+    }
+
+    .test-kpi-row {
+      display: flex;
+      gap: var(--gap-md);
+      margin-top: var(--gap-lg);
+      flex-wrap: wrap;
+    }
+
+    .test-kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: var(--gap-sm) var(--gap-md);
+      text-align: center;
+      flex: 1;
+      min-width: 150px;
+    }
+
+    .test-kpi-value {
+      font-family: var(--font-display);
+      font-size: clamp(28px, 3vw, 40px);
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .test-kpi-label {
+      font-size: var(--fs-xs);
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
     /* Responsive */
+    @media (min-width: 601px) {
+      .project-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (min-width: 901px) {
+      .project-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+
     @media (max-width: 1199px) {
       .kpi-grid { grid-template-columns: repeat(2, 1fr); }
     }
@@ -514,7 +583,6 @@
       .slide { min-height: auto; padding: var(--gap-lg) var(--gap-md); }
       .slide-nav { display: none; }
       .kpi-grid { grid-template-columns: 1fr; }
-      .project-grid { grid-template-columns: 1fr; }
       .breakdown-row { grid-template-columns: 120px 1fr 50px; }
       .scroll-container { max-height: none; }
     }
@@ -572,6 +640,13 @@
       </div>
     </section>
 
+    <section class="slide slide--scrollable" id="slide-tests">
+      <div class="slide-inner">
+        <h2 class="h1 animate">測試</h2>
+        <div class="scroll-container" id="testMetricsContainer"></div>
+      </div>
+    </section>
+
     <section class="slide slide--scrollable" id="slide-proposals">
       <div class="slide-inner">
         <h2 class="h1 animate">OpenSpec 提案</h2>
@@ -590,8 +665,8 @@
   <script>
     var DATA = "__SHOWCASE_DATA__";
 
-    var NAV_LABELS = ['封面', '指標', '時間軸', '類型', '專案', '提案', '紀錄'];
-    var SLIDE_IDS = ['slide-cover', 'slide-kpi', 'slide-timeline', 'slide-breakdown', 'slide-projects', 'slide-proposals', 'slide-commits'];
+    var NAV_LABELS = ['封面', '指標', '時間軸', '類型', '專案', '測試', '提案', '紀錄'];
+    var SLIDE_IDS = ['slide-cover', 'slide-kpi', 'slide-timeline', 'slide-breakdown', 'slide-projects', 'slide-tests', 'slide-proposals', 'slide-commits'];
     var COMMIT_LIMIT = 100;
     var commitShowAll = false;
     var commitSortCol = null;
@@ -604,6 +679,7 @@
       renderTimeline();
       renderBreakdown();
       renderProjects();
+      renderTestMetrics();
       renderProposals();
       renderCommits();
       initAnimations();
@@ -808,7 +884,7 @@
       }
 
       var html = '<table class="data-table"><thead><tr>';
-      html += '<th>專案</th><th>代稱</th><th>日期</th><th>工作項</th>';
+      html += '<th>日期</th><th>專案</th><th>代稱</th><th>工作項</th>';
       html += '</tr></thead><tbody>';
 
       var lastProject = '';
@@ -817,13 +893,70 @@
         var showProject = p.project !== lastProject;
         lastProject = p.project;
         html += '<tr>';
+        html += '<td class="date-cell">' + escapeHtml(p.date) + '</td>';
         html += '<td>' + (showProject ? escapeHtml(p.project) : '') + '</td>';
         html += '<td class="mono">' + escapeHtml(p.slug) + '</td>';
-        html += '<td>' + escapeHtml(p.date) + '</td>';
         html += '<td>' + (p.task_count || 0) + '</td>';
         html += '</tr>';
       }
       html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
+    // --- Test Metrics ---
+    function renderTestMetrics() {
+      var container = document.getElementById('testMetricsContainer');
+      var metrics = DATA.test_metrics || [];
+
+      if (metrics.length === 0) {
+        container.innerHTML = '<div class="empty-state">無測試資料</div>';
+        return;
+      }
+
+      var html = '<table class="data-table"><thead><tr>';
+      html += '<th>專案</th><th>框架</th><th>測試檔案</th><th>測試案例</th><th>覆蓋率</th>';
+      html += '</tr></thead><tbody>';
+
+      var totalFiles = 0;
+      var totalCases = 0;
+      var coverageSum = 0;
+      var coverageCount = 0;
+
+      for (var i = 0; i < metrics.length; i++) {
+        var m = metrics[i];
+        totalFiles += m.test_file_count || 0;
+        totalCases += m.test_case_count || 0;
+
+        html += '<tr>';
+        html += '<td>' + escapeHtml(m.project) + '</td>';
+        html += '<td class="mono">' + escapeHtml(m.framework) + '</td>';
+        html += '<td class="mono">' + (m.test_file_count || 0) + '</td>';
+        html += '<td class="mono">' + (m.test_case_count || 0) + '</td>';
+
+        if (m.coverage_percent != null) {
+          var pct = m.coverage_percent;
+          coverageSum += pct;
+          coverageCount++;
+          var color = pct >= 80 ? 'var(--feat)' : pct >= 50 ? 'var(--refactor)' : 'var(--fix)';
+          html += '<td><div class="coverage-cell">';
+          html += '<div class="coverage-bar-track"><div class="coverage-bar-fill" style="width:' + pct.toFixed(0) + '%;background:' + color + '"></div></div>';
+          html += '<span>' + pct.toFixed(1) + '%</span>';
+          html += '</div></td>';
+        } else {
+          html += '<td class="muted">—</td>';
+        }
+        html += '</tr>';
+      }
+      html += '</tbody></table>';
+
+      // KPI summary row
+      var avgCoverage = coverageCount > 0 ? (coverageSum / coverageCount) : null;
+      html += '<div class="test-kpi-row">';
+      html += '<div class="test-kpi-card"><div class="test-kpi-value">' + totalFiles + '</div><div class="test-kpi-label">總測試檔案</div></div>';
+      html += '<div class="test-kpi-card"><div class="test-kpi-value">' + totalCases + '</div><div class="test-kpi-label">總測試案例</div></div>';
+      html += '<div class="test-kpi-card"><div class="test-kpi-value">' + (avgCoverage != null ? avgCoverage.toFixed(1) + '%' : '—') + '</div><div class="test-kpi-label">平均覆蓋率</div></div>';
+      html += '</div>';
+
       container.innerHTML = html;
     }
 
@@ -841,9 +974,9 @@
       var display = commitShowAll ? sorted : sorted.slice(0, COMMIT_LIMIT);
 
       var html = '<table class="data-table" id="commitTable"><thead><tr>';
-      html += '<th>Hash</th>';
       html += buildSortHeader('date', '日期');
       html += buildSortHeader('project', '專案');
+      html += '<th>Hash</th>';
       html += buildSortHeader('commit_type', '類型');
       html += buildSortHeader('subject', '說明');
       html += buildSortHeader('changes', '+/−');
@@ -854,9 +987,9 @@
         var typeClass = c.commit_type || 'other';
         var subject = c.subject || '';
         html += '<tr>';
-        html += '<td class="mono">' + escapeHtml(c.hash.substring(0, 8)) + '</td>';
-        html += '<td class="mono" style="white-space:nowrap;">' + escapeHtml(c.date) + '</td>';
+        html += '<td class="date-cell">' + escapeHtml(c.date) + '</td>';
         html += '<td>' + escapeHtml(c.project) + '</td>';
+        html += '<td class="mono">' + escapeHtml(c.hash.substring(0, 8)) + '</td>';
         html += '<td><span class="badge badge-' + typeClass + '">' + escapeHtml(c.commit_type || 'other') + '</span></td>';
         html += '<td>' + escapeHtml(subject) + '</td>';
         html += '<td class="mono"><span class="line-add">+' + (c.insertions || 0) + '</span> <span class="line-del">−' + (c.deletions || 0) + '</span></td>';
