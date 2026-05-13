@@ -1,5 +1,10 @@
 # contribution-showcase
 
+[![Build, Test, Audit & Coverage](https://github.com/jim60105/contribution-showcase/actions/workflows/build-test-audit-coverage.yml/badge.svg)](https://github.com/jim60105/contribution-showcase/actions/workflows/build-test-audit-coverage.yml)
+[![Release](https://github.com/jim60105/contribution-showcase/actions/workflows/release.yml/badge.svg)](https://github.com/jim60105/contribution-showcase/actions/workflows/release.yml)
+[![codecov](https://codecov.io/gh/jim60105/contribution-showcase/graph/badge.svg?token=yAi5wZRrEK)](https://codecov.io/gh/jim60105/contribution-showcase)
+[![License: GPL-3.0](https://img.shields.io/github/license/jim60105/contribution-showcase)](LICENSE)
+
 一個 Rust CLI 工具，掃描多個 Git 儲存庫的提交紀錄，產生一頁式 HTML 貢獻總覽報告。
 
 ## 功能
