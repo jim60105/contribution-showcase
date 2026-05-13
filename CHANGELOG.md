@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-05-13
+
+### Added
+
+- Extended timeline granularity to five levels: daily, weekly, monthly, quarterly (`YYYY-Qn`), and yearly (`YYYY`), selected automatically using a ≤14-bucket cascade rule
+
+### Fixed
+
+- Corrected coverage configuration examples in `showcase.example.toml` (wrong `--html` flag replaced with `--cobertura`; result path updated to `coverage.xml`)
+
 ## [0.1.0] - 2026-05-13
 
 ### Added
@@ -43,5 +53,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
-[Unreleased]: https://github.com/jim60105/contribution-showcase/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/jim60105/contribution-showcase/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/jim60105/contribution-showcase/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/jim60105/contribution-showcase/releases/tag/v0.1.0
