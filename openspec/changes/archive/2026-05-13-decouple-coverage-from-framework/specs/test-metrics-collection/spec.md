@@ -1,12 +1,4 @@
-# Test Metrics Collection
-
-## Purpose
-
-Collects test framework detection, test file/case counts, and coverage
-report data for each configured project. Results feed the Test Metrics
-slide in the HTML report.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: Framework Detection
 
@@ -48,29 +40,6 @@ Framework detection determines the test file discovery patterns and test case co
 - **GIVEN** a project directory without any recognized test configuration but with `coverage_command` configured
 - **WHEN** test metrics collection runs
 - **THEN** the framework is "none", test counts are 0, but the coverage command is still executed and coverage results are still parsed
-
-### Requirement: Test File Discovery
-
-The system SHALL count files matching test patterns: `test_*`, `*_test.*`, `*.test.*`, `*.spec.*`. The search SHALL exclude `node_modules/`, `target/`, `.venv/`, `__pycache__/`, and other build artifact directories.
-
-#### Scenario: Python project with test files
-- **GIVEN** a project with files `tests/test_auth.py`, `tests/test_api.py`, `src/utils.py`
-- **WHEN** test file discovery runs
-- **THEN** `test_file_count` is 2
-
-### Requirement: Test Case Counting
-
-The system SHALL count test cases by pattern-matching source lines within discovered test files:
-- Python: lines matching `def test_` or `async def test_`
-- JavaScript/TypeScript: lines matching `it(` or `test(`
-- Rust: lines matching `#[test]`, `#[tokio::test`, or `#[rstest]`
-
-Counting is approximate (regex-based, not AST-based).
-
-#### Scenario: Python test file with 5 test functions
-- **GIVEN** a test file containing 5 lines matching `def test_*`
-- **WHEN** test case counting runs
-- **THEN** the file contributes 5 to `test_case_count`
 
 ### Requirement: Coverage Report Discovery
 

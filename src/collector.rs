@@ -764,10 +764,6 @@ fn collect_test_metrics(config: &Config) -> Vec<TestMetrics> {
             if !project_path.exists() {
                 continue;
             }
-            let framework = detect_framework(project_path);
-            if framework == "none" {
-                continue;
-            }
             eprintln!("  Starting coverage: {} ({})", project.name, cmd);
             match Command::new("sh")
                 .arg("-c")
@@ -809,23 +805,18 @@ fn collect_test_metrics(config: &Config) -> Vec<TestMetrics> {
             continue;
         }
         let framework = detect_framework(project_path);
-        if framework == "none" {
-            metrics.push(TestMetrics {
-                project: project.name.clone(),
-                test_file_count: 0,
-                test_case_count: 0,
-                coverage_percent: None,
-                framework,
-            });
-            continue;
-        }
-        let test_files = discover_test_files(project_path, &framework);
-        let test_case_count = count_test_cases(&test_files, &framework);
+        let (test_file_count, test_case_count) = if framework == "none" {
+            (0, 0)
+        } else {
+            let test_files = discover_test_files(project_path, &framework);
+            let test_case_count = count_test_cases(&test_files, &framework);
+            (test_files.len(), test_case_count)
+        };
         let coverage_percent =
             discover_coverage(project_path, project.coverage_result_path.as_deref());
         metrics.push(TestMetrics {
             project: project.name.clone(),
-            test_file_count: test_files.len(),
+            test_file_count,
             test_case_count,
             coverage_percent,
             framework,
@@ -940,6 +931,7 @@ pub fn collect(config: &Config) -> Result<ShowcaseData> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::config::{Config, ProjectConfig};
 
     #[test]
     fn test_parse_conventional_commit_feat() {
@@ -3153,5 +3145,182 @@ mod tests {
         ];
         let data = build_project_data("proj", "Proj", &[], &proposals);
         assert_eq!(data.proposal_count, 1);
+    }
+
+    // ========================================================================
+    // collect_test_metrics() integration tests — coverage decoupled from framework
+    // ========================================================================
+
+    fn make_config_single_project(
+        name: &str,
+        path: &str,
+        coverage_command: Option<&str>,
+        coverage_result_path: Option<&str>,
+    ) -> Config {
+        Config {
+            title: None,
+            output: None,
+            projects: vec![ProjectConfig {
+                name: name.to_string(),
+                path: path.to_string(),
+                description: None,
+                branch: None,
+                coverage_command: coverage_command.map(|s| s.to_string()),
+                coverage_result_path: coverage_result_path.map(|s| s.to_string()),
+            }],
+            filters: None,
+        }
+    }
+
+    #[test]
+    fn test_collect_metrics_phase1_runs_coverage_command_without_framework() {
+        // Phase 1 test: coverage_command generates a file; no framework markers.
+        // If Phase 1 gate were still present, command wouldn't run → file missing → None.
+        let dir = tempfile::tempdir().unwrap();
+        let cov_path = dir.path().join("coverage.xml");
+        let cmd = format!(
+            "printf '<coverage line-rate=\"0.75\"></coverage>' > {}",
+            cov_path.display()
+        );
+        let config = make_config_single_project(
+            "test-proj",
+            dir.path().to_str().unwrap(),
+            Some(&cmd),
+            Some("coverage.xml"),
+        );
+        let metrics = collect_test_metrics(&config);
+        assert_eq!(metrics.len(), 1);
+        assert_eq!(metrics[0].framework, "none");
+        assert_eq!(
+            metrics[0].coverage_percent,
+            Some(75.0),
+            "coverage_command must run even when framework is 'none'"
+        );
+        assert_eq!(metrics[0].test_file_count, 0);
+        assert_eq!(metrics[0].test_case_count, 0);
+    }
+
+    #[test]
+    fn test_collect_metrics_phase3_discovers_preexisting_istanbul_json() {
+        // Phase 3 test: pre-existing Istanbul JSON, no framework.
+        let dir = tempfile::tempdir().unwrap();
+        let cov_dir = dir.path().join("coverage");
+        std::fs::create_dir(&cov_dir).unwrap();
+        std::fs::write(
+            cov_dir.join("coverage-summary.json"),
+            r#"{"total":{"lines":{"pct":88.5}}}"#,
+        )
+        .unwrap();
+        let config = make_config_single_project(
+            "istanbul-proj",
+            dir.path().to_str().unwrap(),
+            None,
+            Some("coverage/coverage-summary.json"),
+        );
+        let metrics = collect_test_metrics(&config);
+        assert_eq!(metrics.len(), 1);
+        assert_eq!(metrics[0].framework, "none");
+        assert_eq!(metrics[0].coverage_percent, Some(88.5));
+        assert_eq!(metrics[0].test_file_count, 0);
+        assert_eq!(metrics[0].test_case_count, 0);
+    }
+
+    #[test]
+    fn test_collect_metrics_phase3_discovers_preexisting_cobertura_xml() {
+        // Phase 3 test: pre-existing Cobertura XML via explicit path, no framework.
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("cov.xml"),
+            r#"<coverage line-rate="0.91"></coverage>"#,
+        )
+        .unwrap();
+        let config = make_config_single_project(
+            "cobertura-proj",
+            dir.path().to_str().unwrap(),
+            None,
+            Some("cov.xml"),
+        );
+        let metrics = collect_test_metrics(&config);
+        assert_eq!(metrics.len(), 1);
+        assert_eq!(metrics[0].framework, "none");
+        assert_eq!(metrics[0].coverage_percent, Some(91.0));
+    }
+
+    #[test]
+    fn test_collect_metrics_no_framework_no_coverage_file() {
+        // No framework, no coverage file → coverage_percent is None.
+        let dir = tempfile::tempdir().unwrap();
+        let config =
+            make_config_single_project("empty-proj", dir.path().to_str().unwrap(), None, None);
+        let metrics = collect_test_metrics(&config);
+        assert_eq!(metrics.len(), 1);
+        assert_eq!(metrics[0].framework, "none");
+        assert_eq!(metrics[0].coverage_percent, None);
+        assert_eq!(metrics[0].test_file_count, 0);
+        assert_eq!(metrics[0].test_case_count, 0);
+    }
+
+    #[test]
+    fn test_collect_metrics_coverage_command_fails_no_output() {
+        // coverage_command exits non-zero, produces no file → coverage_percent is None.
+        let dir = tempfile::tempdir().unwrap();
+        let config = make_config_single_project(
+            "fail-proj",
+            dir.path().to_str().unwrap(),
+            Some("exit 1"),
+            Some("coverage.xml"),
+        );
+        let metrics = collect_test_metrics(&config);
+        assert_eq!(metrics.len(), 1);
+        assert_eq!(metrics[0].framework, "none");
+        assert_eq!(metrics[0].coverage_percent, None);
+    }
+
+    #[test]
+    fn test_collect_metrics_auto_discovery_without_explicit_path() {
+        // framework=none, no coverage_result_path, but coverage.xml exists → auto-discovered.
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("coverage.xml"),
+            r#"<coverage line-rate="0.64"></coverage>"#,
+        )
+        .unwrap();
+        let config =
+            make_config_single_project("auto-proj", dir.path().to_str().unwrap(), None, None);
+        let metrics = collect_test_metrics(&config);
+        assert_eq!(metrics.len(), 1);
+        assert_eq!(metrics[0].framework, "none");
+        assert_eq!(
+            metrics[0].coverage_percent,
+            Some(64.0),
+            "auto-discovery must work even for unknown frameworks"
+        );
+    }
+
+    #[test]
+    fn test_collect_metrics_known_framework_regression() {
+        // Regression test: Cargo project with coverage must still work after Phase 3 refactor.
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("Cargo.toml"), "[package]\nname = \"test\"").unwrap();
+        let src = dir.path().join("src");
+        std::fs::create_dir(&src).unwrap();
+        std::fs::write(
+            src.join("lib.rs"),
+            "#[cfg(test)] mod tests { #[test] fn it_works() {} }",
+        )
+        .unwrap();
+        std::fs::write(
+            dir.path().join("coverage.xml"),
+            r#"<coverage line-rate="0.82"></coverage>"#,
+        )
+        .unwrap();
+        let config =
+            make_config_single_project("cargo-proj", dir.path().to_str().unwrap(), None, None);
+        let metrics = collect_test_metrics(&config);
+        assert_eq!(metrics.len(), 1);
+        assert_eq!(metrics[0].framework, "cargo test");
+        assert_eq!(metrics[0].coverage_percent, Some(82.0));
+        assert!(metrics[0].test_file_count >= 1, "should find test files");
+        assert!(metrics[0].test_case_count >= 1, "should count test cases");
     }
 }
