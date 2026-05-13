@@ -7,7 +7,11 @@ mod config;
 mod model;
 
 #[derive(Parser)]
-#[command(name = "contribution-showcase", about = "產生貢獻總覽靜態網頁")]
+#[command(
+    name = "contribution-showcase",
+    version,
+    about = "產生貢獻總覽靜態網頁"
+)]
 #[command(arg_required_else_help = true)]
 struct Cli {
     #[command(subcommand)]
