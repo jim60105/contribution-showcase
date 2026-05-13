@@ -583,6 +583,18 @@ fn detect_framework(project_path: &Path) -> String {
             return "jest".to_string();
         }
     }
+    // Check deno.json / deno.jsonc for vitest or plain deno test
+    for deno_config in ["deno.json", "deno.jsonc"] {
+        let deno_path = project_path.join(deno_config);
+        if deno_path.exists()
+            && let Ok(content) = std::fs::read_to_string(&deno_path)
+        {
+            if content.contains("vitest") {
+                return "vitest".to_string();
+            }
+            return "deno test".to_string();
+        }
+    }
     "none".to_string()
 }
 
@@ -604,6 +616,12 @@ fn is_test_file(path: &Path, framework: &str) -> bool {
                 || file_name.ends_with("_test.py")
         }
         "vitest" | "jest" => file_name.contains(".test.") || file_name.contains(".spec."),
+        "deno test" => {
+            file_name.ends_with("_test.ts")
+                || file_name.ends_with("_test.js")
+                || file_name.ends_with("_test.mjs")
+                || file_name.contains(".test.")
+        }
         "cargo test" => {
             // For Rust, test files in tests/ dir, or any .rs file — we'll check content
             if let Some(ext) = path.extension() {
@@ -673,6 +691,13 @@ fn count_test_cases(test_files: &[std::path::PathBuf], framework: &str) -> usize
                         if (trimmed.contains("#[test]")
                             || trimmed.contains("#[tokio::test")
                             || trimmed.contains("#[rstest")) =>
+                    {
+                        count += 1;
+                    }
+                    "deno test"
+                        if trimmed.starts_with("Deno.test(")
+                            || trimmed.starts_with("Deno.test.only(")
+                            || trimmed.starts_with("Deno.test.ignore(") =>
                     {
                         count += 1;
                     }
@@ -2292,6 +2317,47 @@ mod tests {
         assert_eq!(detect_framework(dir.path()), "vitest");
     }
 
+    #[test]
+    fn test_detect_framework_deno_json_with_vitest() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("deno.json"),
+            r#"{"imports":{"vitest":"npm:vitest@^4.0.0"}}"#,
+        )
+        .unwrap();
+        assert_eq!(detect_framework(dir.path()), "vitest");
+    }
+
+    #[test]
+    fn test_detect_framework_deno_jsonc_with_vitest() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("deno.jsonc"),
+            r#"{"imports":{"vitest":"npm:vitest@^4.0.0"}}"#,
+        )
+        .unwrap();
+        assert_eq!(detect_framework(dir.path()), "vitest");
+    }
+
+    #[test]
+    fn test_detect_framework_deno_json_without_vitest() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(
+            dir.path().join("deno.json"),
+            r#"{"tasks":{"test":"deno test tests/"}}"#,
+        )
+        .unwrap();
+        assert_eq!(detect_framework(dir.path()), "deno test");
+    }
+
+    #[test]
+    fn test_detect_framework_priority_cargo_over_deno() {
+        let dir = tempfile::tempdir().unwrap();
+        std::fs::write(dir.path().join("Cargo.toml"), "[package]\nname=\"x\"").unwrap();
+        std::fs::write(dir.path().join("deno.json"), "{}").unwrap();
+        assert_eq!(detect_framework(dir.path()), "cargo test");
+    }
+
     // ========================================================================
     // is_excluded_dir() tests
     // ========================================================================
@@ -2353,6 +2419,16 @@ mod tests {
     fn test_is_test_file_unknown_framework() {
         assert!(!is_test_file(Path::new("test_foo.py"), "unknown"));
         assert!(!is_test_file(Path::new("foo.rs"), "none"));
+    }
+
+    #[test]
+    fn test_is_test_file_deno_test_patterns() {
+        assert!(is_test_file(Path::new("parser_test.ts"), "deno test"));
+        assert!(is_test_file(Path::new("parser_test.js"), "deno test"));
+        assert!(is_test_file(Path::new("parser_test.mjs"), "deno test"));
+        assert!(is_test_file(Path::new("foo.test.ts"), "deno test"));
+        assert!(!is_test_file(Path::new("parser.ts"), "deno test"));
+        assert!(!is_test_file(Path::new("parser.js"), "deno test"));
     }
 
     // ========================================================================
@@ -2478,6 +2554,19 @@ mod tests {
         std::fs::write(&test_file, "def test_a():\n    pass\n").unwrap();
         let files = vec![test_file];
         assert_eq!(count_test_cases(&files, "unknown"), 0);
+    }
+
+    #[test]
+    fn test_count_test_cases_deno_test() {
+        let dir = tempfile::tempdir().unwrap();
+        let test_file = dir.path().join("parser_test.js");
+        std::fs::write(
+            &test_file,
+            "Deno.test(\"parses basic\", () => {});\nDeno.test.only(\"only this\", () => {});\nDeno.test.ignore(\"skip\", () => {});\n// Deno.test(\"commented\", () => {});\n",
+        )
+        .unwrap();
+        let files = vec![test_file];
+        assert_eq!(count_test_cases(&files, "deno test"), 3);
     }
 
     // ========================================================================
