@@ -321,62 +321,136 @@ fn build_timeline(commits: &[CommitEntry]) -> Vec<TimelineEntry> {
 
     let min_date = dates.iter().map(|(d, _)| *d).min().unwrap();
     let max_date = dates.iter().map(|(d, _)| *d).max().unwrap();
-    let span_days = (max_date - min_date).num_days();
+
+    // Five-level granularity cascade: escalate when distinct bucket count > 14
+    #[derive(Clone, Copy)]
+    enum Granularity {
+        Daily,
+        Weekly,
+        Monthly,
+        Quarterly,
+        Yearly,
+    }
+
+    let day_count = (max_date - min_date).num_days() + 1; // inclusive
+
+    let granularity = if day_count <= 14 {
+        Granularity::Daily
+    } else {
+        // Count distinct ISO weeks (early exit once > 14)
+        let mut week_set = std::collections::HashSet::new();
+        let mut d = min_date;
+        while d <= max_date {
+            week_set.insert(d.format("%G-W%V").to_string());
+            if week_set.len() > 14 {
+                break;
+            }
+            d += chrono::Duration::days(1);
+        }
+        if week_set.len() <= 14 {
+            Granularity::Weekly
+        } else {
+            let month_count = (max_date.year() - min_date.year()) * 12 + max_date.month() as i32
+                - min_date.month() as i32
+                + 1;
+            if month_count <= 14 {
+                Granularity::Monthly
+            } else {
+                let min_q = (min_date.month() as i32 - 1) / 3 + 1;
+                let max_q = (max_date.month() as i32 - 1) / 3 + 1;
+                let quarter_count = (max_date.year() - min_date.year()) * 4 + max_q - min_q + 1;
+                if quarter_count <= 14 {
+                    Granularity::Quarterly
+                } else {
+                    Granularity::Yearly
+                }
+            }
+        }
+    };
+
+    // Format a date into a bucket label based on selected granularity
+    let format_label = |date: &chrono::NaiveDate| -> String {
+        match granularity {
+            Granularity::Daily => date.format("%Y-%m-%d").to_string(),
+            Granularity::Weekly => date.format("%G-W%V").to_string(),
+            Granularity::Monthly => format!("{:04}-{:02}", date.year(), date.month()),
+            Granularity::Quarterly => {
+                let q = (date.month() - 1) / 3 + 1;
+                format!("{}-Q{}", date.year(), q)
+            }
+            Granularity::Yearly => format!("{}", date.year()),
+        }
+    };
 
     // Aggregate commit lines into buckets
     let mut bucket_lines: HashMap<String, usize> = HashMap::new();
     for (date, lines) in &dates {
-        let label = if span_days <= 13 {
-            date.format("%Y-%m-%d").to_string()
-        } else if span_days <= 60 {
-            date.format("%G-W%V").to_string()
-        } else {
-            date.format("%Y-%m").to_string()
-        };
+        let label = format_label(date);
         *bucket_lines.entry(label).or_insert(0) += lines;
     }
 
     // Generate contiguous bucket labels from min_date to max_date
-    let all_labels: Vec<String> = if span_days <= 13 {
-        // Daily: enumerate every day
-        let mut labels = Vec::new();
-        let mut d = min_date;
-        while d <= max_date {
-            labels.push(d.format("%Y-%m-%d").to_string());
-            d += chrono::Duration::days(1);
-        }
-        labels
-    } else if span_days <= 60 {
-        // Weekly: enumerate every ISO week
-        let mut labels = Vec::new();
-        let mut d = min_date;
-        let mut last_label = String::new();
-        while d <= max_date {
-            let label = d.format("%G-W%V").to_string();
-            if label != last_label {
-                labels.push(label.clone());
-                last_label = label;
+    let all_labels: Vec<String> = match granularity {
+        Granularity::Daily => {
+            let mut labels = Vec::new();
+            let mut d = min_date;
+            while d <= max_date {
+                labels.push(d.format("%Y-%m-%d").to_string());
+                d += chrono::Duration::days(1);
             }
-            d += chrono::Duration::days(1);
+            labels
         }
-        labels
-    } else {
-        // Monthly: enumerate every month
-        let mut labels = Vec::new();
-        let (mut y, mut m) = (min_date.year(), min_date.month());
-        let (end_y, end_m) = (max_date.year(), max_date.month());
-        loop {
-            labels.push(format!("{:04}-{:02}", y, m));
-            if y == end_y && m == end_m {
-                break;
+        Granularity::Weekly => {
+            let mut labels = Vec::new();
+            let mut d = min_date;
+            let mut last_label = String::new();
+            while d <= max_date {
+                let label = d.format("%G-W%V").to_string();
+                if label != last_label {
+                    labels.push(label.clone());
+                    last_label = label;
+                }
+                d += chrono::Duration::days(1);
             }
-            m += 1;
-            if m > 12 {
-                m = 1;
-                y += 1;
-            }
+            labels
         }
-        labels
+        Granularity::Monthly => {
+            let mut labels = Vec::new();
+            let (mut y, mut m) = (min_date.year(), min_date.month());
+            let (end_y, end_m) = (max_date.year(), max_date.month());
+            loop {
+                labels.push(format!("{:04}-{:02}", y, m));
+                if y == end_y && m == end_m {
+                    break;
+                }
+                m += 1;
+                if m > 12 {
+                    m = 1;
+                    y += 1;
+                }
+            }
+            labels
+        }
+        Granularity::Quarterly => {
+            let mut labels = Vec::new();
+            let (mut y, mut q) = (min_date.year(), (min_date.month() as i32 - 1) / 3 + 1);
+            let (end_y, end_q) = (max_date.year(), (max_date.month() as i32 - 1) / 3 + 1);
+            loop {
+                labels.push(format!("{}-Q{}", y, q));
+                if y == end_y && q == end_q {
+                    break;
+                }
+                q += 1;
+                if q > 4 {
+                    q = 1;
+                    y += 1;
+                }
+            }
+            labels
+        }
+        Granularity::Yearly => (min_date.year()..=max_date.year())
+            .map(|y| format!("{}", y))
+            .collect(),
     };
 
     let max_lines = bucket_lines.values().copied().max().unwrap_or(0);
@@ -2528,28 +2602,31 @@ mod tests {
 
     #[test]
     fn test_build_timeline_monthly_granularity() {
+        // Span ~8 months: > 14 distinct weeks, ≤ 14 months → monthly
         let commits = vec![
             make_commit("2025-01-15", 10, 5),
-            make_commit("2025-03-01", 20, 3),
-            make_commit("2025-04-15", 7, 2),
+            make_commit("2025-06-01", 20, 3),
+            make_commit("2025-08-15", 7, 2),
         ];
         let timeline = build_timeline(&commits);
-        // Contiguous monthly buckets from 2025-01 to 2025-04
-        assert_eq!(timeline.len(), 4);
+        // Contiguous monthly buckets from 2025-01 to 2025-08 = 8 months
+        assert_eq!(timeline.len(), 8);
         assert!(timeline.iter().all(|t| t.label.len() == 7)); // %Y-%m
         assert_eq!(timeline[0].label, "2025-01");
         assert_eq!(timeline[0].lines, 15);
         assert_eq!(timeline[1].label, "2025-02");
         assert_eq!(timeline[1].lines, 0); // gap month
-        assert_eq!(timeline[2].label, "2025-03");
-        assert_eq!(timeline[2].lines, 23);
-        assert_eq!(timeline[3].label, "2025-04");
-        assert_eq!(timeline[3].lines, 9);
+        assert_eq!(timeline[4].label, "2025-05");
+        assert_eq!(timeline[4].lines, 0); // gap month
+        assert_eq!(timeline[5].label, "2025-06");
+        assert_eq!(timeline[5].lines, 23);
+        assert_eq!(timeline[7].label, "2025-08");
+        assert_eq!(timeline[7].lines, 9);
     }
 
     #[test]
     fn test_build_timeline_boundary_14_days() {
-        // 14 days span → weekly
+        // 15 inclusive days (> 14) → escalates to weekly
         let commits = vec![
             make_commit("2025-03-01", 10, 0),
             make_commit("2025-03-15", 5, 0),
@@ -2560,7 +2637,7 @@ mod tests {
 
     #[test]
     fn test_build_timeline_boundary_60_days() {
-        // 60 days span → weekly
+        // 61 inclusive days → > 14 days; ~9 distinct weeks ≤ 14 → weekly
         let commits = vec![
             make_commit("2025-01-01", 10, 0),
             make_commit("2025-03-02", 5, 0),
@@ -2571,19 +2648,13 @@ mod tests {
 
     #[test]
     fn test_build_timeline_boundary_61_days() {
-        // 61 days span → monthly
+        // 62 inclusive days → > 14 days; ~9 distinct weeks ≤ 14 → weekly
         let commits = vec![
             make_commit("2025-01-01", 10, 0),
             make_commit("2025-03-03", 5, 0),
         ];
         let timeline = build_timeline(&commits);
-        assert!(timeline.iter().all(|t| t.label.len() == 7));
-        // Contiguous: 2025-01, 2025-02, 2025-03
-        assert_eq!(timeline.len(), 3);
-        assert_eq!(timeline[0].label, "2025-01");
-        assert_eq!(timeline[1].label, "2025-02");
-        assert_eq!(timeline[1].lines, 0); // gap month
-        assert_eq!(timeline[2].label, "2025-03");
+        assert!(timeline.iter().all(|t| t.label.contains("-W")));
     }
 
     #[test]
@@ -2615,6 +2686,212 @@ mod tests {
         assert_eq!(timeline[13].lines, 5);
         // Gap days should have 0 lines
         assert_eq!(timeline[1].lines, 0);
+    }
+
+    #[test]
+    fn test_build_timeline_quarterly_granularity() {
+        // Span ~16 months: > 14 distinct weeks, > 14 months, ≤ 14 quarters → quarterly
+        let commits = vec![
+            make_commit("2024-01-15", 10, 5),
+            make_commit("2025-04-20", 20, 3),
+        ];
+        let timeline = build_timeline(&commits);
+        assert!(timeline.iter().all(|t| t.label.contains("-Q")));
+        // 2024-Q1 to 2025-Q2 = 6 quarters
+        assert_eq!(timeline.len(), 6);
+        assert_eq!(timeline[0].label, "2024-Q1");
+        assert_eq!(timeline[0].lines, 15);
+        assert_eq!(timeline[1].label, "2024-Q2");
+        assert_eq!(timeline[1].lines, 0);
+        assert_eq!(timeline[5].label, "2025-Q2");
+        assert_eq!(timeline[5].lines, 23);
+    }
+
+    #[test]
+    fn test_build_timeline_quarterly_contiguous_with_gaps() {
+        // Span > 14 months, ≤ 14 quarters → quarterly with gap filling
+        let commits = vec![
+            make_commit("2023-01-15", 10, 0),
+            make_commit("2024-06-15", 5, 0),
+        ];
+        let timeline = build_timeline(&commits);
+        // 2023-Q1 to 2024-Q2 = 6 quarters
+        assert_eq!(timeline.len(), 6);
+        assert!(timeline.iter().all(|t| t.label.contains("-Q")));
+        assert_eq!(timeline[0].label, "2023-Q1");
+        assert_eq!(timeline[0].lines, 10);
+        assert_eq!(timeline[1].label, "2023-Q2");
+        assert_eq!(timeline[1].lines, 0); // gap
+        assert_eq!(timeline[5].label, "2024-Q2");
+        assert_eq!(timeline[5].lines, 5);
+    }
+
+    #[test]
+    fn test_build_timeline_yearly_granularity() {
+        // Span > 14 quarters → yearly
+        let commits = vec![
+            make_commit("2020-01-01", 100, 50),
+            make_commit("2025-12-31", 20, 10),
+        ];
+        let timeline = build_timeline(&commits);
+        assert_eq!(timeline.len(), 6); // 2020..2025
+        assert!(timeline.iter().all(|t| t.label.len() == 4)); // YYYY
+        assert_eq!(timeline[0].label, "2020");
+        assert_eq!(timeline[0].lines, 150);
+        assert_eq!(timeline[1].label, "2021");
+        assert_eq!(timeline[1].lines, 0); // gap
+        assert_eq!(timeline[5].label, "2025");
+        assert_eq!(timeline[5].lines, 30);
+    }
+
+    #[test]
+    fn test_build_timeline_yearly_contiguous_with_gaps() {
+        // Multi-decade span
+        let commits = vec![
+            make_commit("2015-06-01", 10, 0),
+            make_commit("2025-06-01", 5, 0),
+        ];
+        let timeline = build_timeline(&commits);
+        assert_eq!(timeline.len(), 11); // 2015..2025
+        assert!(timeline.iter().all(|t| t.label.len() == 4));
+        assert_eq!(timeline[0].label, "2015");
+        assert_eq!(timeline[10].label, "2025");
+        // All gap years should be 0
+        for entry in timeline.iter().take(10).skip(1) {
+            assert_eq!(entry.lines, 0);
+        }
+    }
+
+    #[test]
+    fn test_build_timeline_boundary_14_days_inclusive_daily() {
+        // Exactly 14 inclusive days → daily
+        let commits = vec![
+            make_commit("2025-03-01", 10, 0),
+            make_commit("2025-03-14", 5, 0),
+        ];
+        let timeline = build_timeline(&commits);
+        assert_eq!(timeline.len(), 14);
+        assert!(timeline.iter().all(|t| t.label.len() == 10)); // YYYY-MM-DD
+    }
+
+    #[test]
+    fn test_build_timeline_boundary_15_days_to_weekly() {
+        // 15 inclusive days → > 14, escalate to weekly
+        let commits = vec![
+            make_commit("2025-03-01", 10, 0),
+            make_commit("2025-03-15", 5, 0),
+        ];
+        let timeline = build_timeline(&commits);
+        assert!(timeline.iter().all(|t| t.label.contains("-W")));
+    }
+
+    #[test]
+    fn test_build_timeline_boundary_14_weeks_to_weekly() {
+        // Span producing exactly 14 distinct ISO weeks → weekly
+        // 2025-01-06 (W02) to 2025-04-13 (W15) = 14 distinct weeks
+        let commits = vec![
+            make_commit("2025-01-06", 10, 0), // W02
+            make_commit("2025-04-13", 5, 0),  // W15
+        ];
+        let timeline = build_timeline(&commits);
+        assert!(timeline.iter().all(|t| t.label.contains("-W")));
+        assert_eq!(timeline.len(), 14);
+    }
+
+    #[test]
+    fn test_build_timeline_boundary_15_weeks_to_monthly() {
+        // Span producing > 14 distinct ISO weeks → monthly (if ≤ 14 months)
+        let commits = vec![
+            make_commit("2025-01-01", 10, 0),
+            make_commit("2025-04-30", 5, 0),
+        ];
+        let timeline = build_timeline(&commits);
+        // Jan-Apr = 4 months, but > 14 weeks → monthly
+        // Check label format: YYYY-MM (7 chars)
+        assert!(timeline.iter().all(|t| t.label.len() == 7));
+    }
+
+    #[test]
+    fn test_build_timeline_boundary_15_months_to_quarterly() {
+        // 15 distinct months → quarterly
+        let commits = vec![
+            make_commit("2024-01-01", 10, 0),
+            make_commit("2025-03-31", 5, 0),
+        ];
+        let timeline = build_timeline(&commits);
+        // 15 months > 14 → quarterly. Q1 2024 to Q1 2025 = 5 quarters
+        assert!(timeline.iter().all(|t| t.label.contains("-Q")));
+    }
+
+    #[test]
+    fn test_build_timeline_boundary_14_months_stays_monthly() {
+        // Exactly 14 distinct months → monthly
+        let commits = vec![
+            make_commit("2024-01-01", 10, 0),
+            make_commit("2025-02-28", 5, 0),
+        ];
+        let timeline = build_timeline(&commits);
+        // 14 months ≤ 14 → monthly
+        assert_eq!(timeline.len(), 14);
+        assert!(timeline.iter().all(|t| t.label.len() == 7));
+    }
+
+    #[test]
+    fn test_build_timeline_boundary_14_quarters_stays_quarterly() {
+        // Exactly 14 distinct quarters → quarterly
+        // Q1 2022 to Q2 2025 = 14 quarters
+        let commits = vec![
+            make_commit("2022-01-15", 10, 0),
+            make_commit("2025-06-15", 5, 0),
+        ];
+        let timeline = build_timeline(&commits);
+        assert_eq!(timeline.len(), 14);
+        assert!(timeline.iter().all(|t| t.label.contains("-Q")));
+    }
+
+    #[test]
+    fn test_build_timeline_boundary_15_quarters_to_yearly() {
+        // 15 distinct quarters → yearly
+        let commits = vec![
+            make_commit("2021-01-01", 10, 0),
+            make_commit("2024-09-30", 5, 0),
+        ];
+        let timeline = build_timeline(&commits);
+        // Q1 2021 to Q3 2024 = 15 quarters > 14 → yearly
+        assert!(timeline.iter().all(|t| t.label.len() == 4)); // YYYY
+        assert_eq!(timeline.len(), 4); // 2021, 2022, 2023, 2024
+    }
+
+    #[test]
+    fn test_build_timeline_iso_week_year_boundary() {
+        // Dec 29, 2024 is ISO week 2025-W01 (Mon Dec 30 is in W01)
+        // This tests that ISO week-year (%G) is used, not calendar year (%Y)
+        let commits = vec![
+            make_commit("2024-12-25", 10, 0),
+            make_commit("2025-01-05", 5, 0),
+        ];
+        let timeline = build_timeline(&commits);
+        // 12 inclusive days → daily
+        assert_eq!(timeline.len(), 12);
+        assert!(timeline.iter().all(|t| t.label.len() == 10));
+    }
+
+    #[test]
+    fn test_build_timeline_iso_week_year_boundary_weekly() {
+        // Test ISO week-year boundary in weekly mode
+        // Dec 20, 2024 to Jan 20, 2025 = 32 inclusive days → > 14 → weekly
+        let commits = vec![
+            make_commit("2024-12-20", 10, 0),
+            make_commit("2025-01-20", 5, 0),
+        ];
+        let timeline = build_timeline(&commits);
+        assert!(timeline.iter().all(|t| t.label.contains("-W")));
+        // Should have labels crossing ISO year boundary:
+        // 2024-W51, 2024-W52, 2025-W01, 2025-W02, 2025-W03, 2025-W04
+        let has_2024 = timeline.iter().any(|t| t.label.starts_with("2024-W"));
+        let has_2025 = timeline.iter().any(|t| t.label.starts_with("2025-W"));
+        assert!(has_2024, "Should have 2024 ISO week labels");
+        assert!(has_2025, "Should have 2025 ISO week labels");
     }
 
     // ========================================================================
