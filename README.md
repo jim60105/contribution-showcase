@@ -1,6 +1,6 @@
 # contribution-showcase
 
-<img width="1672" height="941" alt="ChatGPT Image 2026年5月13日 下午12_08_35" src="https://github.com/user-attachments/assets/539c9059-9c00-41a5-b199-968543214884" />
+<img width="1672" height="941" alt="image" src="https://github.com/user-attachments/assets/539c9059-9c00-41a5-b199-968543214884" />
 
 [![Build, Test, Audit & Coverage](https://github.com/jim60105/contribution-showcase/actions/workflows/build-test-audit-coverage.yml/badge.svg)](https://github.com/jim60105/contribution-showcase/actions/workflows/build-test-audit-coverage.yml)
 [![Release](https://github.com/jim60105/contribution-showcase/actions/workflows/release.yml/badge.svg)](https://github.com/jim60105/contribution-showcase/actions/workflows/release.yml)
@@ -64,7 +64,7 @@ title = "My Contribution Showcase"
 
 # 輸出設定（選填）
 [output]
-path = "dist/index.html"     # 預設值
+path = "dist/index.html"
 
 # 全域篩選條件（選填）
 [filters]
@@ -80,8 +80,8 @@ name = "my-backend"
 path = "../my-backend"
 description = "REST API server"
 branch = "main"
-coverage_command = "cargo llvm-cov --html"
-coverage_result_path = "target/llvm-cov/html/index.html"
+coverage_command = "cargo llvm-cov --cobertura --output-path coverage.xml"
+coverage_result_path = "coverage.xml"
 ```
 
 **必填欄位：** `name`、`path`。其餘欄位皆為選填。
@@ -111,19 +111,6 @@ contribution-showcase init [OPTIONS]
 | 選項 | 說明 |
 |---|---|
 | `-o, --output <FILE>` | 設定檔輸出路徑（預設：`showcase.toml`） |
-
-## 開發
-
-```bash
-# 執行測試
-cargo test
-
-# 格式化程式碼
-cargo fmt
-
-# 靜態分析
-cargo clippy
-```
 
 ## License
 
