@@ -84,11 +84,28 @@ branch = "main"
 # coverage_command [optional] — Shell command that produces a test-coverage
 # report. The tool runs this command inside the project directory and then
 # reads the result file specified by coverage_result_path.
-# coverage_command = "cargo llvm-cov --html"
+#
+# Supported output formats (the tool parses these to extract line coverage %):
+#   1. Cobertura XML  — any .xml file with <coverage line-rate="...">
+#   2. Istanbul JSON   — coverage-summary.json with { "total": { "lines": { "pct": N } } }
+#
+# Auto-discovery (when coverage_result_path is omitted):
+#   The tool checks <project>/coverage.xml first, then
+#   <project>/coverage/coverage-summary.json.
+#
+# Examples:
+#   Rust (cargo-llvm-cov):   "cargo llvm-cov --cobertura --output-path coverage.xml"
+#   Python (pytest-cov):     "pytest --cov=src --cov-report=xml:coverage.xml"
+#   Node.js (vitest):        "npx vitest run --coverage"
+#   Node.js (jest):          "npx jest --coverage"
+# coverage_command = "cargo llvm-cov --cobertura --output-path coverage.xml"
 
 # coverage_result_path [optional] — Path (relative to the project root) where
 # the coverage report is written after running coverage_command.
-# coverage_result_path = "target/llvm-cov/html/index.html"
+# Must be a .xml (Cobertura) or .json (Istanbul) file.
+# When omitted, auto-discovery checks coverage.xml and
+# coverage/coverage-summary.json in the project root.
+# coverage_result_path = "coverage.xml"
 
 # --- Project 2 ---------------------------------------------------------------
 [[projects]]
@@ -99,6 +116,6 @@ description = "Single-page application for the operator console"
 
 # branch is omitted here — the tool will use whatever branch is checked out.
 
-# Coverage example for a Node.js / Vitest project:
+# Coverage example for a Node.js / Vitest project (Istanbul JSON output):
 # coverage_command = "npx vitest run --coverage"
-# coverage_result_path = "coverage/index.html"
+# coverage_result_path = "coverage/coverage-summary.json"
