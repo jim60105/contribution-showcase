@@ -1,5 +1,7 @@
 # contribution-showcase
 
+<img width="1672" height="941" alt="ChatGPT Image 2026年5月13日 下午12_08_35" src="https://github.com/user-attachments/assets/539c9059-9c00-41a5-b199-968543214884" />
+
 [![Build, Test, Audit & Coverage](https://github.com/jim60105/contribution-showcase/actions/workflows/build-test-audit-coverage.yml/badge.svg)](https://github.com/jim60105/contribution-showcase/actions/workflows/build-test-audit-coverage.yml)
 [![Release](https://github.com/jim60105/contribution-showcase/actions/workflows/release.yml/badge.svg)](https://github.com/jim60105/contribution-showcase/actions/workflows/release.yml)
 [![codecov](https://codecov.io/gh/jim60105/contribution-showcase/graph/badge.svg?token=yAi5wZRrEK)](https://codecov.io/gh/jim60105/contribution-showcase)
