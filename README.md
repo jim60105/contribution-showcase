@@ -1,6 +1,6 @@
 # contribution-showcase
 
-<img width="1672" height="941" alt="image" src="https://github.com/user-attachments/assets/539c9059-9c00-41a5-b199-968543214884" />
+![Preview image](docs/preview.png)
 
 [![GitHub Pages](https://img.shields.io/badge/Live_Demo-GitHub_Pages-blue)](https://jim60105.github.io/contribution-showcase/contribution-showcase.html)
 [![Build, Test, Audit & Coverage](https://github.com/jim60105/contribution-showcase/actions/workflows/build-test-audit-coverage.yml/badge.svg)](https://github.com/jim60105/contribution-showcase/actions/workflows/build-test-audit-coverage.yml)
