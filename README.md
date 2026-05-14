@@ -3,6 +3,7 @@
 ![Preview image](docs/preview.png)
 
 [![GitHub Pages](https://img.shields.io/badge/Live_Demo-GitHub_Pages-blue)](https://jim60105.github.io/contribution-showcase/contribution-showcase.html)
+[![crates.io](https://img.shields.io/crates/v/contribution-showcase)](https://crates.io/crates/contribution-showcase)
 [![Build, Test, Audit & Coverage](https://github.com/jim60105/contribution-showcase/actions/workflows/build-test-audit-coverage.yml/badge.svg)](https://github.com/jim60105/contribution-showcase/actions/workflows/build-test-audit-coverage.yml)
 [![Release](https://github.com/jim60105/contribution-showcase/actions/workflows/release.yml/badge.svg)](https://github.com/jim60105/contribution-showcase/actions/workflows/release.yml)
 [![codecov](https://codecov.io/gh/jim60105/contribution-showcase/graph/badge.svg?token=yAi5wZRrEK)](https://codecov.io/gh/jim60105/contribution-showcase)
@@ -34,6 +35,14 @@
 - Git
 
 ### 安裝與建置
+
+**從 crates.io 安裝（推薦）：**
+
+```bash
+cargo install contribution-showcase
+```
+
+**從原始碼建置：**
 
 ```bash
 cargo build --release
