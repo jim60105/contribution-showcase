@@ -3181,15 +3181,13 @@ mod tests {
         // Phase 1 test: coverage_command generates a file; no framework markers.
         // If Phase 1 gate were still present, command wouldn't run → file missing → None.
         let dir = tempfile::tempdir().unwrap();
-        let cov_path = dir.path().join("coverage.xml");
-        let cmd = format!(
-            "printf '<coverage line-rate=\"0.75\"></coverage>' > {}",
-            cov_path.display()
-        );
+        // Use a relative path so the shell command works cross-platform
+        // (current_dir is set to project path by collect_test_metrics)
+        let cmd = "echo '<coverage line-rate=\"0.75\"></coverage>' > coverage.xml";
         let config = make_config_single_project(
             "test-proj",
             dir.path().to_str().unwrap(),
-            Some(&cmd),
+            Some(cmd),
             Some("coverage.xml"),
         );
         let metrics = collect_test_metrics(&config);
