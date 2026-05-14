@@ -508,6 +508,7 @@ fn build_type_breakdown(commits: &[CommitEntry]) -> Vec<TypeBreakdown> {
 fn build_project_data(
     project_name: &str,
     description: &str,
+    url: Option<&str>,
     commits: &[CommitEntry],
     proposals: &[ProposalEntry],
 ) -> ProjectData {
@@ -555,6 +556,7 @@ fn build_project_data(
         lines_added,
         lines_removed,
         top_types,
+        url: url.map(|s| s.to_string()),
     }
 }
 
@@ -893,6 +895,7 @@ pub fn collect(config: &Config) -> Result<ShowcaseData> {
             build_project_data(
                 &p.name,
                 p.description.as_deref().unwrap_or(""),
+                p.url.as_deref(),
                 &all_commits,
                 &all_proposals,
             )
@@ -1488,7 +1491,7 @@ mod tests {
                 deletions: 5,
             },
         ];
-        let data = build_project_data("proj", "Test project", &commits, &[]);
+        let data = build_project_data("proj", "Test project", None, &commits, &[]);
         // top_types ordered by descending lines
         assert_eq!(data.top_types.len(), 3);
         assert_eq!(data.top_types[0].commit_type, "fix");
@@ -1519,7 +1522,7 @@ mod tests {
                 deletions: 0,
             })
             .collect();
-        let data = build_project_data("proj", "Test project", &commits, &[]);
+        let data = build_project_data("proj", "Test project", None, &commits, &[]);
         assert_eq!(data.top_types.len(), 5);
         // First should be the largest lines (style: 70, ci: 60, chore: 50, test: 40, docs: 30)
         assert!(data.top_types[0].lines >= data.top_types[1].lines);
@@ -3119,7 +3122,7 @@ mod tests {
                 deletions: 3,
             },
         ];
-        let data = build_project_data("proj-a", "Project A", &commits, &[]);
+        let data = build_project_data("proj-a", "Project A", None, &commits, &[]);
         assert_eq!(data.commit_count, 1);
         assert_eq!(data.lines_added, 10);
         assert_eq!(data.lines_removed, 5);
@@ -3143,7 +3146,7 @@ mod tests {
                 task_count: 2,
             },
         ];
-        let data = build_project_data("proj", "Proj", &[], &proposals);
+        let data = build_project_data("proj", "Proj", None, &[], &proposals);
         assert_eq!(data.proposal_count, 1);
     }
 
@@ -3167,6 +3170,7 @@ mod tests {
                 branch: None,
                 coverage_command: coverage_command.map(|s| s.to_string()),
                 coverage_result_path: coverage_result_path.map(|s| s.to_string()),
+                url: None,
             }],
             filters: None,
         }

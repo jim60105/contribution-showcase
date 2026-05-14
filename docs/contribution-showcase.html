@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>貢獻總覽</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%93%8A%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono&family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@400;700&family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f8f7f4;
+      --surface: #ffffff;
+      --fg: #1a1916;
+      --muted: #6b6964;
+      --border: #e8e5df;
+      --accent: #2563eb;
+
+      --feat: #2f7d4a;
+      --fix: #b53a2a;
+      --docs: #6366f1;
+      --refactor: #d97706;
+      --test: #0891b2;
+      --chore: #6b7280;
+      --ci: #7c3aed;
+      --build: #ea580c;
+      --style: #db2777;
+      --perf: #059669;
+      --other: #9a9a95;
+
+      --font-display: 'Playfair Display', 'Noto Serif TC', Georgia, serif;
+      --font-body: 'Inter', 'Noto Sans TC', system-ui, sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+
+      --fs-display: clamp(52px, 6vw, 84px);
+      --fs-h1: clamp(36px, 4vw, 52px);
+      --fs-h2: clamp(28px, 3vw, 40px);
+      --fs-body: 22px;
+      --fs-small: 20px;
+      --fs-xs: 18px;
+
+      --gap-xs: 8px;
+      --gap-sm: 12px;
+      --gap-md: 20px;
+      --gap-lg: 32px;
+      --gap-xl: 56px;
+      --gap-2xl: 96px;
+      --container: 1120px;
+      --radius: 12px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-body);
+      font-size: var(--fs-body);
+      color: var(--fg);
+      background: var(--bg);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    main {
+      scroll-snap-type: y mandatory;
+      overflow-y: auto;
+      height: 100vh;
+    }
+
+    .slide {
+      min-height: 100vh;
+      scroll-snap-align: start;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: var(--gap-xl) var(--gap-md);
+      position: relative;
+    }
+
+    .slide--scrollable {
+      justify-content: flex-start;
+      padding-top: var(--gap-lg);
+    }
+
+    .slide-inner {
+      width: 100%;
+      max-width: var(--container);
+    }
+
+    .scroll-container {
+      width: 100%;
+      max-width: var(--container);
+      max-height: calc(100vh - 120px);
+      overflow-y: auto;
+      overflow-x: auto;
+      padding-right: var(--gap-xs);
+    }
+
+    /* Typography */
+    .display {
+      font-family: var(--font-display);
+      font-size: var(--fs-display);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      line-height: 1.1;
+    }
+
+    .h1 {
+      font-family: var(--font-display);
+      font-size: var(--fs-h1);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: var(--gap-lg);
+    }
+
+    .h2 {
+      font-family: var(--font-display);
+      font-size: var(--fs-h2);
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+
+    .caps {
+      font-size: var(--fs-xs);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .xs { font-size: var(--fs-xs); }
+    .small { font-size: var(--fs-small); }
+    .muted { color: var(--muted); }
+    .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+    .metric {
+      font-family: var(--font-display);
+      font-size: clamp(40px, 5vw, 60px);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      line-height: 1;
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* Navigation Dots */
+    .slide-nav {
+      position: fixed;
+      right: 24px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      z-index: 100;
+    }
+
+    .nav-dot {
+      position: relative;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 2px solid var(--muted);
+      background: transparent;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      padding: 0;
+    }
+
+    .nav-dot[aria-current="true"] {
+      background: var(--fg);
+      border-color: var(--fg);
+      width: 12px;
+      height: 12px;
+    }
+
+    .nav-dot:not([aria-current="true"]) {
+      width: 10px;
+      height: 10px;
+    }
+
+    .nav-dot-label {
+      position: absolute;
+      right: 24px;
+      top: 50%;
+      transform: translateY(-50%);
+      white-space: nowrap;
+      font-size: var(--fs-xs);
+      color: var(--fg);
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      pointer-events: none;
+      background: var(--surface);
+      padding: 2px 8px;
+      border-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .nav-dot:hover .nav-dot-label,
+    .nav-dot:focus-visible .nav-dot-label { opacity: 1; }
+
+    .nav-dot:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 3px;
+    }
+
+    /* KPI Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: var(--gap-md);
+      width: 100%;
+      max-width: var(--container);
+    }
+
+    .kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: var(--gap-md) var(--gap-md) var(--gap-lg);
+      display: flex;
+      flex-direction: column;
+      gap: var(--gap-xs);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .kpi-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+    }
+
+    .kpi-card--green { background: #f0fdf4; }
+    .kpi-card--red { background: #fef2f2; }
+    .kpi-card--accent { background: #eff6ff; }
+
+    .kpi-value { font-size: clamp(32px, 4vw, 48px); font-weight: 700; font-family: var(--font-display); line-height: 1.2; }
+    .kpi-unit { font-size: var(--fs-small); color: var(--muted); }
+
+    /* Timeline */
+    .timeline-chart {
+      display: flex;
+      align-items: flex-end;
+      gap: 2px;
+      height: 240px;
+      width: 100%;
+      max-width: var(--container);
+      padding-bottom: 40px;
+      position: relative;
+    }
+
+    .bar-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      height: 100%;
+      justify-content: flex-end;
+      position: relative;
+    }
+
+    .bar {
+      width: 100%;
+      background: rgba(37, 99, 235, 0.25);
+      border-radius: 3px 3px 0 0;
+      transition: height 1s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .bar:not(.bar--zero) { min-height: 2px; }
+
+    .bar--peak { background: var(--accent); }
+
+    .bar-label {
+      position: absolute;
+      bottom: -36px;
+      font-size: var(--fs-xs);
+      color: var(--muted);
+      transform: rotate(-45deg);
+      transform-origin: top left;
+      white-space: nowrap;
+    }
+
+    .peak-annotation {
+      position: absolute;
+      top: -24px;
+      font-size: var(--fs-xs);
+      color: var(--accent);
+      white-space: nowrap;
+      font-weight: 600;
+    }
+
+    /* Type Breakdown */
+    .breakdown-list {
+      width: 100%;
+      max-width: var(--container);
+      display: flex;
+      flex-direction: column;
+      gap: var(--gap-sm);
+    }
+
+    .breakdown-row {
+      display: grid;
+      grid-template-columns: 180px 1fr 60px;
+      align-items: center;
+      gap: var(--gap-sm);
+    }
+
+    .breakdown-label { font-size: var(--fs-small); font-weight: 500; white-space: nowrap; }
+
+    .breakdown-bar-track {
+      height: 28px;
+      background: var(--bg);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .breakdown-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .breakdown-pct { font-size: var(--fs-small); color: var(--muted); text-align: right; font-family: var(--font-mono); }
+
+    /* Projects */
+    .project-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: var(--gap-md);
+      width: 100%;
+      max-width: var(--container);
+    }
+
+    .project-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: var(--gap-md);
+      display: flex;
+      flex-direction: column;
+      gap: var(--gap-sm);
+    }
+
+    .project-card:hover {
+      box-shadow: 0 4px 16px rgba(0,0,0,0.05);
+    }
+
+    .project-stats {
+      display: flex;
+      gap: var(--gap-md);
+      font-size: var(--fs-small);
+      color: var(--muted);
+    }
+
+    .project-lines { font-size: var(--fs-small); font-family: var(--font-mono); }
+    .line-add { color: var(--feat); }
+    .line-del { color: var(--fix); }
+
+    .type-badges { display: flex; flex-wrap: wrap; gap: var(--gap-xs); margin-top: var(--gap-xs); }
+
+    /* Badges */
+    .badge {
+      display: inline-block;
+      font-size: var(--fs-xs);
+      font-weight: 500;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    .badge-feat { color: var(--feat); background: #2f7d4a1a; }
+    .badge-fix { color: var(--fix); background: #b53a2a1a; }
+    .badge-docs { color: var(--docs); background: #6366f11a; }
+    .badge-refactor { color: var(--refactor); background: #d977061a; }
+    .badge-test { color: var(--test); background: #0891b21a; }
+    .badge-chore { color: var(--chore); background: #6b72801a; }
+    .badge-ci { color: var(--ci); background: #7c3aed1a; }
+    .badge-build { color: var(--build); background: #ea580c1a; }
+    .badge-style { color: var(--style); background: #db27771a; }
+    .badge-perf { color: var(--perf); background: #0596691a; }
+    .badge-other { color: var(--other); background: #9a9a951a; }
+
+    /* Tables */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: var(--fs-small);
+    }
+
+    .data-table th {
+      text-align: left;
+      padding: var(--gap-sm) var(--gap-sm);
+      border-bottom: 2px solid var(--border);
+      font-weight: 600;
+      white-space: nowrap;
+      position: sticky;
+      top: 0;
+      background: var(--surface);
+      z-index: 1;
+    }
+
+    .data-table th button {
+      background: none;
+      border: none;
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      padding: 0;
+      color: inherit;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .data-table th button:hover { color: var(--accent); }
+
+    .sort-arrow { font-size: 18px; opacity: 0.6; }
+
+    .data-table td {
+      padding: var(--gap-sm) var(--gap-sm);
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    .data-table .date-cell {
+      white-space: nowrap;
+      min-width: calc(10ch + var(--gap-sm) + var(--gap-sm));
+    }
+
+    .data-table tr:nth-child(even) td { background: var(--bg); }
+    .data-table tr:hover td { background: var(--border); }
+
+    /* Animations */
+    .animate {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+    }
+
+    .animate.in-view {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .stagger-1 { transition-delay: 100ms; }
+    .stagger-2 { transition-delay: 200ms; }
+    .stagger-3 { transition-delay: 300ms; }
+    .stagger-4 { transition-delay: 400ms; }
+    .stagger-5 { transition-delay: 500ms; }
+    .stagger-6 { transition-delay: 600ms; }
+
+    /* Cover */
+    .cover-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: var(--gap-md);
+    }
+
+    .cover-subtitle { color: var(--muted); font-size: var(--fs-body); }
+    .cover-generated { color: var(--muted); font-size: var(--fs-xs); }
+
+    .hero-metric {
+      margin-top: var(--gap-xl);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: var(--gap-xs);
+    }
+
+    .hero-metric .metric { font-size: clamp(60px, 8vw, 100px); }
+    .hero-metric-label { color: var(--muted); font-size: var(--fs-body); }
+
+    .scroll-indicator {
+      position: absolute;
+      bottom: var(--gap-lg);
+      font-size: 28px;
+      color: var(--muted);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; transform: translateY(0); }
+      50% { opacity: 1; transform: translateY(6px); }
+    }
+
+    /* Show more button */
+    .show-more-btn {
+      display: block;
+      margin: var(--gap-md) auto 0;
+      padding: var(--gap-xs) var(--gap-md);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: var(--fs-small);
+      cursor: pointer;
+      color: var(--accent);
+      font-weight: 500;
+      transition: background 0.2s;
+    }
+
+    .show-more-btn:hover { background: var(--bg); }
+
+    .empty-state {
+      text-align: center;
+      color: var(--muted);
+      padding: var(--gap-xl);
+      font-size: var(--fs-body);
+    }
+
+    /* Coverage bars */
+    .coverage-bar-track {
+      width: 100%;
+      max-width: 120px;
+      height: 18px;
+      background: var(--bg);
+      border-radius: 4px;
+      overflow: hidden;
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    .coverage-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+      transition: width 0.6s ease;
+    }
+
+    .coverage-cell {
+      display: flex;
+      align-items: center;
+      gap: var(--gap-xs);
+      font-family: var(--font-mono);
+      font-size: var(--fs-xs);
+    }
+
+    .test-kpi-row {
+      display: flex;
+      gap: var(--gap-md);
+      margin-bottom: var(--gap-lg);
+      flex-wrap: wrap;
+    }
+
+    .test-kpi-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: var(--gap-sm) var(--gap-md);
+      text-align: center;
+      flex: 1;
+      min-width: 150px;
+    }
+
+    .test-kpi-value {
+      font-family: var(--font-display);
+      font-size: clamp(28px, 3vw, 40px);
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .test-kpi-label {
+      font-size: var(--fs-xs);
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
+    /* Responsive */
+    @media (min-width: 601px) {
+      .project-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (min-width: 901px) {
+      .project-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+
+    @media (max-width: 1199px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 920px) {
+      main { scroll-snap-type: none; height: auto; }
+      .slide { min-height: auto; padding: var(--gap-lg) var(--gap-md); }
+      .slide-nav { display: none; }
+      .kpi-grid { grid-template-columns: 1fr; }
+      .breakdown-row { grid-template-columns: 120px 1fr 50px; }
+      .scroll-container { max-height: none; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .animate { opacity: 1 !important; transform: none !important; transition: none !important; }
+      .bar { transition: none !important; }
+      .breakdown-bar-fill { transition: none !important; }
+      .scroll-indicator { animation: none; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="slide-nav" aria-label="頁面導覽" id="slideNav"></nav>
+
+  <main id="main">
+    <section class="slide" id="slide-cover">
+      <div class="cover-content">
+        <h1 class="display animate" id="coverTitle"></h1>
+        <p class="cover-subtitle animate stagger-1" id="coverSubtitle"></p>
+        <p class="cover-generated animate stagger-2" id="coverGenerated"></p>
+        <div class="hero-metric animate stagger-3">
+          <span class="metric" id="heroCounter" data-target="0">0</span>
+          <span class="hero-metric-label">次提交</span>
+        </div>
+      </div>
+      <div class="scroll-indicator" aria-hidden="true">↓</div>
+    </section>
+
+    <section class="slide" id="slide-kpi">
+      <div class="slide-inner">
+        <h2 class="h1 animate">關鍵指標</h2>
+        <div class="kpi-grid" id="kpiGrid"></div>
+      </div>
+    </section>
+
+    <section class="slide" id="slide-timeline">
+      <div class="slide-inner">
+        <h2 class="h1 animate">時間軸</h2>
+        <div class="timeline-chart animate stagger-1" id="timelineChart"></div>
+      </div>
+    </section>
+
+    <section class="slide" id="slide-breakdown">
+      <div class="slide-inner">
+        <h2 class="h1 animate">貢獻類型</h2>
+        <div class="breakdown-list" id="breakdownList"></div>
+      </div>
+    </section>
+
+    <section class="slide slide--scrollable" id="slide-projects">
+      <div class="slide-inner">
+        <h2 class="h1 animate">專案</h2>
+        <div class="scroll-container" id="projectGridContainer">
+          <div class="project-grid" id="projectGrid"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="slide slide--scrollable" id="slide-tests">
+      <div class="slide-inner">
+        <h2 class="h1 animate">測試</h2>
+        <div class="scroll-container" id="testMetricsContainer"></div>
+      </div>
+    </section>
+
+    <section class="slide slide--scrollable" id="slide-proposals">
+      <div class="slide-inner">
+        <h2 class="h1 animate">OpenSpec 提案</h2>
+        <div class="scroll-container" id="proposalContainer"></div>
+      </div>
+    </section>
+
+    <section class="slide slide--scrollable" id="slide-commits">
+      <div class="slide-inner">
+        <h2 class="h1 animate">提交紀錄</h2>
+        <div class="scroll-container" id="commitContainer"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    var DATA = {"title":"Contribution Showcase","author":"ALL","date_range":"2026-04-06 ~ 2026-05-14","generated_at":"2026-05-14 10:04","summary":{"total_commits":479,"total_repos":2,"total_proposals":145,"lines_added":211511,"lines_removed":39864,"avg_daily_lines":8379.166666666666},"timeline":[{"label":"2026-W15","lines":70395,"height":98.84022970753009},{"label":"2026-W16","lines":71221,"height":100.0},{"label":"2026-W17","lines":4776,"height":6.705887308518554},{"label":"2026-W18","lines":40120,"height":56.33169991996743},{"label":"2026-W19","lines":53218,"height":74.72234312913326},{"label":"2026-W20","lines":11645,"height":16.35051459541427}],"type_breakdown":[{"commit_type":"feat","label":"新功能","lines":160113,"percentage":63.69487817006464},{"commit_type":"refactor","label":"重構","lines":27651,"percentage":10.999900546991546},{"commit_type":"docs","label":"文件","lines":20474,"percentage":8.144803580308304},{"commit_type":"chore","label":"維護","lines":14420,"percentage":5.73644952759821},{"commit_type":"fix","label":"錯誤修復","lines":11679,"percentage":4.646046742913973},{"commit_type":"test","label":"測試","lines":10307,"percentage":4.100248632521134},{"commit_type":"other","label":"其他","lines":5510,"percentage":2.191944306315266},{"commit_type":"style","label":"格式","lines":563,"percentage":0.2239681750372949},{"commit_type":"ci","label":"CI/CD","lines":561,"percentage":0.22317255096966684},{"commit_type":"build","label":"建構","lines":97,"percentage":0.03858776727996022}],"projects":[{"name":"HeartReverie","description":"AI-driven interactive fiction engine — Deno/Hono backend, Vue 3 frontend, Vento prompt templates, plugin system","commit_count":341,"proposal_count":115,"lines_added":167976,"lines_removed":31663,"top_types":[{"commit_type":"feat","label":"新功能","lines":127850,"percentage":64.04059327085389},{"commit_type":"refactor","label":"重構","lines":25485,"percentage":12.765541802954333},{"commit_type":"docs","label":"文件","lines":14617,"percentage":7.321715696832783},{"commit_type":"chore","label":"維護","lines":10505,"percentage":5.261997906220729},{"commit_type":"test","label":"測試","lines":10307,"percentage":5.162818888093008}]},{"name":"HeartReverie_Plugins","description":"Optional plugin set — advanced prompt strategies, YAML state tracking, frontend UI panels","commit_count":138,"proposal_count":30,"lines_added":43535,"lines_removed":8201,"top_types":[{"commit_type":"feat","label":"新功能","lines":32263,"percentage":62.360831915880624},{"commit_type":"docs","label":"文件","lines":5857,"percentage":11.320937065099738},{"commit_type":"other","label":"其他","lines":4284,"percentage":8.28050100510283},{"commit_type":"chore","label":"維護","lines":3915,"percentage":7.567264573991031},{"commit_type":"fix","label":"錯誤修復","lines":3248,"percentage":6.278026905829597}]}],"proposals":[{"slug":"hook-inspector","date":"2026-05-14","project":"HeartReverie","description":"","task_count":51},{"slug":"hook-inspector-logger","date":"2026-05-14","project":"HeartReverie_Plugins","description":"","task_count":6},{"slug":"lower-coverage-threshold-to-85","date":"2026-05-13","project":"HeartReverie","description":"","task_count":5},{"slug":"autoresize-prompt-and-chat-textareas","date":"2026-05-12","project":"HeartReverie","description":"","task_count":25},{"slug":"expose-builtin-plugin-settings","date":"2026-05-11","project":"HeartReverie","description":"","task_count":32},{"slug":"expose-external-plugin-settings","date":"2026-05-11","project":"HeartReverie_Plugins","description":"","task_count":31},{"slug":"name-system-prompt-blocks","date":"2026-05-10","project":"HeartReverie","description":"","task_count":15},{"slug":"palette-css-var-hygiene-plugin-settings","date":"2026-05-10","project":"HeartReverie","description":"","task_count":8},{"slug":"palette-css-var-hygiene-reader-sweep","date":"2026-05-10","project":"HeartReverie","description":"","task_count":30},{"slug":"remove-default-max-completion-tokens","date":"2026-05-10","project":"HeartReverie","description":"","task_count":32},{"slug":"theme-sort-order","date":"2026-05-10","project":"HeartReverie","description":"","task_count":6},{"slug":"fix-status-outfit-field-mapping","date":"2026-05-10","project":"HeartReverie_Plugins","description":"","task_count":19},{"slug":"image-source-preservation","date":"2026-05-10","project":"HeartReverie_Plugins","description":"","task_count":20},{"slug":"lightbox-side-panel-and-button-feedback","date":"2026-05-10","project":"HeartReverie_Plugins","description":"","task_count":33},{"slug":"palette-css-var-hygiene-state","date":"2026-05-10","project":"HeartReverie_Plugins","description":"","task_count":14},{"slug":"palette-css-var-hygiene","date":"2026-05-10","project":"HeartReverie_Plugins","description":"","task_count":7},{"slug":"restyle-output-format-prompts","date":"2026-05-10","project":"HeartReverie_Plugins","description":"","task_count":35},{"slug":"sd-webui-connected-prompt-flag","date":"2026-05-10","project":"HeartReverie_Plugins","description":"","task_count":23},{"slug":"unify-image-block-format","date":"2026-05-10","project":"HeartReverie_Plugins","description":"","task_count":28},{"slug":"branch-copy-images","date":"2026-05-09","project":"HeartReverie","description":"","task_count":10},{"slug":"context-compaction-settings-ui","date":"2026-05-09","project":"HeartReverie","description":"","task_count":30},{"slug":"hide-sidebar-during-llm-generation","date":"2026-05-09","project":"HeartReverie","description":"","task_count":21},{"slug":"fix-lightbox-and-nl-prompt","date":"2026-05-09","project":"HeartReverie_Plugins","description":"","task_count":34},{"slug":"image-design-action","date":"2026-05-09","project":"HeartReverie_Plugins","description":"","task_count":19},{"slug":"image-metadata-reconcile","date":"2026-05-09","project":"HeartReverie_Plugins","description":"","task_count":28},{"slug":"image-ux-fixes","date":"2026-05-09","project":"HeartReverie_Plugins","description":"","task_count":17},{"slug":"lightbox-pan-and-conversion-metadata","date":"2026-05-09","project":"HeartReverie_Plugins","description":"","task_count":28},{"slug":"csp-blob-url-support","date":"2026-05-07","project":"HeartReverie","description":"","task_count":2},{"slug":"diagnostic-logging-and-error-handling","date":"2026-05-07","project":"HeartReverie","description":"","task_count":33},{"slug":"multi-select-dropdown","date":"2026-05-07","project":"HeartReverie","description":"","task_count":37},{"slug":"diagnostic-logging-and-error-handling","date":"2026-05-07","project":"HeartReverie_Plugins","description":"","task_count":12},{"slug":"forge-additional-modules","date":"2026-05-07","project":"HeartReverie_Plugins","description":"","task_count":7},{"slug":"image-panel-redesign","date":"2026-05-07","project":"HeartReverie_Plugins","description":"","task_count":17},{"slug":"sd-webui-format-robustness","date":"2026-05-07","project":"HeartReverie_Plugins","description":"","task_count":9},{"slug":"sd-webui-multi-select-and-prompt","date":"2026-05-07","project":"HeartReverie_Plugins","description":"","task_count":9},{"slug":"fix-hardcoded-colors-and-action-bar","date":"2026-05-06","project":"HeartReverie","description":"","task_count":28},{"slug":"sd-webui-image-gen","date":"2026-05-06","project":"HeartReverie","description":"","task_count":41},{"slug":"sd-webui-connection-test-support","date":"2026-05-06","project":"HeartReverie","description":"","task_count":16},{"slug":"sd-webui-image-gen","date":"2026-05-06","project":"HeartReverie_Plugins","description":"","task_count":55},{"slug":"sd-webui-connection-test","date":"2026-05-06","project":"HeartReverie_Plugins","description":"","task_count":13},{"slug":"theme-system","date":"2026-05-05","project":"HeartReverie","description":"","task_count":48},{"slug":"add-spa-tools-menu","date":"2026-05-05","project":"HeartReverie","description":"","task_count":33},{"slug":"fix-import-character-card","date":"2026-05-05","project":"HeartReverie","description":"","task_count":11},{"slug":"story-init-status-override","date":"2026-05-05","project":"HeartReverie_Plugins","description":"","task_count":37},{"slug":"continue-last-chapter","date":"2026-05-04","project":"HeartReverie","description":"","task_count":33},{"slug":"fix-summary-chapter-number","date":"2026-05-04","project":"HeartReverie","description":"","task_count":17},{"slug":"polish-last-chapter","date":"2026-05-04","project":"HeartReverie","description":"","task_count":0},{"slug":"dispatch-forgejo-webhook-after-latest-build","date":"2026-05-03","project":"HeartReverie","description":"","task_count":11},{"slug":"remove-tls-from-application","date":"2026-05-03","project":"HeartReverie","description":"","task_count":51},{"slug":"reserve-platform-system-directories","date":"2026-05-03","project":"HeartReverie","description":"","task_count":7},{"slug":"add-forgejo-build-workflow-triggers","date":"2026-05-03","project":"HeartReverie_Plugins","description":"","task_count":9},{"slug":"add-helm-chart","date":"2026-05-02","project":"HeartReverie","description":"","task_count":40},{"slug":"header-chapter-nav-tweaks","date":"2026-05-02","project":"HeartReverie","description":"","task_count":18},{"slug":"mobile-responsive-layout","date":"2026-05-02","project":"HeartReverie","description":"","task_count":22},{"slug":"remove-fsa-and-indexeddb","date":"2026-05-02","project":"HeartReverie","description":"","task_count":38},{"slug":"expose-llm-defaults-in-settings-form","date":"2026-05-01","project":"HeartReverie","description":"","task_count":28},{"slug":"multi-message-prompt-template","date":"2026-05-01","project":"HeartReverie","description":"","task_count":53},{"slug":"plugin-action-buttons","date":"2026-05-01","project":"HeartReverie","description":"","task_count":53},{"slug":"prompt-editor-independent-scroll","date":"2026-05-01","project":"HeartReverie","description":"","task_count":21},{"slug":"prompt-editor-message-ui","date":"2026-05-01","project":"HeartReverie","description":"","task_count":50},{"slug":"update-llm-defaults-and-completion-tokens","date":"2026-05-01","project":"HeartReverie","description":"","task_count":35},{"slug":"add-dialogue-colorize-plugin","date":"2026-04-30","project":"HeartReverie","description":"","task_count":32},{"slug":"fix-frontend-render-on-edit-and-reload","date":"2026-04-30","project":"HeartReverie","description":"","task_count":37},{"slug":"stream-reasoning-think-block","date":"2026-04-30","project":"HeartReverie","description":"","task_count":19},{"slug":"add-openrouter-app-attribution","date":"2026-04-29","project":"HeartReverie","description":"","task_count":10},{"slug":"fix-streaming-cancellation","date":"2026-04-29","project":"HeartReverie","description":"","task_count":30},{"slug":"add-llm-reasoning-config","date":"2026-04-28","project":"HeartReverie","description":"","task_count":40},{"slug":"fix-settings-back-to-reading","date":"2026-04-28","project":"HeartReverie","description":"","task_count":15},{"slug":"raise-test-coverage-over-90","date":"2026-04-20","project":"HeartReverie","description":"","task_count":18},{"slug":"scene-info-sidebar-redesign","date":"2026-04-20","project":"HeartReverie_Plugins","description":"","task_count":23},{"slug":"activate-response-stream-hook","date":"2026-04-19","project":"HeartReverie","description":"","task_count":22},{"slug":"add-codecov-ci-coverage-upload","date":"2026-04-19","project":"HeartReverie","description":"","task_count":7},{"slug":"chapter-edit-branch","date":"2026-04-19","project":"HeartReverie","description":"","task_count":31},{"slug":"fix-batch-chapter-loading","date":"2026-04-19","project":"HeartReverie","description":"","task_count":11},{"slug":"frontend-hook-expansion","date":"2026-04-19","project":"HeartReverie","description":"","task_count":31},{"slug":"per-story-llm-settings","date":"2026-04-19","project":"HeartReverie","description":"","task_count":32},{"slug":"richer-dynamic-variable-context","date":"2026-04-19","project":"HeartReverie","description":"","task_count":19},{"slug":"story-export","date":"2026-04-19","project":"HeartReverie","description":"","task_count":36},{"slug":"token-usage-tracking","date":"2026-04-19","project":"HeartReverie","description":"","task_count":47},{"slug":"yml-to-yaml-extension","date":"2026-04-19","project":"HeartReverie","description":"","task_count":27},{"slug":"forgejo-actions-container-build","date":"2026-04-19","project":"HeartReverie_Plugins","description":"","task_count":4},{"slug":"runtime-state-diff","date":"2026-04-19","project":"HeartReverie_Plugins","description":"","task_count":55},{"slug":"yml-to-yaml-extension","date":"2026-04-19","project":"HeartReverie_Plugins","description":"","task_count":24},{"slug":"scene-locale-header","date":"2026-04-19","project":"HeartReverie_Plugins","description":"","task_count":0},{"slug":"state-diff-viewer","date":"2026-04-19","project":"HeartReverie_Plugins","description":"","task_count":26},{"slug":"audit-logging","date":"2026-04-18","project":"HeartReverie","description":"","task_count":19},{"slug":"chat-input-persistence","date":"2026-04-18","project":"HeartReverie","description":"","task_count":3},{"slug":"llm-request-logging","date":"2026-04-18","project":"HeartReverie","description":"","task_count":22},{"slug":"plugin-css-injection","date":"2026-04-18","project":"HeartReverie","description":"","task_count":33},{"slug":"plugin-logger","date":"2026-04-18","project":"HeartReverie","description":"","task_count":17},{"slug":"relax-rate-limits-batch-chapters","date":"2026-04-18","project":"HeartReverie","description":"","task_count":16},{"slug":"toast-notification-system","date":"2026-04-18","project":"HeartReverie","description":"","task_count":18},{"slug":"fix-plugins-prompt-file","date":"2026-04-17","project":"HeartReverie","description":"","task_count":8},{"slug":"migrate-serve-to-bash","date":"2026-04-17","project":"HeartReverie","description":"","task_count":16},{"slug":"container-uid-permissions","date":"2026-04-16","project":"HeartReverie","description":"","task_count":16},{"slug":"migrate-npm-to-deno","date":"2026-04-16","project":"HeartReverie","description":"","task_count":25},{"slug":"extract-status-data-to-state-plugin","date":"2026-04-15","project":"HeartReverie","description":"","task_count":25},{"slug":"plugin-docs-and-prompt-extraction","date":"2026-04-15","project":"HeartReverie","description":"","task_count":21},{"slug":"enhance-template-variables","date":"2026-04-14","project":"HeartReverie","description":"","task_count":22},{"slug":"lore-codex-restructure","date":"2026-04-14","project":"HeartReverie","description":"","task_count":29},{"slug":"lore-codex","date":"2026-04-14","project":"HeartReverie","description":"","task_count":45},{"slug":"prompts-dir-underscore-prefix","date":"2026-04-14","project":"HeartReverie","description":"","task_count":11},{"slug":"rename-state-plugin-specs","date":"2026-04-14","project":"HeartReverie","description":"","task_count":19},{"slug":"file-based-prompt","date":"2026-04-13","project":"HeartReverie","description":"","task_count":36},{"slug":"stop-generation","date":"2026-04-13","project":"HeartReverie","description":"","task_count":21},{"slug":"websocket-streaming","date":"2026-04-13","project":"HeartReverie","description":"","task_count":43},{"slug":"fix-render-token-specs","date":"2026-04-12","project":"HeartReverie","description":"","task_count":8},{"slug":"move-plugin-code-to-plugins","date":"2026-04-12","project":"HeartReverie","description":"","task_count":21},{"slug":"settings-page","date":"2026-04-12","project":"HeartReverie","description":"","task_count":27},{"slug":"shared-plugin-utils","date":"2026-04-12","project":"HeartReverie","description":"","task_count":16},{"slug":"vue-router-setup","date":"2026-04-12","project":"HeartReverie","description":"","task_count":29},{"slug":"vue-typescript-refactor","date":"2026-04-12","project":"HeartReverie","description":"","task_count":97},{"slug":"apply-patches-security-fixes","date":"2026-04-11","project":"HeartReverie","description":"","task_count":18},{"slug":"containerfile","date":"2026-04-11","project":"HeartReverie","description":"","task_count":13},{"slug":"context-compaction","date":"2026-04-11","project":"HeartReverie","description":"","task_count":23},{"slug":"declarative-frontend-strip","date":"2026-04-11","project":"HeartReverie","description":"","task_count":26},{"slug":"env-config-cleanup","date":"2026-04-11","project":"HeartReverie","description":"","task_count":16},{"slug":"frontend-background-config","date":"2026-04-11","project":"HeartReverie","description":"","task_count":12},{"slug":"migrate-writer-to-typescript","date":"2026-04-11","project":"HeartReverie","description":"","task_count":37},{"slug":"plugin-consolidation","date":"2026-04-11","project":"HeartReverie","description":"","task_count":23},{"slug":"plugin-creation-skill","date":"2026-04-11","project":"HeartReverie","description":"","task_count":13},{"slug":"restructure-project-layout","date":"2026-04-11","project":"HeartReverie","description":"","task_count":24},{"slug":"apply-patches-test-refactor","date":"2026-04-10","project":"HeartReverie","description":"","task_count":30},{"slug":"plugin-system","date":"2026-04-10","project":"HeartReverie","description":"","task_count":46},{"slug":"prompt-template-variables","date":"2026-04-10","project":"HeartReverie","description":"","task_count":25},{"slug":"regex-strip-tags","date":"2026-04-10","project":"HeartReverie","description":"","task_count":5},{"slug":"test-refactor-deno-migration","date":"2026-04-10","project":"HeartReverie","description":"","task_count":0},{"slug":"auto-reload","date":"2026-04-06","project":"HeartReverie","description":"","task_count":14},{"slug":"chat-ui-enhancements","date":"2026-04-06","project":"HeartReverie","description":"","task_count":11},{"slug":"fix-browser-console-errors","date":"2026-04-06","project":"HeartReverie","description":"","task_count":5},{"slug":"fix-poll-rate-limit","date":"2026-04-06","project":"HeartReverie","description":"","task_count":5},{"slug":"header-nav-polish","date":"2026-04-06","project":"HeartReverie","description":"","task_count":25},{"slug":"jsonpatch-script","date":"2026-04-06","project":"HeartReverie","description":"","task_count":15},{"slug":"keyboard-shortcut-cleanup","date":"2026-04-06","project":"HeartReverie","description":"","task_count":4},{"slug":"md-story-reader","date":"2026-04-06","project":"HeartReverie","description":"","task_count":52},{"slug":"option-append-to-input","date":"2026-04-06","project":"HeartReverie","description":"","task_count":6},{"slug":"passphrase-gate","date":"2026-04-06","project":"HeartReverie","description":"","task_count":18},{"slug":"persist-user-message","date":"2026-04-06","project":"HeartReverie","description":"","task_count":7},{"slug":"prompt-cleanup-and-live-polling","date":"2026-04-06","project":"HeartReverie","description":"","task_count":9},{"slug":"reader-directory-restructure","date":"2026-04-06","project":"HeartReverie","description":"","task_count":11},{"slug":"security-hardening","date":"2026-04-06","project":"HeartReverie","description":"","task_count":26},{"slug":"story-writer-server","date":"2026-04-06","project":"HeartReverie","description":"","task_count":36},{"slug":"streaming-response-and-patch","date":"2026-04-06","project":"HeartReverie","description":"","task_count":17},{"slug":"typography-and-spacing","date":"2026-04-06","project":"HeartReverie","description":"","task_count":11},{"slug":"ui-refinements","date":"2026-04-06","project":"HeartReverie","description":"","task_count":36}],"test_metrics":[{"project":"HeartReverie","test_file_count":86,"test_case_count":816,"coverage_percent":91.85,"framework":"vitest"},{"project":"HeartReverie_Plugins","test_file_count":0,"test_case_count":0,"coverage_percent":null,"framework":"none"}],"commits":[{"hash":"8f1490f10f40b806c0e8b0a758d46bdb9f4df6e8","date":"2026-05-14","commit_type":"feat","scope":"","subject":"feat: hook-inspector — declarative manifest hooks, introspection, and inspector UI","project":"HeartReverie","insertions":3549,"deletions":78},{"hash":"4e7304070dab370bb0694e4f50a5433aa4344048","date":"2026-05-14","commit_type":"feat","scope":"","subject":"feat: add hook-inspector-logger companion plugin and declare hooks[] for all plugins","project":"HeartReverie_Plugins","insertions":306,"deletions":17},{"hash":"9e1f5cf5cf5caecdea127f0d8092d8b6e2009817","date":"2026-05-13","commit_type":"test","scope":"","subject":"test: add JSON summary output to frontend coverage","project":"HeartReverie","insertions":1,"deletions":1},{"hash":"fd298c6e6ac3002cd7319cba666ee630310fc5f0","date":"2026-05-13","commit_type":"chore","scope":"openspec","subject":"chore(openspec): archive lower-coverage-threshold-to-85","project":"HeartReverie","insertions":5,"deletions":5},{"hash":"29165717e567a7fce3ed3688649434d6c68aaa17","date":"2026-05-13","commit_type":"feat","scope":"coverage","subject":"feat(coverage): lower combined line-coverage gate from \u003e90% to \u003e85%","project":"HeartReverie","insertions":11,"deletions":6},{"hash":"3f013d8c4b7db76c4f0f9113c8af27a40d6f116e","date":"2026-05-13","commit_type":"docs","scope":"openspec","subject":"docs(openspec): propose lowering coverage gate from 90% to 85%","project":"HeartReverie","insertions":156,"deletions":0},{"hash":"85f22bfbba1a2b8577c185788ca6d05deb2256c0","date":"2026-05-13","commit_type":"test","scope":"usePluginActions","subject":"test(usePluginActions): expose missing usePlugins exports in mock","project":"HeartReverie","insertions":4,"deletions":0},{"hash":"77d297e188842d93c12e54c5997ce6594723dbfd","date":"2026-05-12","commit_type":"fix","scope":"response-notify","subject":"fix(response-notify): restore always-notify default to match spec \u0026 tests","project":"HeartReverie","insertions":13,"deletions":9},{"hash":"a6da2c1fafe678dae5b4d8ba0fa6b0b7757a9801","date":"2026-05-12","commit_type":"docs","scope":"skill","subject":"docs(skill): refine create-plugin skill from QA loop + critique","project":"HeartReverie","insertions":74,"deletions":20},{"hash":"baf3ddb155f3e8457503f0d46fadc61fd060e6e9","date":"2026-05-12","commit_type":"docs","scope":"skill","subject":"docs(skill): refresh heartreverie-create-plugin to match current plugin system","project":"HeartReverie","insertions":202,"deletions":76},{"hash":"d763ad9e0766c04d7f76c02ecad2b7c5ccfbd9bf","date":"2026-05-12","commit_type":"docs","scope":"","subject":"docs: log unreleased changes and document textarea auto-resize","project":"HeartReverie","insertions":9,"deletions":1},{"hash":"70502cc40face147fec63982efbd19e2d5f4b716","date":"2026-05-12","commit_type":"feat","scope":"reader","subject":"feat(reader): auto-resize prompt editor and chat textareas","project":"HeartReverie","insertions":1187,"deletions":4},{"hash":"16a6c7985a8bcb4a7eb54abfaa95094e2aafe634","date":"2026-05-12","commit_type":"docs","scope":"skill","subject":"docs(skill): refine create-plugin skill from QA loop + critique","project":"HeartReverie_Plugins","insertions":74,"deletions":20},{"hash":"0f7a19c11241d877f5e828e1fc25234e82a80070","date":"2026-05-12","commit_type":"docs","scope":"skill","subject":"docs(skill): refresh heartreverie-create-plugin to match current plugin system","project":"HeartReverie_Plugins","insertions":202,"deletions":76},{"hash":"b2dbb9bc07429f79503348dd3904373fa774e734","date":"2026-05-12","commit_type":"docs","scope":"","subject":"docs: sync heartreverie-create-plugin skill from core repo","project":"HeartReverie_Plugins","insertions":10,"deletions":2},{"hash":"16494be42a3c4db375c5490b822c590fc284c3c0","date":"2026-05-12","commit_type":"docs","scope":"","subject":"docs: cover settings APIs and new manifest fields in plugin authoring guide","project":"HeartReverie_Plugins","insertions":3,"deletions":3},{"hash":"a3c6a7f0e5579b95592fcf3e7cb925c8d938b918","date":"2026-05-11","commit_type":"chore","scope":"openspec","subject":"chore(openspec): correct archive directory dates from 2025 to 2026","project":"HeartReverie","insertions":0,"deletions":0},{"hash":"90834e2a9ec4a720b1bc2da0bc89d24fa518a52f","date":"2026-05-11","commit_type":"chore","scope":"openspec","subject":"chore(openspec): archive expose-builtin-plugin-settings","project":"HeartReverie","insertions":271,"deletions":1},{"hash":"ca4bd1ba73eccb297664011d333ed5576de9df20","date":"2026-05-11","commit_type":"chore","scope":"plugins","subject":"chore(plugins): standardize enabled setting placement and description","project":"HeartReverie","insertions":23,"deletions":20},{"hash":"3c21eeaadedfea8dc23814c4ac63906eebd83e0c","date":"2026-05-11","commit_type":"feat","scope":"plugins","subject":"feat(plugins): apply expose-builtin-plugin-settings","project":"HeartReverie","insertions":1809,"deletions":604},{"hash":"b1d5362e8c63a79162912c8dd1b80b5461e82ed2","date":"2026-05-11","commit_type":"docs","scope":"openspec","subject":"docs(openspec): propose expose-builtin-plugin-settings","project":"HeartReverie","insertions":426,"deletions":0},{"hash":"da53c887266cdb9dc40c213c2b5adac3edae6a4c","date":"2026-05-11","commit_type":"chore","scope":"openspec","subject":"chore(openspec): correct archive directory dates from 2025 to 2026","project":"HeartReverie_Plugins","insertions":0,"deletions":0},{"hash":"e6c4f2b4009698df1002038ff374e96881dfeef8","date":"2026-05-11","commit_type":"chore","scope":"openspec","subject":"chore(openspec): archive expose-external-plugin-settings","project":"HeartReverie_Plugins","insertions":91,"deletions":0},{"hash":"43ac9f73e4b7aea095b3e011e02a74fb3617c476","date":"2026-05-11","commit_type":"chore","scope":"plugins","subject":"chore(plugins): standardize enabled setting placement and description","project":"HeartReverie_Plugins","insertions":25,"deletions":25},{"hash":"d0525bdcd16680e46b64b4bf6290b06f9e48bab3","date":"2026-05-11","commit_type":"feat","scope":"plugins","subject":"feat(plugins): apply expose-external-plugin-settings","project":"HeartReverie_Plugins","insertions":1444,"deletions":491},{"hash":"323a8ddcdfc70922dfac3b89ef051cd6c951714b","date":"2026-05-11","commit_type":"docs","scope":"openspec","subject":"docs(openspec): propose expose-external-plugin-settings","project":"HeartReverie_Plugins","insertions":291,"deletions":0},{"hash":"956f3d85f47756f9b9ccc5f45ea967f6712c5892","date":"2026-05-10","commit_type":"chore","scope":"release","subject":"chore(release): bump version to 0.6.0","project":"HeartReverie","insertions":48,"deletions":8},{"hash":"25ee9507641d6652c076f0e5bb358f00d0a71622","date":"2026-05-10","commit_type":"chore","scope":"openspec","subject":"chore(openspec): archive remove-default-max-completion-tokens","project":"HeartReverie","insertions":63,"deletions":25},{"hash":"1888868a1b79fd430229ad3087a3a4dd30dd8d2f","date":"2026-05-10","commit_type":"refactor","scope":"llm","subject":"refactor(llm): make LLM_MAX_COMPLETION_TOKENS optional with null sentinel","project":"HeartReverie","insertions":1154,"deletions":76},{"hash":"7c07d461a232cf3bfb007da5881af41e175f289f","date":"2026-05-10","commit_type":"chore","scope":"openspec","subject":"chore(openspec): archive name-system-prompt-blocks","project":"HeartReverie","insertions":41,"deletions":12},{"hash":"2769d61840cbd7350c82fd805791cf9ad98182ca","date":"2026-05-10","commit_type":"refactor","scope":"prompt","subject":"refactor(prompt): wrap system.md sections in named XML tags","project":"HeartReverie","insertions":188,"deletions":1},{"hash":"cd32d74b24c3268a3386d2883c431ea61e5c25aa","date":"2026-05-10","commit_type":"test","scope":"coverage","subject":"test(coverage): lift combined line coverage past 90% gate","project":"HeartReverie","insertions":659,"deletions":5},{"hash":"5acec5b6a19aad5ab2d1359e9aa342650d305c75","date":"2026-05-10","commit_type":"chore","scope":"openspec","subject":"chore(openspec): archive palette-css-var-hygiene-reader-sweep","project":"HeartReverie","insertions":61,"deletions":5},{"hash":"e6cd96fde13c7ca89cfc3cc98684baad9e4f991f","date":"2026-05-10","commit_type":"fix","scope":"reader","subject":"fix(reader): apply palette-css-var-hygiene-reader-sweep","project":"HeartReverie","insertions":47,"deletions":47},{"hash":"68d814ee772a0d2749d88ebae5956b5f3ddcf4de","date":"2026-05-10","commit_type":"docs","scope":"openspec","subject":"docs(openspec): propose palette-css-var-hygiene-reader-sweep","project":"HeartReverie","insertions":331,"deletions":0},{"hash":"9956d72b092d020f441849191f409a84fed16e8f","date":"2026-05-10","commit_type":"chore","scope":"openspec","subject":"chore(openspec): archive palette-css-var-hygiene-plugin-settings","project":"HeartReverie","insertions":41,"deletions":2},{"hash":"05d0b3b1a7df2dbd1cb78b6f1d3d759355811b9c","date":"2026-05-10","commit_type":"docs","scope":"openspec","subject":"docs(openspec): retroactive proposal for palette-css-var-hygiene-plugin-settings","project":"HeartReverie","insertions":158,"deletions":0},{"hash":"b34cc0eef1a798db7f65e615df081e3e3ea89adf","date":"2026-05-10","commit_type":"fix","scope":"reader","subject":"fix(reader): use defined palette vars in PluginSettingsPage","project":"HeartReverie","insertions":3,"deletions":3},{"hash":"b38d573c6973aa90912d0636a74b1127e1e84a10","date":"2026-05-10","commit_type":"chore","scope":"theme-system","subject":"chore(theme-system): archive theme-sort-order change","project":"HeartReverie","insertions":33,"deletions":5},{"hash":"312c7f583b68fe28f0da199dde466d314878f92b","date":"2026-05-10","commit_type":"chore","scope":"openspec","subject":"chore(openspec): archive sd-webui-connected-prompt-flag","project":"HeartReverie_Plugins","insertions":326,"deletions":0},{"hash":"56bfae8e5e6fc8e2768c60ba5376203148aa2b80","date":"2026-05-10","commit_type":"feat","scope":"sd-webui-image-gen","subject":"feat(sd-webui-image-gen): gate `{{ create_image }}` on live sd-webui connectivity","project":"HeartReverie_Plugins","insertions":1347,"deletions":12},{"hash":"128a29a8302d272f49c8a530d31f8742ac389316","date":"2026-05-10","commit_type":"chore","scope":"openspec","subject":"chore(openspec): archive fix-status-outfit-field-mapping","project":"HeartReverie_Plugins","insertions":0,"deletions":0},{"hash":"a26b7de68fc2c10f231d61e7ab61d660808d9606","date":"2026-05-10","commit_type":"chore","scope":"openspec","subject":"chore(openspec): archive restyle-output-format-prompts","project":"HeartReverie_Plugins","insertions":144,"deletions":13},{"hash":"7045845fbec206bd7fe76a78d783cd2baf8dc426","date":"2026-05-10","commit_type":"refactor","scope":"prompt","subject":"refactor(prompt): improve chapter-based story and image prompt templates","project":"HeartReverie_Plugins","insertions":7,"deletions":9},{"hash":"44343acb29a39ad64041ed10574075e00c1e3767","date":"2026-05-10","commit_type":"fix","scope":"status","subject":"fix(status): align outfit parser/UI with prompt slots (衣物/鞋襪/飾品/其他)","project":"HeartReverie_Plugins","insertions":242,"deletions":24},{"hash":"dad8f3a53477c37a8ae0936f11607b1bec9882bb","date":"2026-05-10","commit_type":"refactor","scope":"prompts","subject":"refactor(prompts): rewrite status/options/scene prompts in structured Vento DSL","project":"HeartReverie_Plugins","insertions":801,"deletions":78},{"hash":"41aa117296830b789050100a944b41333cfe768e","date":"2026-05-10","commit_type":"fix","scope":"sd-webui-image-gen","subject":"fix(sd-webui-image-gen): center lightbox content and let image hug intrinsic size","project":"HeartReverie_Plugins","insertions":2,"deletions":2},{"hash":"0c4f48681faa0353064428ab207a934cd8e3c0a2","date":"2026-05-10","commit_type":"chore","scope":"openspec","subject":"chore(openspec): archive palette-css-var-hygiene-state","project":"HeartReverie_Plugins","insertions":38,"deletions":2},{"hash":"777e5a6cc273df68c3e1d694c185766f5f44f8d9","date":"2026-05-10","commit_type":"fix","scope":"state","subject":"fix(state): apply palette-css-var-hygiene-state","project":"HeartReverie_Plugins","insertions":31,"deletions":24},{"hash":"41638563c33639b3f687cb316bedc44d4460bb6b","date":"2026-05-10","commit_type":"docs","scope":"openspec","subject":"docs(openspec): propose palette-css-var-hygiene-state","project":"HeartReverie_Plugins","insertions":160,"deletions":0},{"hash":"e87c202dc453eefc152e14aa6b768155c48ae156","date":"2026-05-10","commit_type":"chore","scope":"openspec","subject":"chore(openspec): archive unify-image-block-format and palette-css-var-hygiene","project":"HeartReverie_Plugins","insertions":182,"deletions":46},{"hash":"512cfc97f3e26e49b3e9a9b4cec99d3ed39fd918","date":"2026-05-10","commit_type":"docs","scope":"openspec","subject":"docs(openspec): retroactive proposal for palette-css-var-hygiene","project":"HeartReverie_Plugins","insertions":134,"deletions":0},{"hash":"e2749d2f6efc367abb9245108e6777eeccd44f9f","date":"2026-05-10","commit_type":"docs","scope":"openspec","subject":"docs(openspec): retroactive proposal for unify-image-block-format","project":"HeartReverie_Plugins","insertions":517,"deletions":0},{"hash":"6d6a9dc0445742a86e4d6d7b69ee71c9a7925ec6","date":"2026-05-10","commit_type":"fix","scope":"sd-webui-image-gen","subject":"fix(sd-webui-image-gen): replace undefined --text-secondary with --text-italic","project":"HeartReverie_Plugins","insertions":2,"deletions":2},{"hash":"360654a5759ec9788d510de47c6bbcd2ceaa3c6a","date":"2026-05-10","commit_type":"fix","scope":"sd-webui-image-gen","subject":"fix(sd-webui-image-gen): make frontend \u003cimage\u003e placeholder regex accept new 4-section format","project":"HeartReverie_Plugins","insertions":17,"deletions":14},{"hash":"e0b536a774616bacc11902e9fae01c2ade06105c","date":"2026-05-10","commit_type":"feat","scope":"sd-webui-image-gen","subject":"feat(sd-webui-image-gen): unify image+nl_prompt into single 4-section \u003cimage\u003e block, switch to (tag:N.NN) weights","project":"HeartReverie_Plugins","insertions":332,"deletions":176},{"hash":"29b6c84cb51c108e2de75b824b58e2351c8347b1","date":"2026-05-10","commit_type":"feat","scope":"sd-webui-image-gen","subject":"feat(sd-webui-image-gen): rewrite image-design.md from create_image.md with 4-image system prompt wrapper","project":"HeartReverie_Plugins","insertions":608,"deletions":72},{"hash":"21746ce2338753c2e9ad9f0c209aaea19b01da63","date":"2026-05-10","commit_type":"feat","scope":"prompt","subject":"feat(prompt): refine system prompt response formatting","project":"HeartReverie_Plugins","insertions":49,"deletions":3},{"hash":"28fd0625bb54914466f653177437e64c9dbc2aed","date":"2026-05-10","commit_type":"chore","scope":"sd-webui-image-gen","subject":"chore(sd-webui-image-gen): archive lightbox side-panel change","project":"HeartReverie_Plugins","insertions":99,"deletions":36},{"hash":"7c08202ac021596e37686d339a8efa852efe5085","date":"2026-05-10","commit_type":"feat","scope":"sd-webui-image-gen","subject":"feat(sd-webui-image-gen): rework lightbox into fixed side panel with viewport-anchored nav","project":"HeartReverie_Plugins","insertions":662,"deletions":73},{"hash":"9bcd06390c999a79c84d37a566cad4704382cf5b","date":"2026-05-10","commit_type":"feat","scope":"sd-webui-image-gen","subject":"feat(sd-webui-image-gen): preserve \u003cimage\u003e source blocks in chapter files","project":"HeartReverie_Plugins","insertions":1208,"deletions":242},{"hash":"89e4c7bed9665f1f40b3840f7e4eab073da68f31","date":"2026-05-09","commit_type":"chore","scope":"openspec","subject":"chore(openspec): archive context-compaction-settings-ui and sync main spec","project":"HeartReverie","insertions":116,"deletions":8},{"hash":"ba735cd6027e0fafb50d130ab3b1090fb0772cf8","date":"2026-05-09","commit_type":"feat","scope":"context-compaction","subject":"feat(context-compaction): expose recentChapters/enabled via plugin settings UI","project":"HeartReverie","insertions":685,"deletions":33},{"hash":"9f1b73f9201002fe92d3141e9ef724d33591544a","date":"2026-05-09","commit_type":"feat","scope":"reader","subject":"feat(reader): hide sidebar during LLM streaming to eliminate flicker","project":"HeartReverie","insertions":411,"deletions":1},{"hash":"6ec14e0c2338f0743c8c65c804a374c57f2bbf11","date":"2026-05-09","commit_type":"refactor","scope":"prompt","subject":"refactor(prompt): refine prompt flow and clarify intent tags","project":"HeartReverie","insertions":5,"deletions":4},{"hash":"eaaead15221120f2fdce7cff8c3b415870763b7b","date":"2026-05-09","commit_type":"fix","scope":"prompt-editor","subject":"fix(prompt-editor): use theme variables for message card backgrounds","project":"HeartReverie","insertions":3,"deletions":3},{"hash":"50cd1c5b2b822359dacabc87aa9f274bf9e3d20c","date":"2026-05-09","commit_type":"docs","scope":"openspec","subject":"docs(openspec): update theme-system spec for light.toml backgroundImage","project":"HeartReverie","insertions":1,"deletions":1},{"hash":"1297ee5d0aa53929a0dbba209c84bea2bf99ccbb","date":"2026-05-09","commit_type":"style","scope":"themes","subject":"style(themes): redesign dark theme to pure grayscale","project":"HeartReverie","insertions":37,"deletions":37},{"hash":"2747f0a2090e9da77c78726852753cac5320445c","date":"2026-05-09","commit_type":"style","scope":"themes","subject":"style(themes): redesign light theme to yellow and grayscale","project":"HeartReverie","insertions":36,"deletions":36},{"hash":"4bee8cb8a6d0e296fb62d75b3b288c71e412f73f","date":"2026-05-09","commit_type":"feat","scope":"writer","subject":"feat(writer): sort theme dropdown with priority order","project":"HeartReverie","insertions":182,"deletions":2},{"hash":"27dcf0d2808c0efa0a950887ae663aee61eb35cf","date":"2026-05-09","commit_type":"docs","scope":"openspec","subject":"docs(openspec): sync specs and archive branch-copy-images","project":"HeartReverie","insertions":30,"deletions":2},{"hash":"0b677ff24f51836ef395c5c800fea79a747bed3c","date":"2026-05-09","commit_type":"refactor","scope":"prompt","subject":"refactor(prompt): align scene prompt context and clarify user intent","project":"HeartReverie_Plugins","insertions":5,"deletions":5},{"hash":"281c86cd6133a8b911cb2b6ad6b244804673e6b5","date":"2026-05-09","commit_type":"feat","scope":"sd-webui-image-gen","subject":"feat(sd-webui-image-gen): add lightbox pan-zoom and preserve generation metadata on conversion","project":"HeartReverie_Plugins","insertions":2289,"deletions":197},{"hash":"aca2b8a7f065b163ecfe9215f4bdb6d4e575a754","date":"2026-05-09","commit_type":"feat","scope":"sd-webui-image-gen","subject":"feat(sd-webui-image-gen): reconcile orphan metadata and allocate monotonic per-chapter indices","project":"HeartReverie_Plugins","insertions":1838,"deletions":65},{"hash":"c06f07becf4a58b089c2c60180c22eaffc503fc0","date":"2026-05-09","commit_type":"feat","scope":"sd-webui-image-gen","subject":"feat(sd-webui-image-gen): add 🎨 設計新圖片 action button","project":"HeartReverie_Plugins","insertions":735,"deletions":597},{"hash":"8b035b911ae772bfc781598e128333bc1d359756","date":"2026-05-09","commit_type":"refactor","scope":"sd-webui-image-gen","subject":"refactor(sd-webui-image-gen): strip quality/censor prompts; expand image-design template","project":"HeartReverie_Plugins","insertions":650,"deletions":12},{"hash":"ffd67b16ebdede3322b6ee81215c76d43e857c1c","date":"2026-05-09","commit_type":"refactor","scope":"prompts","subject":"refactor(prompts): remove quality tags from scene composition prompts","project":"HeartReverie_Plugins","insertions":9,"deletions":9},{"hash":"d5307ce25246e337df50a78c0299d650ddea3c60","date":"2026-05-09","commit_type":"fix","scope":"sd-webui-image-gen","subject":"fix(sd-webui-image-gen): pair NL prompts to images, harden lightbox, add hover magnifier","project":"HeartReverie_Plugins","insertions":1530,"deletions":107},{"hash":"e20cc8f578ed98190aac12a81b46fe8d9eb2fba1","date":"2026-05-09","commit_type":"refactor","scope":"prompt","subject":"refactor(prompt): refine scenario rendering and status data","project":"HeartReverie_Plugins","insertions":12,"deletions":1},{"hash":"cb97d6458abf54fdd4cf24e43dcc1b529d115c64","date":"2026-05-09","commit_type":"fix","scope":"image","subject":"fix(image): strip nl_prompt tags and update image defaults","project":"HeartReverie_Plugins","insertions":5,"deletions":5},{"hash":"a51b7903e9e1bef9c7955266b0643f67df2ff727","date":"2026-05-09","commit_type":"fix","scope":"scene-info-sidebar","subject":"fix(scene-info-sidebar): use theme accent color instead of hardcoded blue","project":"HeartReverie_Plugins","insertions":3,"deletions":3},{"hash":"0c94cba2ccc1399f0319ba97e796ed9732d17bb7","date":"2026-05-09","commit_type":"docs","scope":"openspec","subject":"docs(openspec): sync specs and archive image-ux-fixes","project":"HeartReverie_Plugins","insertions":116,"deletions":5},{"hash":"ad4c600df4759d801c60b0a56a18edc89486d452","date":"2026-05-09","commit_type":"fix","scope":"state","subject":"fix(state): fix typo","project":"HeartReverie_Plugins","insertions":3,"deletions":3},{"hash":"dbe22c36a05efdd3160b4565449c8d98e9fd7fcd","date":"2026-05-09","commit_type":"feat","scope":"","subject":"feat: add heartreverie-create-character skill","project":"HeartReverie_Plugins","insertions":164,"deletions":0},{"hash":"10b030f7de721906c1c6da65a6f893824810e1e6","date":"2026-05-09","commit_type":"docs","scope":"","subject":"docs: add README for sd-webui-image-gen plugin","project":"HeartReverie_Plugins","insertions":98,"deletions":0},{"hash":"1be8aaeee16335dd4dfe2de11d13d8efddb73843","date":"2026-05-08","commit_type":"fix","scope":"","subject":"fix: use text-only content comparison in sidebar watch to prevent race","project":"HeartReverie","insertions":95,"deletions":55},{"hash":"3992259c33a8019fca3602c10d9d76884d5dae8a","date":"2026-05-08","commit_type":"fix","scope":"sidebar","subject":"fix(sidebar): preserve sidebar panels on non-content rerenders","project":"HeartReverie","insertions":11,"deletions":3},{"hash":"7cb459868719aa261e2af16795980bf81176a5f2","date":"2026-05-08","commit_type":"fix","scope":"","subject":"fix: preserve sidebar panels when non-content triggers fire","project":"HeartReverie","insertions":38,"deletions":8},{"hash":"4da54e27861a37aea67e8666ce22ba5923fe797b","date":"2026-05-08","commit_type":"chore","scope":"","subject":"chore: remove stale inline comment","project":"HeartReverie_Plugins","insertions":1,"deletions":1},{"hash":"b7b26981813d1cfadeefd752d3f2e00ff8865e4c","date":"2026-05-08","commit_type":"fix","scope":"","subject":"fix: re-acquire panelEl when ContentArea sidebar watch replaces DOM","project":"HeartReverie_Plugins","insertions":20,"deletions":0},{"hash":"940b7301a95440534090ad1b8bb26399ef7b78b6","date":"2026-05-07","commit_type":"feat","scope":"","subject":"feat: copy images and config when branching a story","project":"HeartReverie","insertions":62,"deletions":10},{"hash":"60e6b3cc0e459a23af104671df5027cd8c23a177","date":"2026-05-07","commit_type":"docs","scope":"openspec","subject":"docs(openspec): propose branch-copy-images","project":"HeartReverie","insertions":165,"deletions":0},{"hash":"c033de64d78887fb87ccebbb1a91504b69301b4e","date":"2026-05-07","commit_type":"docs","scope":"openspec","subject":"docs(openspec): mark all tasks done in archived change","project":"HeartReverie","insertions":4,"deletions":4},{"hash":"5d6a6852febd5a5fbcab887f057228bd8c264c61","date":"2026-05-07","commit_type":"docs","scope":"openspec","subject":"docs(openspec): sync and archive diagnostic-logging-and-error-handling change","project":"HeartReverie","insertions":126,"deletions":0},{"hash":"8cc14af55e2544ac24ee0b35f3cbdde23a53617c","date":"2026-05-07","commit_type":"feat","scope":"","subject":"feat: add diagnostic logging and fix swallowed errors","project":"HeartReverie","insertions":272,"deletions":81},{"hash":"2c85bbbf08afda74891f77b610a4540e34914371","date":"2026-05-07","commit_type":"docs","scope":"openspec","subject":"docs(openspec): propose diagnostic-logging-and-error-handling","project":"HeartReverie","insertions":467,"deletions":0},{"hash":"1d5e1ca964150e383ffc6d3504fef5f01586d1af","date":"2026-05-07","commit_type":"docs","scope":"openspec","subject":"docs(openspec): archive csp-blob-url-support, sync delta specs","project":"HeartReverie","insertions":90,"deletions":46},{"hash":"36dd2299a358567515b354358cc258a0615e7453","date":"2026-05-07","commit_type":"fix","scope":"","subject":"fix: add --allow-ffi permission for Sharp native bindings","project":"HeartReverie","insertions":2,"deletions":1},{"hash":"778a55bc15ecc1a892a29cb40c505419563942a9","date":"2026-05-07","commit_type":"fix","scope":"csp","subject":"fix(csp): allow blob: URLs in img-src directive","project":"HeartReverie","insertions":1,"deletions":1},{"hash":"cd404ff1e67a4465d33216ebe1be9cb6d17a8e31","date":"2026-05-07","commit_type":"docs","scope":"openspec","subject":"docs(openspec): sync multi-select-dropdown delta and archive change","project":"HeartReverie","insertions":175,"deletions":0},{"hash":"b8a742bc8b5d84d2c5476bc77f5ed14a806bcc37","date":"2026-05-07","commit_type":"fix","scope":"settings","subject":"fix(settings): address rubber-duck findings for multi-select dropdown","project":"HeartReverie","insertions":567,"deletions":16},{"hash":"4c2d70f90fc7f5d242716d692a214f8033a042b1","date":"2026-05-07","commit_type":"feat","scope":"","subject":"feat: fix image sidebar UX — scheduler, race condition, lightbox layout","project":"HeartReverie_Plugins","insertions":252,"deletions":50},{"hash":"79f8f1e84aeb32eda5357b635e280b84164bb75a","date":"2026-05-07","commit_type":"docs","scope":"openspec","subject":"docs(openspec): propose image-ux-fixes","project":"HeartReverie_Plugins","insertions":389,"deletions":0},{"hash":"06228886eecec3a619fe717f3bd04076e4875537","date":"2026-05-07","commit_type":"docs","scope":"openspec","subject":"docs(openspec): mark all tasks done in archived change","project":"HeartReverie_Plugins","insertions":6,"deletions":6},{"hash":"4ed24c76002ee421febf4942c1e6bbb9acc15c70","date":"2026-05-07","commit_type":"docs","scope":"openspec","subject":"docs(openspec): sync delta specs and archive diagnostic-logging-and-error-handling","project":"HeartReverie_Plugins","insertions":250,"deletions":17},{"hash":"8602553f820eede4e1a2f82fb074a716a6f7fa88","date":"2026-05-07","commit_type":"feat","scope":"","subject":"feat: add diagnostic logging and fix swallowed errors","project":"HeartReverie_Plugins","insertions":141,"deletions":54},{"hash":"0c1bbf456af2bc3c0471f95d821c8535345ae7d8","date":"2026-05-07","commit_type":"docs","scope":"openspec","subject":"docs(openspec): propose diagnostic-logging-and-error-handling","project":"HeartReverie_Plugins","insertions":652,"deletions":0},{"hash":"91d2b74c86bc35ed55bd2f597241b60cd01e040a","date":"2026-05-07","commit_type":"docs","scope":"lora","subject":"docs(lora): docs keep LoRA tags unescaped in examples","project":"HeartReverie_Plugins","insertions":4,"deletions":4},{"hash":"bbb6c34660a72902a22f42a6ea78880b961b739f","date":"2026-05-07","commit_type":"docs","scope":"openspec","subject":"docs(openspec): archive sd-webui-format-robustness, sync delta specs","project":"HeartReverie_Plugins","insertions":69,"deletions":367},{"hash":"575b012a2dca22deb72e0535982f620798570a4f","date":"2026-05-07","commit_type":"docs","scope":"openspec","subject":"docs(openspec): archive image-panel-redesign, sync delta specs","project":"HeartReverie_Plugins","insertions":414,"deletions":101},{"hash":"2349944d18d65cc479a75e9154c7ab921300f91d","date":"2026-05-07","commit_type":"docs","scope":"","subject":"docs: mark all sd-webui-format-robustness tasks as done","project":"HeartReverie_Plugins","insertions":20,"deletions":0},{"hash":"c6ef16820813b2597902e7358169b07bbc1c40fa","date":"2026-05-07","commit_type":"fix","scope":"","subject":"fix: eliminate silent AVIF fallback, enforce PNG transport format","project":"HeartReverie_Plugins","insertions":104,"deletions":26},{"hash":"1e941aec794249b62171e2193e3a44e795c544bf","date":"2026-05-07","commit_type":"fix","scope":"sd-webui-image-gen","subject":"fix(sd-webui-image-gen): use PLAYGROUND_DIR for story paths and add regenerate logging","project":"HeartReverie_Plugins","insertions":113,"deletions":25},{"hash":"6bf166e02617e10fe5254e2d536ddf9bc28fe1e7","date":"2026-05-07","commit_type":"feat","scope":"sd-webui-image-gen","subject":"feat(sd-webui-image-gen): relocate image panel to core sidebar + add regenerate button","project":"HeartReverie_Plugins","insertions":426,"deletions":147},{"hash":"6f8ea879061356907844b2b229299dd5a7c53f7e","date":"2026-05-07","commit_type":"docs","scope":"openspec","subject":"docs(openspec): propose image-panel-redesign change","project":"HeartReverie_Plugins","insertions":308,"deletions":0},{"hash":"8859e723cc76e826406cbe1b9e0f92411485290a","date":"2026-05-07","commit_type":"docs","scope":"openspec","subject":"docs(openspec): sync delta specs and archive completed changes","project":"HeartReverie_Plugins","insertions":98,"deletions":4},{"hash":"31f7f77407d3d8644043c53fb6c00b2b4c557333","date":"2026-05-07","commit_type":"feat","scope":"sd-webui","subject":"feat(sd-webui): use forge_additional_modules instead of sd_vae","project":"HeartReverie_Plugins","insertions":14,"deletions":9},{"hash":"e2bdb52d5823ba21fdaecbe9e12257d111a2b4c1","date":"2026-05-07","commit_type":"docs","scope":"openspec","subject":"docs(openspec): propose forge-additional-modules change","project":"HeartReverie_Plugins","insertions":160,"deletions":0},{"hash":"349e4f218fd67f1594241cb54fbe2f1a1df58afa","date":"2026-05-07","commit_type":"fix","scope":"parser","subject":"fix(parser): allow whitespace between title and image### in regex","project":"HeartReverie_Plugins","insertions":1,"deletions":1},{"hash":"ef278891ec4019431b8ad7a2842147144403b182","date":"2026-05-07","commit_type":"fix","scope":"sd-webui","subject":"fix(sd-webui): filter non-string items in sdModule array migration","project":"HeartReverie_Plugins","insertions":809,"deletions":5},{"hash":"d108f52d59255787de628721df900680d118fb4e","date":"2026-05-06","commit_type":"feat","scope":"","subject":"feat: add x-actions support to plugin settings and fix SPA fallback routing","project":"HeartReverie","insertions":551,"deletions":19},{"hash":"23b901be62670cdef1ef9a8fddef0869b2a74b43","date":"2026-05-06","commit_type":"docs","scope":"","subject":"docs: document plugin settings, custom routes, and image serving","project":"HeartReverie","insertions":349,"deletions":12},{"hash":"269ce1b9c2f0a8469c1ae598a0a1414a0ad90d1e","date":"2026-05-06","commit_type":"chore","scope":"","subject":"chore: archive sd-webui-image-gen and sync specs","project":"HeartReverie","insertions":198,"deletions":0},{"hash":"538a60aa0c42f675a8b7174d14064cee4ccf80af","date":"2026-05-06","commit_type":"feat","scope":"reader","subject":"feat(reader): add combobox and multi-tag inputs for plugin settings","project":"HeartReverie","insertions":135,"deletions":4},{"hash":"00be2053798bec3a8a99c29348b1b16f5549a756","date":"2026-05-06","commit_type":"feat","scope":"","subject":"feat: add plugin settings API, image serving, and route registration","project":"HeartReverie","insertions":482,"deletions":94},{"hash":"c7f561efb380a4e458fc3777f3fce3525685d91c","date":"2026-05-06","commit_type":"feat","scope":"reader","subject":"feat(reader): add plugin settings page and extend hook contexts","project":"HeartReverie","insertions":473,"deletions":35},{"hash":"f3f88d3b14973b470f06471adc145c869f2116a7","date":"2026-05-06","commit_type":"feat","scope":"","subject":"feat: add sd-webui-image-gen openspec proposal","project":"HeartReverie","insertions":433,"deletions":0},{"hash":"9b91f42099c1f118d1f945de9a5edb2eeecaee51","date":"2026-05-06","commit_type":"chore","scope":"","subject":"chore: archive fix-hardcoded-colors-and-action-bar and sync specs","project":"HeartReverie","insertions":131,"deletions":5},{"hash":"935bfd3f02ca37d56c0a869f616422b3a03b2350","date":"2026-05-06","commit_type":"feat","scope":"","subject":"feat: replace hardcoded accent colors with CSS custom properties","project":"HeartReverie","insertions":309,"deletions":65},{"hash":"d8647ea865bc9ad90d51d6275987db936ff80b3f","date":"2026-05-06","commit_type":"feat","scope":"sd-webui-image-gen","subject":"feat(sd-webui-image-gen): add connection test health check endpoint","project":"HeartReverie_Plugins","insertions":353,"deletions":3},{"hash":"024e02562610ef79600f328ee1286741b87eb558","date":"2026-05-06","commit_type":"chore","scope":"","subject":"chore: archive sd-webui-image-gen and sync specs","project":"HeartReverie_Plugins","insertions":545,"deletions":0},{"hash":"b7d704768ec479ef34026ffec475008938f9a57e","date":"2026-05-06","commit_type":"feat","scope":"sd-webui-image-gen","subject":"feat(sd-webui-image-gen): add sd-modules proxy and sdModule setting","project":"HeartReverie_Plugins","insertions":32,"deletions":2},{"hash":"4fcd4a558f8d97e27e530285c8d18fa8a8d08c0b","date":"2026-05-06","commit_type":"feat","scope":"","subject":"feat: add sd-webui-image-gen plugin","project":"HeartReverie_Plugins","insertions":1639,"deletions":57},{"hash":"141066cfee32606e49d1370b5cc5b45926caca9a","date":"2026-05-06","commit_type":"feat","scope":"","subject":"feat: add sd-webui-image-gen openspec proposal","project":"HeartReverie_Plugins","insertions":904,"deletions":0},{"hash":"a0976f89b4726e63254b0679ff463e347ab4de01","date":"2026-05-06","commit_type":"chore","scope":"","subject":"chore: update skill","project":"HeartReverie_Plugins","insertions":166,"deletions":5},{"hash":"8155e642833010aace7ecd7a1d03ead3d959811c","date":"2026-05-06","commit_type":"feat","scope":"","subject":"feat: replace hardcoded accent colors with CSS custom properties","project":"HeartReverie_Plugins","insertions":9,"deletions":9},{"hash":"6d1d1437a05c22ef9cc68d73fd79872d54fda91f","date":"2026-05-05","commit_type":"chore","scope":"","subject":"chore: add openspec proposal for fix-hardcoded-colors-and-action-bar","project":"HeartReverie","insertions":161,"deletions":0},{"hash":"93f6257a7f3a7cfa8444ded5aa5b7c7c13e9c958","date":"2026-05-05","commit_type":"feat","scope":"quick-add","subject":"feat(quick-add): add 必填 indicators and validation feedback","project":"HeartReverie","insertions":20,"deletions":6},{"hash":"8670a6277d7b1f6a6d7341dba9851bc187a1802f","date":"2026-05-05","commit_type":"chore","scope":"","subject":"chore: sync specs and archive fix-import-character-card","project":"HeartReverie","insertions":173,"deletions":41},{"hash":"e4c037911466c393105ff30b6633d03fb71d6f33","date":"2026-05-05","commit_type":"style","scope":"import-card","subject":"style(import-card): add disabled state styling for themed-btn","project":"HeartReverie","insertions":10,"deletions":0},{"hash":"11efae495fa8073453d66f6ad2989c245a9269b4","date":"2026-05-05","commit_type":"feat","scope":"import-card","subject":"feat(import-card): add required field indicators and validation feedback","project":"HeartReverie","insertions":46,"deletions":12},{"hash":"2ee19bdf922a0bcfa3689fde54bac2f155008add","date":"2026-05-05","commit_type":"refactor","scope":"import-card","subject":"refactor(import-card): reorder sections and fields","project":"HeartReverie","insertions":54,"deletions":55},{"hash":"01a1f181bb2fcf369201914029e3be9e122b3219","date":"2026-05-05","commit_type":"feat","scope":"import-card","subject":"feat(import-card): fix parser, series-scope lore, UI restructure","project":"HeartReverie","insertions":413,"deletions":240},{"hash":"14209879c6c1f48490d856683c4a56bac366da72","date":"2026-05-05","commit_type":"docs","scope":"openspec","subject":"docs(openspec): add 典籍→篇章 rename to fix-import-character-card proposal","project":"HeartReverie","insertions":65,"deletions":18},{"hash":"c5745c829c835a332d1d1c9f6c688ad1e805e6c2","date":"2026-05-05","commit_type":"docs","scope":"openspec","subject":"docs(openspec): add fix-import-character-card change proposal","project":"HeartReverie","insertions":428,"deletions":0},{"hash":"8dda0feeb3ddaeb40e549ef349b6f6febc975294","date":"2026-05-05","commit_type":"feat","scope":"","subject":"feat: add SPA tools menu with Quick-Add and ST character-card import","project":"HeartReverie","insertions":5689,"deletions":27},{"hash":"2ca95334aae6959c2fba48f82b66f059075bf8a7","date":"2026-05-05","commit_type":"chore","scope":"scripts","subject":"chore(scripts): derive PROJECT_DIR and PLUGINS_DIR from script location","project":"HeartReverie","insertions":3,"deletions":2},{"hash":"b3c9731f290bb511d5d43f61c9773cdd12b560fc","date":"2026-05-05","commit_type":"chore","scope":"scripts","subject":"chore(scripts): mark podman-build-run.sh executable","project":"HeartReverie","insertions":0,"deletions":0},{"hash":"7c1f7a715b01516518760eb80a01fe3e971b704e","date":"2026-05-05","commit_type":"docs","scope":"","subject":"docs: docs rename default theme to 浮心夜夢","project":"HeartReverie","insertions":11,"deletions":11},{"hash":"863823e9822319ea8bc177c5a4f68d10fec66845","date":"2026-05-05","commit_type":"chore","scope":"openspec","subject":"chore(openspec): sync delta specs and archive theme-system","project":"HeartReverie","insertions":592,"deletions":149},{"hash":"2af1f4b567326bc45a8da93f0711c5708ecf3eb8","date":"2026-05-05","commit_type":"feat","scope":"themes","subject":"feat(themes): complete theme system with page-bg, palette design, and dialogue highlight fix","project":"HeartReverie","insertions":161,"deletions":98},{"hash":"652b0c001f0980cd75207dd21f53591b95e47683","date":"2026-05-05","commit_type":"feat","scope":"themes","subject":"feat(themes): implement TOML-based theme system with FOUC prevention","project":"HeartReverie","insertions":981,"deletions":374},{"hash":"481b01f2d325f5264c494a3936877954da9a1e65","date":"2026-05-05","commit_type":"chore","scope":"openspec","subject":"chore(openspec): sync delta spec and archive fix-summary-chapter-number","project":"HeartReverie","insertions":20,"deletions":0},{"hash":"616c0de072f602c7ea248a2ebc0f6b95e40e0b9d","date":"2026-05-05","commit_type":"fix","scope":"writer","subject":"fix(writer): render plugin fragment variables through Vento with canonical chapter number","project":"HeartReverie","insertions":156,"deletions":24},{"hash":"cad5800ac7558eb55fbc71a44644d6bdffa4c48a","date":"2026-05-05","commit_type":"feat","scope":"writer","subject":"feat(writer): add polish-last-chapter replace mode and bundled polish plugin","project":"HeartReverie","insertions":1599,"deletions":90},{"hash":"d0d17f06b5388878005f27d34e6669abbaad4a34","date":"2026-05-05","commit_type":"feat","scope":"writer","subject":"feat(writer): add continue-last-chapter mode","project":"HeartReverie","insertions":2941,"deletions":80},{"hash":"600b8bef62a5af835dcdf14e5bae823c8f7dfdd0","date":"2026-05-05","commit_type":"feat","scope":"state","subject":"feat(state): support per-story init-status.yaml override","project":"HeartReverie_Plugins","insertions":928,"deletions":40},{"hash":"a29e3af90856a84321ce8dd286b7da821b45a007","date":"2026-05-04","commit_type":"build","scope":"script","subject":"build(script): use nested repository paths in build script","project":"HeartReverie","insertions":2,"deletions":2},{"hash":"8499e7b204f48ec70df5c9dfd11beb86d49ce91c","date":"2026-05-04","commit_type":"docs","scope":"openspec","subject":"docs(openspec): add OpenSpec proposals for chapter actions and themes","project":"HeartReverie","insertions":2164,"deletions":0},{"hash":"cd037c99eec4aa15aa72963c2daeb8f10161d3b9","date":"2026-05-04","commit_type":"feat","scope":"status","subject":"feat(status): add recompute action button","project":"HeartReverie_Plugins","insertions":89,"deletions":5},{"hash":"4d4cdd8985c1887a6f0a0f587a9d2f6cd84f0424","date":"2026-05-03","commit_type":"docs","scope":"openspec","subject":"docs(openspec): add ci-latest-publish-webhook-dispatch spec and archive change","project":"HeartReverie","insertions":68,"deletions":0},{"hash":"7724b5bbf6d53d10e3991bee0116456e917c2c7d","date":"2026-05-03","commit_type":"docs","scope":"","subject":"docs: clarify FORGEJO_API_TOKEN requires write:repository scope","project":"HeartReverie","insertions":1,"deletions":1},{"hash":"7bca1b0ebb7a75a0b4e5ce8d0424026ef08a3c03","date":"2026-05-03","commit_type":"docs","scope":"","subject":"docs: move CI cross-repo trigger docs to docs/ci-cross-repo-trigger.md","project":"HeartReverie","insertions":27,"deletions":28},{"hash":"50644729a785ec096ea2e5f16978cc3783d65b54","date":"2026-05-03","commit_type":"feat","scope":"ci","subject":"feat(ci): add Forgejo dispatch trigger and OpenSpec change artifacts","project":"HeartReverie","insertions":181,"deletions":0},{"hash":"fc5b7f687a7987ceda4e67257b35110c8bb6802f","date":"2026-05-03","commit_type":"feat","scope":"","subject":"feat: dispatch Forgejo plugins build after latest image publish","project":"HeartReverie","insertions":99,"deletions":0},{"hash":"3e81ede7dec856a492eeaf7e430f38344610e8ed","date":"2026-05-03","commit_type":"fix","scope":"logger","subject":"fix(logger): disable ANSI escapes for non-TTY output","project":"HeartReverie","insertions":61,"deletions":6},{"hash":"24c653f6ceca95689a1889decd15b45881f04b96","date":"2026-05-03","commit_type":"feat","scope":"writer","subject":"feat(writer): reserve platform system directories","project":"HeartReverie","insertions":363,"deletions":13},{"hash":"e998918f82bc9faf1c6359130619adf3ae19c154","date":"2026-05-03","commit_type":"fix","scope":"container","subject":"fix(container): align frontend build dependencies","project":"HeartReverie","insertions":3,"deletions":4},{"hash":"2c846d972fcbc78bea672251e84f1dc6fc4fd548","date":"2026-05-03","commit_type":"test","scope":"","subject":"test: raise coverage above threshold","project":"HeartReverie","insertions":4896,"deletions":0},{"hash":"e459ab51acac2a53f00462b3308842bcd6315cbe","date":"2026-05-03","commit_type":"chore","scope":"openspec","subject":"chore(openspec): archive remove-tls-from-application change","project":"HeartReverie","insertions":204,"deletions":142},{"hash":"6508c5d3cc2095d8f7faff714d1df0f018b5494d","date":"2026-05-03","commit_type":"feat","scope":"","subject":"feat!: remove TLS from application, delegate to upstream proxies","project":"HeartReverie","insertions":129,"deletions":396},{"hash":"cd2f288690a853dfa9868e245b27ae986dbb8fed","date":"2026-05-03","commit_type":"docs","scope":"openspec","subject":"docs(openspec): propose removing TLS from application","project":"HeartReverie","insertions":943,"deletions":0},{"hash":"49b3565df303c0ea311b110b410befe8ab471865","date":"2026-05-03","commit_type":"chore","scope":"openspec","subject":"chore(openspec): archive remove-fsa-and-indexeddb change","project":"HeartReverie","insertions":60,"deletions":238},{"hash":"0fbe8150f7c3613c4f3b08610b44b27f91396f2c","date":"2026-05-03","commit_type":"refactor","scope":"reader","subject":"refactor(reader): remove File System Access API and IndexedDB modes","project":"HeartReverie","insertions":144,"deletions":1005},{"hash":"2810ad75963d78d030f8dd0ef09aaca1ad19d55e","date":"2026-05-03","commit_type":"docs","scope":"openspec","subject":"docs(openspec): propose removing FSA reader mode and IndexedDB","project":"HeartReverie","insertions":836,"deletions":0},{"hash":"b36958fba5da97b36e072362eafa2a275869bd3c","date":"2026-05-03","commit_type":"chore","scope":".agents/skills/heartreverie-create-plugin","subject":"chore(.agents/skills/heartreverie-create-plugin): update skills/heartreverie-create-plugin","project":"HeartReverie_Plugins","insertions":136,"deletions":2},{"hash":"986c8348a11eb9dcfb5cd761e55eaf487842038d","date":"2026-05-03","commit_type":"docs","scope":"openspec","subject":"docs(openspec): sync container-ci spec and archive change","project":"HeartReverie_Plugins","insertions":84,"deletions":0},{"hash":"e571e0d086564f5d50709040951dcbc5bc7b0ec1","date":"2026-05-03","commit_type":"fix","scope":"","subject":"fix: use Forgejo-native context and env vars in build workflow","project":"HeartReverie_Plugins","insertions":10,"deletions":10},{"hash":"aa6ccbdb6142a890ea9c6fab4051426722bf57af","date":"2026-05-03","commit_type":"feat","scope":"ci","subject":"feat(ci): add workflow_dispatch trigger with explicit input contract","project":"HeartReverie_Plugins","insertions":324,"deletions":2},{"hash":"a012b94c1372642a2b855f170bba4249fe002546","date":"2026-05-03","commit_type":"fix","scope":"threshold-lord","subject":"fix(threshold-lord): refine prompt bias wording and ending marker","project":"HeartReverie_Plugins","insertions":4,"deletions":5},{"hash":"e0dfd365bc9bbe1d163dd1f7c85c69c8bc1db21b","date":"2026-05-02","commit_type":"feat","scope":"helm","subject":"feat(helm): add Helm chart for Kubernetes deployment","project":"HeartReverie","insertions":1959,"deletions":0},{"hash":"ab690749e9298811dc24b495691bc4bb2bd271b6","date":"2026-05-02","commit_type":"chore","scope":"release","subject":"chore(release): bump version to 0.5.0","project":"HeartReverie","insertions":23,"deletions":2},{"hash":"e514c8b9467f0d305a071ee50e269022152a8296","date":"2026-05-02","commit_type":"fix","scope":"reader","subject":"fix(reader): preserve story-selector route watchers across component unmounts","project":"HeartReverie","insertions":104,"deletions":35},{"hash":"a7357d101b4f711f9ed0472c19039210489d5355","date":"2026-05-02","commit_type":"feat","scope":"reader","subject":"feat(reader): mobile-responsive header + prompt-editor toolbar wrap","project":"HeartReverie","insertions":502,"deletions":33},{"hash":"4f3f91fea4dfd9c1d4f62a4cc447cba9fc380829","date":"2026-05-02","commit_type":"feat","scope":"reader","subject":"feat(reader): tighten header — drop folder picker, collapse story toggle, add boundary chapter jumps","project":"HeartReverie","insertions":834,"deletions":94},{"hash":"960be0c6e8c4f0e93a5d25ebb5ca4af6939096c2","date":"2026-05-02","commit_type":"docs","scope":"specs","subject":"docs(specs): add SHALL keyword to plugin-core frontend.js path requirement","project":"HeartReverie","insertions":1,"deletions":1},{"hash":"4da23371425ca932229633e2721b5581f9778cbb","date":"2026-05-02","commit_type":"feat","scope":"plugins","subject":"feat(plugins): add plugin action buttons with run-prompt route","project":"HeartReverie","insertions":4775,"deletions":289},{"hash":"2d9803df8e7faeac8c9d58be84b650e60133d4f8","date":"2026-05-02","commit_type":"feat","scope":"","subject":"feat: adopt action buttons in state and options plugins","project":"HeartReverie_Plugins","insertions":435,"deletions":5},{"hash":"218f12a5f75f26eee23d0be2d5c5e95cd9533993","date":"2026-05-01","commit_type":"docs","scope":"changelog","subject":"docs(changelog): fix changelog release date for 0.2.0","project":"HeartReverie","insertions":1,"deletions":1},{"hash":"03f58d426700becb566d52dc7a77c25fae8dc5c3","date":"2026-05-01","commit_type":"chore","scope":"release","subject":"chore(release): bump version to 0.4.0","project":"HeartReverie","insertions":31,"deletions":2},{"hash":"5d593f0353d9cc4d390d57638f21575f898e296b","date":"2026-05-01","commit_type":"feat","scope":"","subject":"feat: multi-message Vento template + cards-mode prompt editor","project":"HeartReverie","insertions":6607,"deletions":677},{"hash":"f0d18a3c46d69b8a34684f73ef5a3f764609de81","date":"2026-05-01","commit_type":"chore","scope":"scripts","subject":"chore(scripts): bind-mount plugin dirs into dev container","project":"HeartReverie","insertions":9,"deletions":0},{"hash":"14e0341c453886cc879780833bda3857854898a2","date":"2026-05-01","commit_type":"fix","scope":"reader","subject":"fix(reader): make prompt-editor textarea and preview scroll independently","project":"HeartReverie","insertions":691,"deletions":0},{"hash":"9e7ad98e56d0dd48b641f15d1d1b977c184e7d96","date":"2026-05-01","commit_type":"feat","scope":"llm-config","subject":"feat(llm-config): expose env defaults and add maxCompletionTokens override","project":"HeartReverie","insertions":2380,"deletions":128},{"hash":"406b08340f2aeb98324a090bd198bcb2d98271c5","date":"2026-05-01","commit_type":"refactor","scope":"prompt","subject":"refactor(prompt): refine scenario prompt structure for character lore","project":"HeartReverie","insertions":5,"deletions":1},{"hash":"ebda2b20ff07bcd95fa482402010a66663477c33","date":"2026-05-01","commit_type":"fix","scope":"plugins/thinking","subject":"fix(plugins/thinking): improve reply planning for likely status updates","project":"HeartReverie","insertions":1,"deletions":0},{"hash":"7214dffde321c3430c2ce412e42e0fb3b029539d","date":"2026-05-01","commit_type":"refactor","scope":"prompt","subject":"refactor(prompt): refactor prompt roles for v0.4.0","project":"HeartReverie_Plugins","insertions":13,"deletions":2},{"hash":"5fef6363ebdaf0279c9ca56fc0dfd09a451d858a","date":"2026-05-01","commit_type":"refactor","scope":"prompts","subject":"refactor(prompts): refine prompt structure and Chinese style rules","project":"HeartReverie_Plugins","insertions":43,"deletions":40},{"hash":"c1d4fe2a4f53728105385c5d25a1c0ddaed83dee","date":"2026-04-30","commit_type":"feat","scope":"plugins","subject":"feat(plugins): add dialogue-colorize plugin via Highlight API","project":"HeartReverie","insertions":1536,"deletions":63},{"hash":"5f080281cd74aedab25a39bf20cbf02988d3a48c","date":"2026-04-30","commit_type":"refactor","scope":"plugins","subject":"refactor(plugins): refine prompt wording for clarity and zh-TW conventions","project":"HeartReverie","insertions":9,"deletions":3},{"hash":"a6c314f7b68852073f8edaf8b2e95a6477a1f134","date":"2026-04-30","commit_type":"feat","scope":"plugins/thinking","subject":"feat(plugins/thinking): prefer native reasoning faculty over inline tags","project":"HeartReverie","insertions":1,"deletions":1},{"hash":"684c313e681c7311f4083d81e7eb69d9db3d9cf5","date":"2026-04-30","commit_type":"fix","scope":"reader","subject":"fix(reader): prevent plugin sidebar loss after reload and edit-cancel","project":"HeartReverie","insertions":1884,"deletions":105},{"hash":"7f0d542005ed634d03b498c7090a2b69d5fae143","date":"2026-04-30","commit_type":"fix","scope":"llm","subject":"fix(llm): drop CJK suffix from OpenRouter X-OpenRouter-Title header","project":"HeartReverie","insertions":10,"deletions":11},{"hash":"78c6f3f763f0e414a326a35357e9f45b6916c01a","date":"2026-04-30","commit_type":"feat","scope":"writer","subject":"feat(writer): stream LLM reasoning into chapter \u003cthink\u003e block","project":"HeartReverie","insertions":1211,"deletions":7},{"hash":"b2f1f39c5c17b9f5342344aa23c33c4f667316cd","date":"2026-04-30","commit_type":"feat","scope":"","subject":"feat: add zhtw-prose-constraints plugin","project":"HeartReverie_Plugins","insertions":65,"deletions":0},{"hash":"999f0e88d267d3c4bf4d2ac3b8d0a8873d67ca97","date":"2026-04-30","commit_type":"docs","scope":"","subject":"docs: normalize traditional chinese wording in markdown files","project":"HeartReverie_Plugins","insertions":53,"deletions":53},{"hash":"ae43cdc345d13de195dddb6930d472e0a5d229a8","date":"2026-04-30","commit_type":"refactor","scope":"","subject":"refactor: refine prompt wording for clarity and zh-TW conventions","project":"HeartReverie_Plugins","insertions":70,"deletions":70},{"hash":"eb37779477b5bc9f09b298274d1ddf1f314f409a","date":"2026-04-29","commit_type":"fix","scope":"chat","subject":"fix(chat): make streaming cancellation reason-agnostic and surface mid-stream provider errors","project":"HeartReverie","insertions":1507,"deletions":59},{"hash":"0eb62c34566a886b14884df6eeeb39e74d140979","date":"2026-04-29","commit_type":"feat","scope":"chat","subject":"feat(chat): attach OpenRouter app-attribution headers to LLM requests","project":"HeartReverie","insertions":698,"deletions":0},{"hash":"e9be2a8c2b0e5c830b0341afb06931a2c0bfe903","date":"2026-04-29","commit_type":"fix","scope":"settings","subject":"fix(settings): replace router.back() with destination-driven back-to-reading","project":"HeartReverie","insertions":771,"deletions":23},{"hash":"950aff6ed57a3fac5d0d6f4a796435a69276a8d6","date":"2026-04-28","commit_type":"feat","scope":"llm","subject":"feat(llm): add reasoning configuration with per-story overrides","project":"HeartReverie","insertions":1707,"deletions":54},{"hash":"6c9573de14ad4419bf58cd8d7188d5d12e7885ee","date":"2026-04-20","commit_type":"fix","scope":"tests","subject":"fix(tests): rename unused init param to _init in usePromptEditor-preview test","project":"HeartReverie","insertions":1,"deletions":1},{"hash":"f749680563c1c9fa6853b8220edc20928f314476","date":"2026-04-20","commit_type":"chore","scope":"openspec","subject":"chore(openspec): sync specs and archive raise-test-coverage-over-90","project":"HeartReverie","insertions":117,"deletions":0},{"hash":"2aef877f9e1b88a8640fe3f82e1d6fc94b2cf00d","date":"2026-04-20","commit_type":"test","scope":"","subject":"test: add AGPL headers to frontend tests and extend backend error-path coverage","project":"HeartReverie","insertions":260,"deletions":0},{"hash":"08a6634e6efc2e4150763b6bc1f29007ba9668d0","date":"2026-04-20","commit_type":"feat","scope":"","subject":"feat: enforce \u003e90% combined coverage across backend and frontend","project":"HeartReverie","insertions":3195,"deletions":240},{"hash":"fcbfba0c341fc9635888aacc8e696adb31bab2f7","date":"2026-04-20","commit_type":"feat","scope":"","subject":"feat: rename scene-locale-header to scene-info-sidebar and redesign","project":"HeartReverie_Plugins","insertions":238,"deletions":183},{"hash":"446955de73f416dab34285c263c5bddbeec30561","date":"2026-04-20","commit_type":"feat","scope":"","subject":"feat: rename scene-locale-header to scene-info-sidebar with redesigned layout","project":"HeartReverie_Plugins","insertions":404,"deletions":136},{"hash":"781e13fd77d288330fde9083c688f746ed73420d","date":"2026-04-20","commit_type":"chore","scope":"gitignore","subject":"chore(gitignore): ignore tmp directory in git","project":"HeartReverie_Plugins","insertions":1,"deletions":0},{"hash":"e233f62a39d567e2f19b9cb1003b13d43f0ec57a","date":"2026-04-19","commit_type":"fix","scope":"openspec","subject":"fix(openspec): correct archive change directory dates","project":"HeartReverie","insertions":0,"deletions":0},{"hash":"d47339859a4621969c789019681512a9d06ac112","date":"2026-04-19","commit_type":"chore","scope":"git","subject":"chore(git): ignore coverage output in Git","project":"HeartReverie","insertions":1,"deletions":0},{"hash":"93871a657cac619d34f61ff347c4c6e93d510b69","date":"2026-04-19","commit_type":"chore","scope":"release","subject":"chore(release): bump version to 0.3.0","project":"HeartReverie","insertions":22,"deletions":15},{"hash":"a0daf1b360275deda7da000a67df872fbf133fe4","date":"2026-04-19","commit_type":"docs","scope":"readme","subject":"docs(readme): add README badges for CI coverage release and license","project":"HeartReverie","insertions":5,"deletions":0},{"hash":"219fdc4cccfd71c343558e38c7a18ae00517b7ac","date":"2026-04-19","commit_type":"feat","scope":"ci","subject":"feat(ci): add codecov coverage reporting workflow","project":"HeartReverie","insertions":180,"deletions":1},{"hash":"99301f47438795ff6c176e85a075988ba84768c5","date":"2026-04-19","commit_type":"chore","scope":"openspec","subject":"chore(openspec): archive yml-to-yaml-extension change","project":"HeartReverie","insertions":0,"deletions":0},{"hash":"a472682c238357c2b9bf90a72924954bf0ce7ec6","date":"2026-04-19","commit_type":"test","scope":"writer","subject":"test(writer): add state artifact cleanup and fork copy coverage","project":"HeartReverie","insertions":180,"deletions":0},{"hash":"3a035492ac8dd8ec75bedaf96945d96e7c7ca89f","date":"2026-04-19","commit_type":"refactor","scope":"","subject":"refactor: rename all .yml extensions to .yaml","project":"HeartReverie","insertions":54,"deletions":54},{"hash":"b7eb2e095dd9813535ef56dc0393f4d3de269517","date":"2026-04-19","commit_type":"feat","scope":"openspec","subject":"feat(openspec): propose yml-to-yaml-extension change","project":"HeartReverie","insertions":255,"deletions":0},{"hash":"13a030c4bfd3ffa278761ae3742702dc9eb82d02","date":"2026-04-19","commit_type":"feat","scope":"state","subject":"feat(state): extend core for state plugin chapter delivery pipeline","project":"HeartReverie","insertions":159,"deletions":10},{"hash":"0679783fe0fb95e2d8b9c88997b85012ce3f7233","date":"2026-04-19","commit_type":"chore","scope":"openspec","subject":"chore(openspec): archive token-usage-tracking, sync specs","project":"HeartReverie","insertions":213,"deletions":2},{"hash":"84d1ff2fe56c86a3a73fa5017778ec266f6b9314","date":"2026-04-19","commit_type":"chore","scope":"openspec","subject":"chore(openspec): archive frontend-hook-expansion, richer-dynamic-variable-context","project":"HeartReverie","insertions":220,"deletions":7},{"hash":"92af167efbdfce1eaecc1a0b5ec36db7941ac95f","date":"2026-04-19","commit_type":"chore","scope":"openspec","subject":"chore(openspec): sync main specs for per-story-llm-settings","project":"HeartReverie","insertions":216,"deletions":5},{"hash":"2f34e56a0fc671223fb1066018e8940e6928d572","date":"2026-04-19","commit_type":"chore","scope":"openspec","subject":"chore(openspec): sync main specs for chapter-editing, story-export","project":"HeartReverie","insertions":256,"deletions":0},{"hash":"68763dc3f6c67d74600999f6e602727f4eb20f14","date":"2026-04-19","commit_type":"chore","scope":"openspec","subject":"chore(openspec): archive activate-response-stream-hook, sync specs","project":"HeartReverie","insertions":85,"deletions":5},{"hash":"09954db72f454d9b1100e5b47d26066f0785c54d","date":"2026-04-19","commit_type":"feat","scope":"chapters","subject":"feat(chapters): add chapter editing, rewind, and story branching","project":"HeartReverie","insertions":2020,"deletions":90},{"hash":"1d2dd319bdf83442c234fa257dfe557d21a7fb64","date":"2026-04-19","commit_type":"feat","scope":"export","subject":"feat(export): add story export endpoint with md/json/txt formats","project":"HeartReverie","insertions":1202,"deletions":61},{"hash":"879b941bdd080c5e980ef69c950b9884f99e6821","date":"2026-04-19","commit_type":"feat","scope":"usage","subject":"feat(usage): add per-story token usage tracking and UI panel","project":"HeartReverie","insertions":1426,"deletions":56},{"hash":"e021d06993d583a394de8fe56b26f8dfe668c0f5","date":"2026-04-19","commit_type":"feat","scope":"config","subject":"feat(config): add per-story LLM settings with override system","project":"HeartReverie","insertions":1697,"deletions":65},{"hash":"ac1cc663940c62ee9f2a2594df0994d8938abd7d","date":"2026-04-19","commit_type":"feat","scope":"reader","subject":"feat(reader): expand frontend hook system with 4 new lifecycle hooks","project":"HeartReverie","insertions":913,"deletions":41},{"hash":"95a980a65383e62107afacd02eb77eaf888f4200","date":"2026-04-19","commit_type":"feat","scope":"plugins","subject":"feat(plugins): enrich DynamicVariableContext with runtime fields","project":"HeartReverie","insertions":332,"deletions":38},{"hash":"faed6c93b252650aac1a4ce24494e8f7d234b31c","date":"2026-04-19","commit_type":"feat","scope":"plugins","subject":"feat(plugins): activate response-stream backend hook","project":"HeartReverie","insertions":503,"deletions":31},{"hash":"6aa3a8f285e477ed6d50fe174ea0a0b034385bce","date":"2026-04-19","commit_type":"feat","scope":"openspec","subject":"feat(openspec): propose 7 new features","project":"HeartReverie","insertions":2508,"deletions":0},{"hash":"8ce8893cb74c732c3a622b6e56d1ec8af1c3665c","date":"2026-04-19","commit_type":"fix","scope":"release-notes","subject":"fix(release-notes): fix release notes Podman pull owner interpolation","project":"HeartReverie","insertions":1,"deletions":1},{"hash":"2a96ce429ac1febdc4a6b8d4c39112483f3fd592","date":"2026-04-19","commit_type":"chore","scope":"release","subject":"chore(release): bump version to 0.2.0","project":"HeartReverie","insertions":31,"deletions":2},{"hash":"b22b97f6dba79af9a9e733b647ec500c1d9a242d","date":"2026-04-19","commit_type":"chore","scope":"openspec","subject":"chore(openspec): archive fix-batch-chapter-loading","project":"HeartReverie","insertions":21,"deletions":2},{"hash":"741232e633af96f31960e3458a3f285135fe6c1a","date":"2026-04-19","commit_type":"fix","scope":"","subject":"fix: rebuild reader-dist to resolve batch chapter loading","project":"HeartReverie","insertions":11,"deletions":11},{"hash":"485be075b45dc0f56883c14bafe478c46596385e","date":"2026-04-19","commit_type":"feat","scope":"openspec","subject":"feat(openspec): propose fix-batch-chapter-loading","project":"HeartReverie","insertions":127,"deletions":0},{"hash":"f641862387a5aefea650629b2b9eef05e0397948","date":"2026-04-19","commit_type":"feat","scope":"scripts","subject":"feat(scripts): export PLUGIN_DIR in serve.sh","project":"HeartReverie","insertions":4,"deletions":3},{"hash":"122d1ada758462dbcec168c052d756c038aaf360","date":"2026-04-19","commit_type":"refactor","scope":"","subject":"refactor: update skills/ path to .agents/skills/","project":"HeartReverie","insertions":5,"deletions":5},{"hash":"e967406bd383a70511e437c32675210279a42009","date":"2026-04-19","commit_type":"refactor","scope":"","subject":"refactor: move plugin specs to HeartReverie_Plugins repo","project":"HeartReverie","insertions":0,"deletions":848},{"hash":"f998048364db748fa54abcbf186dd83a4028cdfe","date":"2026-04-19","commit_type":"feat","scope":"containers","subject":"feat(containers): add Podman script to build and run app","project":"HeartReverie","insertions":42,"deletions":0},{"hash":"beef3a6eb20e6a0c6f67648a5d6c7734c0f5f403","date":"2026-04-19","commit_type":"refactor","scope":"","subject":"refactor: move serve.sh to scripts/ directory","project":"HeartReverie","insertions":24,"deletions":22},{"hash":"4d7ce098113aff208dc9e46fb3128f4355f7da3a","date":"2026-04-19","commit_type":"chore","scope":"metadata","subject":"chore(metadata): mark OpenSpec and spec generation skills internal","project":"HeartReverie","insertions":9,"deletions":0},{"hash":"01b97ae32945d33313563c59f8bbcfbcc4612697","date":"2026-04-19","commit_type":"chore","scope":"openspec","subject":"chore(openspec): archive yml-to-yaml-extension change","project":"HeartReverie_Plugins","insertions":0,"deletions":0},{"hash":"8e4e7bd300c644d88b2b8bc4cdca150e5fc32aaa","date":"2026-04-19","commit_type":"refactor","scope":"","subject":"refactor: rename all .yml string references to .yaml","project":"HeartReverie_Plugins","insertions":107,"deletions":107},{"hash":"5b79f3260f494b68ec5a4697e41aedef56bf4711","date":"2026-04-19","commit_type":"feat","scope":"openspec","subject":"feat(openspec): propose yml-to-yaml-extension change","project":"HeartReverie_Plugins","insertions":378,"deletions":0},{"hash":"a745f968ff2cc9651d67735d6a16ef9b2e2d7597","date":"2026-04-19","commit_type":"chore","scope":"openspec","subject":"chore(openspec): archive runtime-state-diff, sync specs","project":"HeartReverie_Plugins","insertions":349,"deletions":335},{"hash":"4968638dae7e56621d4bd0bc7e8eb91fc78b26d8","date":"2026-04-19","commit_type":"feat","scope":"state","subject":"feat(state): merge state + state-diff-viewer into unified TypeScript plugin","project":"HeartReverie_Plugins","insertions":2196,"deletions":3365},{"hash":"b9196e48f16ad374973993485c9db394cca06623","date":"2026-04-19","commit_type":"feat","scope":"openspec","subject":"feat(openspec): rewrite runtime-state-diff proposal — merge state + state-diff-viewer","project":"HeartReverie_Plugins","insertions":630,"deletions":289},{"hash":"50d65b8b42cc1b3c760d82d866841171e82195f7","date":"2026-04-19","commit_type":"feat","scope":"openspec","subject":"feat(openspec): propose runtime-state-diff change","project":"HeartReverie_Plugins","insertions":410,"deletions":0},{"hash":"8ce7be9949c00d8b53a7894147b43b56d5a4968e","date":"2026-04-19","commit_type":"chore","scope":"openspec","subject":"chore(openspec): archive state-diff-viewer, scene-locale-header","project":"HeartReverie_Plugins","insertions":374,"deletions":0},{"hash":"62af7f2a7cb15060717f22dd76df75291357f7c4","date":"2026-04-19","commit_type":"feat","scope":"state-diff-viewer","subject":"feat(state-diff-viewer): add state diff viewer across write and render","project":"HeartReverie_Plugins","insertions":28,"deletions":26},{"hash":"958c86caae56e3cf4aed00ff17f810d723c9ae92","date":"2026-04-19","commit_type":"docs","scope":"scene-locale-header","subject":"docs(scene-locale-header): update docs for vertical left-side strip design","project":"HeartReverie_Plugins","insertions":51,"deletions":27},{"hash":"70a100205ce6f179f6ea5dc38daf3336600f08d4","date":"2026-04-19","commit_type":"fix","scope":"scene-locale-header","subject":"fix(scene-locale-header): prevent banner from overlapping main content","project":"HeartReverie_Plugins","insertions":15,"deletions":1},{"hash":"5cc8eccd0825e285e508be27b9ab9bf019907b41","date":"2026-04-19","commit_type":"refactor","scope":"scene-locale-header","subject":"refactor(scene-locale-header): vertical left-side strip with scroll animation","project":"HeartReverie_Plugins","insertions":47,"deletions":32},{"hash":"c80adce026e2f937993db7026556c40ccb455844","date":"2026-04-19","commit_type":"fix","scope":"scene-locale-header","subject":"fix(scene-locale-header): prevent pill overflow from banner container","project":"HeartReverie_Plugins","insertions":4,"deletions":0},{"hash":"0464c6f1d45fde675027336bae22a72460ce64f2","date":"2026-04-19","commit_type":"feat","scope":"scene-locale-header","subject":"feat(scene-locale-header): add persistent scene locale banner plugin","project":"HeartReverie_Plugins","insertions":400,"deletions":0},{"hash":"f9a5d9d7cf1769ce73215fc9604bb982ee15f0ad","date":"2026-04-19","commit_type":"feat","scope":"state-diff-viewer","subject":"feat(state-diff-viewer): add state diff visualization plugin","project":"HeartReverie_Plugins","insertions":620,"deletions":0},{"hash":"af071c5adc0e6acaa3f9f2b6b68a968106c3d9e2","date":"2026-04-19","commit_type":"feat","scope":"openspec","subject":"feat(openspec): propose 2 new plugins","project":"HeartReverie_Plugins","insertions":831,"deletions":0},{"hash":"f618abfc898226e25d669faaf6e04dde041ee045","date":"2026-04-19","commit_type":"docs","scope":"","subject":"docs: add LICENSE","project":"HeartReverie_Plugins","insertions":661,"deletions":0},{"hash":"8da8c4353ce19e125a1a63d1b2c51dca6e4dbdc2","date":"2026-04-19","commit_type":"docs","scope":"","subject":"docs: create AGENTS.md with project conventions and structure","project":"HeartReverie_Plugins","insertions":175,"deletions":0},{"hash":"b407c762e6f6b8205bf24efb51fceac72640763e","date":"2026-04-19","commit_type":"chore","scope":"skills","subject":"chore(skills): remove committed skills lock file","project":"HeartReverie_Plugins","insertions":0,"deletions":15},{"hash":"01be47df14b03c5485e93a504cc3617fcfc94982","date":"2026-04-19","commit_type":"docs","scope":"","subject":"docs: update container deployment to use quay.io registry image","project":"HeartReverie_Plugins","insertions":12,"deletions":6},{"hash":"3a8c297ac1e7571820fca36079a979b90aaf72ff","date":"2026-04-19","commit_type":"chore","scope":"openspec","subject":"chore(openspec): archive forgejo-actions-container-build","project":"HeartReverie_Plugins","insertions":50,"deletions":7},{"hash":"3ca41d8f6c35a81e84641dc83935ec82170ee7b2","date":"2026-04-19","commit_type":"fix","scope":"ci","subject":"fix(ci): upgrade runner to codeberg-medium for push memory","project":"HeartReverie_Plugins","insertions":1,"deletions":1},{"hash":"ee81d0c5fac2b4c1781e76704076efbf2e11c710","date":"2026-04-19","commit_type":"fix","scope":"ci","subject":"fix(ci): strip --link flag unsupported by buildah COPY","project":"HeartReverie_Plugins","insertions":3,"deletions":0},{"hash":"c54c4694cc9bc05ddeec6b103924c4d9e5868117","date":"2026-04-19","commit_type":"feat","scope":"ci","subject":"feat(ci): add Forgejo Actions workflow for container build and push","project":"HeartReverie_Plugins","insertions":52,"deletions":26},{"hash":"f6721c6e7dce18baca9d21c676c82081ef4df088","date":"2026-04-19","commit_type":"feat","scope":"openspec","subject":"feat(openspec): propose forgejo-actions-container-build","project":"HeartReverie_Plugins","insertions":169,"deletions":0},{"hash":"e49bd87c9a8fb756227fa99fab63728b8b4eb745","date":"2026-04-19","commit_type":"feat","scope":"","subject":"feat: add openspec specs from HeartReverie core repo","project":"HeartReverie_Plugins","insertions":848,"deletions":0},{"hash":"ce628119ced0afbfcb0306ff347b380ae0a38e66","date":"2026-04-19","commit_type":"feat","scope":"openspec","subject":"feat(openspec): add OpenSpec workflows for guided spec changes","project":"HeartReverie_Plugins","insertions":1395,"deletions":0},{"hash":"01aac55240a577d125e141ef1e2ac5edf4baebfb","date":"2026-04-19","commit_type":"fix","scope":"state","subject":"fix(state): skip underscore-prefixed directories in state-patches","project":"HeartReverie_Plugins","insertions":17,"deletions":0},{"hash":"50ef885c8c94d1a4d7eb2c1bf8c5dc81f349c5ce","date":"2026-04-19","commit_type":"docs","scope":"","subject":"docs: fix skill install command URL (add .git suffix)","project":"HeartReverie_Plugins","insertions":7,"deletions":2},{"hash":"52eba67012ce8f29699013bfb310c4d9795a3fc4","date":"2026-04-19","commit_type":"feat","scope":"skills","subject":"feat(skills): add heartreverie-generate-state skill","project":"HeartReverie_Plugins","insertions":346,"deletions":0},{"hash":"8cd239336299f5a15e3530e275602b8dbb4e1c64","date":"2026-04-18","commit_type":"chore","scope":"openspec","subject":"chore(openspec): archive relax-rate-limits-batch-chapters","project":"HeartReverie","insertions":55,"deletions":10},{"hash":"76f589dc3a1456ae0789ca45090646381ee95276","date":"2026-04-18","commit_type":"test","scope":"","subject":"test: add batch chapter endpoint tests and mark tasks complete","project":"HeartReverie","insertions":58,"deletions":17},{"hash":"18cbb52bad8809d6c6713d1e5562895188b76e1b","date":"2026-04-18","commit_type":"docs","scope":"openspec","subject":"docs(openspec): propose relax-rate-limits-batch-chapters change","project":"HeartReverie","insertions":180,"deletions":0},{"hash":"10d44db24ee0bc69894226f27f2471f834e286c4","date":"2026-04-18","commit_type":"fix","scope":"","subject":"fix: relax API rate limits and add batch chapter loading","project":"HeartReverie","insertions":40,"deletions":84},{"hash":"323857d3efed28265e8335083c979fcdf387e5ce","date":"2026-04-18","commit_type":"docs","scope":"openspec","subject":"docs(openspec): archive llm-request-logging, sync specs to main","project":"HeartReverie","insertions":162,"deletions":5},{"hash":"aa906cdaff27cb27a55dd987724066fc4b34929a","date":"2026-04-18","commit_type":"feat","scope":"logger","subject":"feat(logger): add LLM request/response file logging","project":"HeartReverie","insertions":910,"deletions":41},{"hash":"2ba2004ccb8ef62401365e584b37a5373bfc5f12","date":"2026-04-18","commit_type":"deps","scope":"","subject":"deps: upgrade all major dependencies","project":"HeartReverie","insertions":387,"deletions":839},{"hash":"42fdc0b9f7d02dd7e7a50a523c04c08dd8045c17","date":"2026-04-18","commit_type":"chore","scope":"deps","subject":"chore(deps): upgrade dependencies and remove deprecated @types/dompurify","project":"HeartReverie","insertions":59,"deletions":75},{"hash":"03990a92952cdfc4f692cf72391e24cce787984c","date":"2026-04-18","commit_type":"docs","scope":"skills","subject":"docs(skills): add missing frontendStyles, notification hook, remove stale plugin lists","project":"HeartReverie","insertions":106,"deletions":31},{"hash":"ddf545d115cd52c1ba0de1aa01be9ecf45bb7321","date":"2026-04-18","commit_type":"docs","scope":"","subject":"docs: update documentation for plugin-logger, CSS injection, and response-notify","project":"HeartReverie","insertions":65,"deletions":23},{"hash":"5981dfed62e7dbd8d337ecd1362328032ac123ef","date":"2026-04-18","commit_type":"feat","scope":"plugins","subject":"feat(plugins): add structured logging API for backend plugins","project":"HeartReverie","insertions":645,"deletions":36},{"hash":"1bc8531a9881e6386d0491315bddce416d81e60f","date":"2026-04-18","commit_type":"feat","scope":"","subject":"feat: add structured audit logging system","project":"HeartReverie","insertions":1402,"deletions":118},{"hash":"6cd72c59ca0a4b6920c8f3c27b3f34fa65fbde67","date":"2026-04-18","commit_type":"feat","scope":"reader","subject":"feat(reader): persist chat input text via sessionStorage","project":"HeartReverie","insertions":270,"deletions":1},{"hash":"ba8c669d1219952bf05b22c1df308395d0024f0a","date":"2026-04-18","commit_type":"feat","scope":"plugins","subject":"feat(plugins): add toast notification system with response-notify plugin","project":"HeartReverie","insertions":1500,"deletions":11},{"hash":"202e54fc264961d4dc0f89b54e0817ee0dd497f2","date":"2026-04-18","commit_type":"feat","scope":"plugins","subject":"feat(plugins): add CSS injection support to plugin system","project":"HeartReverie","insertions":1109,"deletions":320},{"hash":"96e2b8c508209522aaf36528384082dde815c915","date":"2026-04-18","commit_type":"fix","scope":"state","subject":"fix(state): move bin execution to prompt-assembly for resend correctness","project":"HeartReverie_Plugins","insertions":15,"deletions":5},{"hash":"3b9384ae679cb7456a85d7562cb7c0d704e585ee","date":"2026-04-18","commit_type":"docs","scope":"docs","subject":"docs(docs): clarify system.md docs and action options","project":"HeartReverie_Plugins","insertions":4,"deletions":10},{"hash":"fb89a4512b3e53ea690b718f60412b8b328df6b7","date":"2026-04-18","commit_type":"feat","scope":"","subject":"feat: strip 女性狀態欄/行動選項 tag delimiters from display","project":"HeartReverie_Plugins","insertions":4,"deletions":2},{"hash":"f18532698a9741464b2b1464f0f3721a59900588","date":"2026-04-18","commit_type":"chore","scope":"","subject":"chore: installed skill to project","project":"HeartReverie_Plugins","insertions":893,"deletions":0},{"hash":"2a863e6e743e396a49df99f552c9fc7f37e8b702","date":"2026-04-18","commit_type":"refactor","scope":"state","subject":"refactor(state): update state plugin hooks and logging","project":"HeartReverie_Plugins","insertions":31,"deletions":6},{"hash":"98b14d67cb598ef420b18b1daf3632596098b98d","date":"2026-04-18","commit_type":"fix","scope":"state","subject":"fix(state): use PLUGIN_DIR env for state-patches binary path","project":"HeartReverie_Plugins","insertions":4,"deletions":1},{"hash":"4218047779bd38a267646f5dccd5ca71e81d2468","date":"2026-04-18","commit_type":"build","scope":"","subject":"build: extract base image into BASE_IMAGE build arg","project":"HeartReverie_Plugins","insertions":2,"deletions":1},{"hash":"0ade0ee4a1d9a40a8d88005f9b9424d327185a3c","date":"2026-04-18","commit_type":"feat","scope":"","subject":"feat: add frontendStyles CSS files for status and options plugins","project":"HeartReverie_Plugins","insertions":308,"deletions":0},{"hash":"ea76f9a464c4f96fecf87384c0ea095ab234ba4e","date":"2026-04-17","commit_type":"chore","scope":"","subject":"chore: release v0.1.0","project":"HeartReverie","insertions":86,"deletions":14},{"hash":"533232876c01a3ae4d4a6a18b7402dca488b5ee0","date":"2026-04-17","commit_type":"docs","scope":"container","subject":"docs(container): update LABEL description to match README","project":"HeartReverie","insertions":3,"deletions":3},{"hash":"ef2b738377301680c8c422ee658bfdf9ddf982b7","date":"2026-04-17","commit_type":"refactor","scope":"","subject":"refactor: migrate serve.zsh to bash","project":"HeartReverie","insertions":172,"deletions":29},{"hash":"2df47fda9c34bb86a7c4ff9d266aa21be6a8d274","date":"2026-04-17","commit_type":"docs","scope":"readme","subject":"docs(readme): update README for .env-based container setup","project":"HeartReverie","insertions":11,"deletions":5},{"hash":"e166cdfcd127d9c6149e8dc3d55799fb99952511","date":"2026-04-17","commit_type":"docs","scope":"","subject":"docs: use GitHub flavored alert blockquotes across all docs","project":"HeartReverie","insertions":8,"deletions":3},{"hash":"940f0a42a8b3240a609f326696e6b21d3191ccc9","date":"2026-04-17","commit_type":"docs","scope":"","subject":"docs: promote optional plugins section in README","project":"HeartReverie","insertions":5,"deletions":3},{"hash":"a4e2950b70b5fc8e78eb30ab9d6b173210d537c3","date":"2026-04-17","commit_type":"docs","scope":"","subject":"docs: replace 克隆/clone with 複製 for git clone terminology","project":"HeartReverie","insertions":4,"deletions":4},{"hash":"6512a17e7e4b021141314f78be28dd9b5ee1ce37","date":"2026-04-17","commit_type":"docs","scope":"","subject":"docs: use ghcr.io/jim60105/heartreverie:latest in README","project":"HeartReverie","insertions":12,"deletions":8},{"hash":"944c41e3a27f318c4d682fa969b918252a669ac4","date":"2026-04-17","commit_type":"docs","scope":"","subject":"docs: update plugin-system.md to use copy approach instead of PROMPT_FILE","project":"HeartReverie","insertions":163,"deletions":3},{"hash":"e87f19a986d8c81ce44278a29b0891aeb82f2699","date":"2026-04-17","commit_type":"chore","scope":"container","subject":"chore(container): simplify image metadata and plugin description","project":"HeartReverie_Plugins","insertions":2,"deletions":6},{"hash":"c5cb735c93347ec0b78efc5258adcb012e28e34d","date":"2026-04-17","commit_type":"docs","scope":"","subject":"docs: update serve.zsh reference to serve.sh","project":"HeartReverie_Plugins","insertions":1,"deletions":1},{"hash":"e4a8eacbafeecb2c652179a57c484b18de528d50","date":"2026-04-17","commit_type":"docs","scope":"","subject":"docs: use GitHub flavored alert blockquotes in README","project":"HeartReverie_Plugins","insertions":5,"deletions":2},{"hash":"e0399b908aba7794b5f10a2e9e1dba8a089600d4","date":"2026-04-17","commit_type":"fix","scope":"","subject":"fix: replace PROMPT_FILE with COPY for system.md override","project":"HeartReverie_Plugins","insertions":17,"deletions":8},{"hash":"e673e61ff956f2929b997c374341f92237f46d23","date":"2026-04-16","commit_type":"feat","scope":"","subject":"feat: change container UID to 1000 and add explicit file permissions","project":"HeartReverie","insertions":373,"deletions":12},{"hash":"e34398be2a448c7b76f44936207285c441c3a02e","date":"2026-04-16","commit_type":"feat","scope":"","subject":"feat: migrate frontend npm dependencies to Deno-native tooling","project":"HeartReverie","insertions":2422,"deletions":4339},{"hash":"078f385e5cbcfa7dc6734a91f38bcaae67674aac","date":"2026-04-16","commit_type":"docs","scope":"readme","subject":"docs(readme): update container metadata and GitHub links","project":"HeartReverie","insertions":4,"deletions":4},{"hash":"c75b4fc9af4a3cd1646b357d027ca1433bdcea23","date":"2026-04-16","commit_type":"fix","scope":"","subject":"fix: resolve test and container build failures","project":"HeartReverie","insertions":3,"deletions":3},{"hash":"279fc97d7867570c265c45edaf6d9f1ca42b08be","date":"2026-04-16","commit_type":"ci","scope":"","subject":"ci: add GitHub Actions workflows for CI, Docker publish, and release","project":"HeartReverie","insertions":561,"deletions":0},{"hash":"b736697cabd931afb6050a327749872ed2026bfd","date":"2026-04-16","commit_type":"build","scope":"deps-dev","subject":"build(deps-dev): Bump happy-dom from 18.0.1 to 20.9.0 in /reader-src in the npm_and_yarn group across 1 directory (#1)","project":"HeartReverie","insertions":42,"deletions":46},{"hash":"4890f852543b34d31d68576f3fdcb2de15ab1af1","date":"2026-04-16","commit_type":"docs","scope":"","subject":"docs: update documentation for optional plugin migration","project":"HeartReverie","insertions":77,"deletions":90},{"hash":"cb8069f5414dbcf5565e936b12cd9b73f3db40ca","date":"2026-04-16","commit_type":"docs","scope":"","subject":"docs: add container build and run instructions to README","project":"HeartReverie_Plugins","insertions":37,"deletions":0},{"hash":"13398c7c51c9fed6004344d85dc506614b9b2484","date":"2026-04-16","commit_type":"fix","scope":"","subject":"fix: change default container UID from 1001 to 1000","project":"HeartReverie_Plugins","insertions":2,"deletions":2},{"hash":"352661dfefb0c1abe958ae43d557b208a95df8fe","date":"2026-04-16","commit_type":"docs","scope":"metadata","subject":"docs(metadata): update repository links to GitHub in metadata and docs","project":"HeartReverie_Plugins","insertions":1,"deletions":1},{"hash":"b91be846d7891136c94f77bdf46f90ca4bb5b3fa","date":"2026-04-16","commit_type":"feat","scope":"","subject":"feat: add Containerfile extending HeartReverie base image","project":"HeartReverie_Plugins","insertions":58,"deletions":0},{"hash":"1d6fa4d9871fd186361bc754a05e46f9d6e7eb36","date":"2026-04-16","commit_type":"docs","scope":"","subject":"docs: add comprehensive README for optional plugins","project":"HeartReverie_Plugins","insertions":84,"deletions":0},{"hash":"a9726743107c079984e67c47ac0d2c5ad718823e","date":"2026-04-15","commit_type":"refactor","scope":"plugins","subject":"refactor(plugins): prune optional plugins","project":"HeartReverie","insertions":40,"deletions":4173},{"hash":"3c428a0ae19cf967c50fa2c83403daef2894dc9c","date":"2026-04-15","commit_type":"docs","scope":"readme","subject":"docs(readme): clarify setup and AI plugin workflow","project":"HeartReverie","insertions":58,"deletions":30},{"hash":"e977bb11ee5df14397087f5d7f114d9ecb5aaf52","date":"2026-04-15","commit_type":"refactor","scope":"plugins","subject":"refactor(plugins): extract status_data from core into state plugin via getDynamicVariables","project":"HeartReverie","insertions":641,"deletions":153},{"hash":"8a8b4cb0708e4519890f87a2abb8573730152656","date":"2026-04-15","commit_type":"docs","scope":"plugins","subject":"docs(plugins): add/update READMEs for start-hints, thinking, threshold-lord","project":"HeartReverie","insertions":57,"deletions":2},{"hash":"5bd3492f4b0e2fcc567ec57baf16591cc39165c5","date":"2026-04-15","commit_type":"feat","scope":"plugins","subject":"feat(plugins): extract optional prompt sections into plugins and fix docs","project":"HeartReverie","insertions":502,"deletions":44},{"hash":"44a6a2e6bc27fcda8c3964d63eadce6b93e263d5","date":"2026-04-15","commit_type":"other","scope":"","subject":"init","project":"HeartReverie_Plugins","insertions":4284,"deletions":0},{"hash":"6d10b20884d84b1f24036494f87db6a61fbbb7bf","date":"2026-04-14","commit_type":"docs","scope":"specs","subject":"docs(specs): rename state-patches plugin refs to state in specs","project":"HeartReverie","insertions":692,"deletions":53},{"hash":"15d30767357028a1bdf52597a5e50e33b76ac3c7","date":"2026-04-14","commit_type":"feat","scope":"","subject":"feat: add series_name/story_name vars, lore Vento rendering, and lore pills","project":"HeartReverie","insertions":1089,"deletions":59},{"hash":"1b0cfbae7900273ebee123ed007babd14106ff67","date":"2026-04-14","commit_type":"feat","scope":"state","subject":"feat(state): rename state plugin and add prompt support","project":"HeartReverie","insertions":69,"deletions":42},{"hash":"d4dd750d4be7c3770ebd379491b5281ef9d049ce","date":"2026-04-14","commit_type":"docs","scope":"","subject":"docs: fix license header reference and add prompt-template doc link","project":"HeartReverie","insertions":4,"deletions":2},{"hash":"64e9d4933bf361ce82eb4c4c7ca5f33b606c9f40","date":"2026-04-14","commit_type":"chore","scope":"openspec","subject":"chore(openspec): archive prompts-dir-underscore-prefix and sync specs","project":"HeartReverie","insertions":5,"deletions":5},{"hash":"9ae7161ffb9b5fb6659326e1cc6f596cccc8f230","date":"2026-04-14","commit_type":"feat","scope":"","subject":"feat: rename prompts dir to _prompts for underscore-prefix convention","project":"HeartReverie","insertions":78,"deletions":20},{"hash":"21ed7def37af6fca7f07f7ae7b19db7e02248a28","date":"2026-04-14","commit_type":"docs","scope":"","subject":"docs: update AGENTS.md, README.md, and .env.example","project":"HeartReverie","insertions":16,"deletions":4},{"hash":"4fd11a3cdfab15777d8b9f00210f38764fb2cd9b","date":"2026-04-14","commit_type":"fix","scope":"openspec","subject":"fix(openspec): align .openspec.yaml created dates with archive directory dates","project":"HeartReverie","insertions":6,"deletions":6},{"hash":"6d4f32be7adf518a2fbdf621516ded0be66b6ed0","date":"2026-04-14","commit_type":"chore","scope":"openspec","subject":"chore(openspec): propose prompts-dir-underscore-prefix change","project":"HeartReverie","insertions":156,"deletions":0},{"hash":"e0f9a095e57b4d00836c56d4785d0e4c82ce383e","date":"2026-04-14","commit_type":"chore","scope":"openspec","subject":"chore(openspec): sync specs and archive lore-codex-restructure change","project":"HeartReverie","insertions":72,"deletions":38},{"hash":"fda1f85b8ce51339343eac9586e8fe879c54405f","date":"2026-04-14","commit_type":"refactor","scope":"","subject":"refactor: restructure lore codex storage to co-located _lore/ directories","project":"HeartReverie","insertions":587,"deletions":261},{"hash":"1cc3c100bea5ce41c7430d97bb51197fe98d11f2","date":"2026-04-14","commit_type":"chore","scope":"","subject":"chore: restructure playground gitignore with _lore directory preservation","project":"HeartReverie","insertions":5,"deletions":1},{"hash":"ea27692c69fba675e5ea6106ef034ed6bb759baf","date":"2026-04-14","commit_type":"docs","scope":"","subject":"docs: refine lore-codex.md with zh-TW writing guidelines","project":"HeartReverie","insertions":16,"deletions":23},{"hash":"ece842cf3aaba9baaedc9acffebfc0af3e98d7b0","date":"2026-04-14","commit_type":"chore","scope":"openspec","subject":"chore(openspec): sync specs and archive lore-codex change","project":"HeartReverie","insertions":507,"deletions":8},{"hash":"30dacac25edf8acd735e963dff36e862e937fc82","date":"2026-04-13","commit_type":"fix","scope":"","subject":"fix: align lore codex with delta spec requirements","project":"HeartReverie","insertions":200,"deletions":20},{"hash":"9ae47ae54812bb5a1b93f3371973ff01fb776379","date":"2026-04-13","commit_type":"feat","scope":"","subject":"feat: implement lore codex system","project":"HeartReverie","insertions":4014,"deletions":114},{"hash":"829eb029710e5f89874c433d926791cfc2e79af1","date":"2026-04-13","commit_type":"feat","scope":"openspec","subject":"feat(openspec): add lore-codex change proposal","project":"HeartReverie","insertions":979,"deletions":0},{"hash":"0b00607a853892933ca56d71ca6ca73193764415","date":"2026-04-13","commit_type":"docs","scope":"","subject":"docs: update AGENTS.md and README.md to reflect Vue 3 SPA rewrite and recent changes","project":"HeartReverie","insertions":127,"deletions":73},{"hash":"8506a7e0ebe5c1625f8a823e49fcab0a80772b6d","date":"2026-04-13","commit_type":"fix","scope":"openspec","subject":"fix(openspec): correct archive directory dates from 2025-07-* to actual git commit dates","project":"HeartReverie","insertions":0,"deletions":0},{"hash":"9e47ea3d6a1a953a16401d01e3751b1a2d577e4b","date":"2026-04-13","commit_type":"fix","scope":"","subject":"fix: remove unused variables blocking container build","project":"HeartReverie","insertions":1,"deletions":2},{"hash":"9243898ecc97d4032963747fa144d1560d81c6df","date":"2026-04-13","commit_type":"feat","scope":"","subject":"feat: add stop-generation abort for WebSocket and HTTP chat","project":"HeartReverie","insertions":663,"deletions":16},{"hash":"7e64a9987fad0d2e4b0699a9758cbac5d6d4d428","date":"2026-04-13","commit_type":"feat","scope":"","subject":"feat: add WebSocket streaming for real-time chat and chapter updates","project":"HeartReverie","insertions":2752,"deletions":243},{"hash":"86ed44e5c68917a8d652796754e6a376d477bf65","date":"2026-04-13","commit_type":"feat","scope":"","subject":"feat: replace localStorage prompt storage with server-side file persistence","project":"HeartReverie","insertions":936,"deletions":177},{"hash":"f8e1bb3a5a0fcf24e861b4694c0cbb82511998e3","date":"2026-04-12","commit_type":"feat","scope":"reader","subject":"feat(reader): add settings page with sidebar navigation","project":"HeartReverie","insertions":1271,"deletions":213},{"hash":"70fb5b56481f6500a20753c3671ea98165d8089e","date":"2026-04-12","commit_type":"feat","scope":"reader","subject":"feat(reader): add Vue Router with HTML5 history mode","project":"HeartReverie","insertions":1505,"deletions":97},{"hash":"4cc63c3ddb4f27b8f2e8f26c12790c5fe574df2e","date":"2026-04-12","commit_type":"refactor","scope":"plugins","subject":"refactor(plugins): extract shared escapeHtml into plugins/_shared/utils.js","project":"HeartReverie","insertions":359,"deletions":20},{"hash":"58d1cade8b67ed7ab37add44ada3ac14905c5509","date":"2026-04-12","commit_type":"refactor","scope":"","subject":"refactor: align specs with plugin delegation architecture","project":"HeartReverie","insertions":742,"deletions":1128},{"hash":"ffbecec1300f304d722130e2678a77c86643e06a","date":"2026-04-12","commit_type":"docs","scope":"openspec","subject":"docs(openspec): sync delta specs and archive vue-typescript-refactor","project":"HeartReverie","insertions":1256,"deletions":402},{"hash":"5fc9aea276d43abf2e4af5f9f5c66ab6a5f03748","date":"2026-04-12","commit_type":"chore","scope":"reader","subject":"chore(reader): remove old vanilla JS frontend and Deno tests","project":"HeartReverie","insertions":0,"deletions":3672},{"hash":"33f7888e2b50702d41781a583866368d6770f83b","date":"2026-04-12","commit_type":"fix","scope":"reader","subject":"fix(reader): fix prompt editor not persisting edits to localStorage","project":"HeartReverie","insertions":3,"deletions":12},{"hash":"20c7fbc1a67c9d5449d4eb89bcb8e44bf12fcd9b","date":"2026-04-12","commit_type":"refactor","scope":"reader","subject":"refactor(reader): delegate options/variable extraction to plugins","project":"HeartReverie","insertions":33,"deletions":110},{"hash":"efad9b6186cf13719342911e404239a8c3909cd1","date":"2026-04-12","commit_type":"fix","scope":"reader","subject":"fix(reader): restore missing favicon in Vue app","project":"HeartReverie","insertions":1,"deletions":0},{"hash":"8d77cd80d15a3e68678d6b4e30d2f27ede65357a","date":"2026-04-12","commit_type":"fix","scope":"reader","subject":"fix(reader): delegate status rendering to plugin with DOM sidebar relocation","project":"HeartReverie","insertions":44,"deletions":79},{"hash":"772fdb9ddd9109243e1c7e3f108fd252033ee565","date":"2026-04-12","commit_type":"fix","scope":"reader","subject":"fix(reader): reorder DOMPurify after token split to fix sidebar","project":"HeartReverie","insertions":18,"deletions":10},{"hash":"d60e7336a7f198ab36f448d30d1f3dfb421468cf","date":"2026-04-12","commit_type":"fix","scope":"reader","subject":"fix(reader): address 8 critique findings from rubber-duck review","project":"HeartReverie","insertions":149,"deletions":98},{"hash":"9d3f5467c23ab710d70734d756973ff619658938","date":"2026-04-12","commit_type":"feat","scope":"reader","subject":"feat(reader): rewrite frontend as Vue 3 + TypeScript SPA","project":"HeartReverie","insertions":8406,"deletions":115},{"hash":"eb4bcbe44022fe1ddd52abd53b3a73d5ea5eafbf","date":"2026-04-12","commit_type":"test","scope":"reader","subject":"test(reader): migrate and expand test suite to Vitest (Group 8)","project":"HeartReverie","insertions":2408,"deletions":0},{"hash":"cd85871b9713fa5f16ba061b8ace54c2e9a69ac1","date":"2026-04-12","commit_type":"fix","scope":"openspec","subject":"fix(openspec): fix naming inconsistencies in design.md","project":"HeartReverie","insertions":5,"deletions":4},{"hash":"2c3179a3ef89057835ebc583022110bba55b1140","date":"2026-04-12","commit_type":"feat","scope":"openspec","subject":"feat(openspec): add vue-typescript-refactor change proposal","project":"HeartReverie","insertions":2809,"deletions":0},{"hash":"f00899fd06fc7c9c71a2fad53240c227ffbba5a2","date":"2026-04-12","commit_type":"style","scope":"typography","subject":"style(typography): unify stat label typography with antique font","project":"HeartReverie","insertions":1,"deletions":1},{"hash":"c8ad1bdc679256170eaf452bb6d7c63df858855b","date":"2026-04-12","commit_type":"feat","scope":"plugins","subject":"feat(plugins): open thinking details while streaming, collapse when complete","project":"HeartReverie","insertions":2,"deletions":1},{"hash":"c7019bca94108252afe0bfb666a3d40f331f6ddf","date":"2026-04-12","commit_type":"fix","scope":"reader","subject":"fix(reader): restart polling when chapter count drops to zero","project":"HeartReverie","insertions":7,"deletions":1},{"hash":"369ed0b60093276275e8841b4c5061ac50162a9d","date":"2026-04-12","commit_type":"refactor","scope":"prompt","subject":"refactor(prompt): use XML tags for analysis and planning","project":"HeartReverie","insertions":5,"deletions":6},{"hash":"1547b01e89287aa40416dbafb5211448069ff781","date":"2026-04-12","commit_type":"feat","scope":"reader","subject":"feat(reader): style reader horizontal rules with heart marker","project":"HeartReverie","insertions":14,"deletions":0},{"hash":"50269c9cd16f9f06f83c39d9e0971c64cc4d560b","date":"2026-04-12","commit_type":"feat","scope":"reader","subject":"feat(reader): add heart favicon to reader page","project":"HeartReverie","insertions":1,"deletions":0},{"hash":"a98ecdee3b92d5419184de5169189ca01fa5ab7e","date":"2026-04-12","commit_type":"refactor","scope":"typography","subject":"refactor(typography): use themed antique and system fonts for content","project":"HeartReverie","insertions":1,"deletions":1},{"hash":"174a9902a71995b727c9844ce342fbbb4611b136","date":"2026-04-12","commit_type":"style","scope":"reader","subject":"style(reader): unify editor and preview panels with dark-red theme","project":"HeartReverie","insertions":29,"deletions":29},{"hash":"d53ec835c405875e2526468db4236d9ebd583069","date":"2026-04-12","commit_type":"style","scope":"","subject":"style: refactor styles","project":"HeartReverie","insertions":164,"deletions":164},{"hash":"1674dd5e9c4c246b35d6c427afc10a6162906273","date":"2026-04-12","commit_type":"feat","scope":"plugins","subject":"feat(plugins): add thinking plugin to fold \u003cthinking\u003e/\u003cthink\u003e tags","project":"HeartReverie","insertions":97,"deletions":0},{"hash":"e6c885f0c33b9ef83fd1d30f8a2e96fb8b2587d6","date":"2026-04-12","commit_type":"fix","scope":"reader","subject":"fix(reader): clear sidebar when switching to story with no sidebar content","project":"HeartReverie","insertions":1,"deletions":0},{"hash":"9c8986291ffd4dcb1469be24a33f6c2165f5b572","date":"2026-04-11","commit_type":"style","scope":"reader","subject":"style(reader): center and enlarge landing page title","project":"HeartReverie","insertions":6,"deletions":3},{"hash":"17de84b1ad6044dc0dcdc3619851831ebd3220f5","date":"2026-04-11","commit_type":"chore","scope":"","subject":"chore: archive containerfile change and sync main specs","project":"HeartReverie","insertions":232,"deletions":0},{"hash":"82a8ddca7a9c75e96ca56f973d32378ba2a6afa8","date":"2026-04-11","commit_type":"fix","scope":"","subject":"fix: add OCI-standard labels to root Containerfile","project":"HeartReverie","insertions":7,"deletions":1},{"hash":"9c13b17809035969ae7303a207ba833feec97ac5","date":"2026-04-11","commit_type":"docs","scope":"","subject":"docs: update containerfile delta specs for implementation fixes","project":"HeartReverie","insertions":74,"deletions":29},{"hash":"e4ad0cf07f3819eccc8ba17e33221e0f67e42e2b","date":"2026-04-11","commit_type":"refactor","scope":"","subject":"refactor: unify startup scripts into shared entrypoint.sh","project":"HeartReverie","insertions":45,"deletions":76},{"hash":"f6edb17affe169ef79c076b31c49174b4d469da1","date":"2026-04-11","commit_type":"feat","scope":"","subject":"feat: add HTTP_ONLY mode for reverse-proxy deployments","project":"HeartReverie","insertions":36,"deletions":22},{"hash":"0057cca12a977220a38c555771353f514ac33f68","date":"2026-04-11","commit_type":"fix","scope":"","subject":"fix: enable dual-stack IPv4+IPv6 listening","project":"HeartReverie","insertions":1,"deletions":1},{"hash":"29d5fa212d29cbbcc7e3f9266c261071e9073e36","date":"2026-04-11","commit_type":"fix","scope":"","subject":"fix: install openssl in final stage for TLS cert generation","project":"HeartReverie","insertions":8,"deletions":1},{"hash":"f6cdc128936d7dd84941184b1f3f1675a1417016","date":"2026-04-11","commit_type":"feat","scope":"","subject":"feat: add two-Containerfile architecture for container deployment","project":"HeartReverie","insertions":960,"deletions":8},{"hash":"57e9c237b96c3c96213767741fb6eed139f8265a","date":"2026-04-11","commit_type":"feat","scope":"","subject":"feat: add configurable background image for web reader","project":"HeartReverie","insertions":346,"deletions":3},{"hash":"574db1be9d50d0ab0de7a0c7e627d664f9e768b7","date":"2026-04-11","commit_type":"build","scope":"startup","subject":"build(startup): run TypeScript server entry at startup","project":"HeartReverie","insertions":1,"deletions":1},{"hash":"a7d21b2b7aaa897e001d67fb2566de298763219c","date":"2026-04-11","commit_type":"docs","scope":"","subject":"docs: add LICENSE","project":"HeartReverie","insertions":871,"deletions":170},{"hash":"d6f6a44aad606f5bc4b7de1d075f76ea77b2135c","date":"2026-04-11","commit_type":"fix","scope":"plugin","subject":"fix(plugin): update plugin skill install to use new repo URL","project":"HeartReverie","insertions":1,"deletions":1},{"hash":"e7b96c9d9c66067c8b30e0e1bd3527dc6d385326","date":"2026-04-11","commit_type":"docs","scope":"readme","subject":"docs(readme): docs align README image and clarify quick start","project":"HeartReverie","insertions":3,"deletions":1},{"hash":"4514fa4978007ef5ff36011c64e25c97cc680189","date":"2026-04-11","commit_type":"feat","scope":"","subject":"feat: add heartreverie-create-plugin skill for guided plugin authoring","project":"HeartReverie","insertions":1144,"deletions":0},{"hash":"d1cfe44e1401f4c2fcbc8f934ab5e6fc91ac07aa","date":"2026-04-11","commit_type":"fix","scope":"plugins","subject":"fix(plugins): preserve bare \u003cT-task\u003e tags in strip regex","project":"HeartReverie","insertions":8,"deletions":8},{"hash":"c621f09f7bf5168b44ecea4929c3cfdb2313ff8b","date":"2026-04-11","commit_type":"docs","scope":"plugins","subject":"docs(plugins): add README.md for all plugins","project":"HeartReverie","insertions":305,"deletions":0},{"hash":"315cfc829203619cc2def680fa7904053288540c","date":"2026-04-11","commit_type":"refactor","scope":"plugins","subject":"refactor(plugins): remove world-aesthetic plugin","project":"HeartReverie","insertions":0,"deletions":189},{"hash":"56b9ca860227f903a6dcbf6cf26fee6231debaaa","date":"2026-04-11","commit_type":"chore","scope":"plugins","subject":"chore(plugins): refine POV and language rules in writing guide","project":"HeartReverie","insertions":59,"deletions":58},{"hash":"2bda6b9c7a1498b22969dd0919b172f6963c3fb6","date":"2026-04-11","commit_type":"refactor","scope":"prompt","subject":"refactor(prompt): consolidate reply rules into system prompt","project":"HeartReverie","insertions":4,"deletions":4},{"hash":"e50c4fee02d5e2514a6822e5276c065dc0d43433","date":"2026-04-11","commit_type":"chore","scope":"openspec","subject":"chore(openspec): archive env-config-cleanup change and sync specs","project":"HeartReverie","insertions":62,"deletions":0},{"hash":"3587ffaec30ec1b2e29271548fa3767fd2e01e23","date":"2026-04-11","commit_type":"fix","scope":"","subject":"fix: update project name in .env.example to HeartReverie 浮心夜夢","project":"HeartReverie","insertions":1,"deletions":1},{"hash":"685fde7547ac49c9618c743e8f4cee0470a28444","date":"2026-04-11","commit_type":"refactor","scope":"","subject":"refactor: rename OpenRouter env vars to LLM_* and make sampling params configurable","project":"HeartReverie","insertions":514,"deletions":112},{"hash":"5444f39b912f1da78f4f7b50182b5dcb5151a373","date":"2026-04-11","commit_type":"refactor","scope":"","subject":"refactor: rename apply-patches to state-patches across codebase","project":"HeartReverie","insertions":68,"deletions":68},{"hash":"b354da4a929e380e7b598dd7e70fc1dfd40d7d44","date":"2026-04-11","commit_type":"chore","scope":"openspec","subject":"chore(openspec): archive declarative-frontend-strip change and sync specs","project":"HeartReverie","insertions":0,"deletions":0},{"hash":"6a02e0f3fee862a454f7395672bec6f8d9ba1cde","date":"2026-04-11","commit_type":"docs","scope":"","subject":"docs: add displayStripTags documentation across all docs","project":"HeartReverie","insertions":35,"deletions":20},{"hash":"47317a2611e73330450d7a072f47713e4ab91643","date":"2026-04-11","commit_type":"refactor","scope":"plugins","subject":"refactor(plugins): replace frontend-strip hook with declarative displayStripTags","project":"HeartReverie","insertions":602,"deletions":134},{"hash":"86d44e113eb3c5a8aab835329fae6748b177e2f8","date":"2026-04-11","commit_type":"chore","scope":"openspec","subject":"chore(openspec): archive plugin-consolidation change and sync specs","project":"HeartReverie","insertions":82,"deletions":24},{"hash":"e66b4f400131a284ab6fcc8b491bc1f2bf680843","date":"2026-04-11","commit_type":"refactor","scope":"plugins","subject":"refactor(plugins): consolidate coupled plugins and add pre-write hook","project":"HeartReverie","insertions":637,"deletions":65},{"hash":"1b2b0a079449b6f10d8ba72e2ca8f3d283dc946d","date":"2026-04-11","commit_type":"chore","scope":"openspec","subject":"chore(openspec): archive context-compaction change and sync specs","project":"HeartReverie","insertions":452,"deletions":10},{"hash":"539a08350b60a212e6695a2d9927f8c477a08882","date":"2026-04-11","commit_type":"refactor","scope":"prompt","subject":"refactor(prompt): refine chapter summary prompts and context compaction","project":"HeartReverie","insertions":5,"deletions":4},{"hash":"2df2b30fb453ad3b365873dcd2f89e8b16143fb1","date":"2026-04-11","commit_type":"refactor","scope":"plugins","subject":"refactor(plugins): rewrite chapter-summary-instruction with rule/format structure","project":"HeartReverie","insertions":12,"deletions":23},{"hash":"c21a7806212740dde0bbc9082f42656eb4592f9c","date":"2026-04-11","commit_type":"docs","scope":"plugins","subject":"docs(plugins): add README for context-compaction plugin","project":"HeartReverie","insertions":76,"deletions":0},{"hash":"4f8d445f5d2d84b0ab7807842cb3bf832785a716","date":"2026-04-11","commit_type":"feat","scope":"plugins","subject":"feat(plugins): add context-compaction plugin for tiered context assembly","project":"HeartReverie","insertions":1092,"deletions":7},{"hash":"74c23b94e67160e4b7adba8879cfb55b61af548c","date":"2026-04-11","commit_type":"docs","scope":"readme","subject":"docs(readme): docs remove hardcoded built-in plugin count","project":"HeartReverie","insertions":1,"deletions":1},{"hash":"e9787267f03191a10006b2b4645b57dddbcec4d5","date":"2026-04-11","commit_type":"docs","scope":"","subject":"docs: separate core template system from plugin details in prompt-template.md","project":"HeartReverie","insertions":32,"deletions":31},{"hash":"7d805b93ce2d3b01b02db1cb67afcb0d63b8c778","date":"2026-04-11","commit_type":"docs","scope":"","subject":"docs: rewrite README.md — rename project to HeartReverie 浮心夜夢","project":"HeartReverie","insertions":48,"deletions":82},{"hash":"25d375595cdb128de71a1d88ff476571d94d15fd","date":"2026-04-11","commit_type":"docs","scope":"","subject":"docs: consolidate reader/AGENTS.md into root AGENTS.md","project":"HeartReverie","insertions":72,"deletions":81},{"hash":"650781f96ce17acd32654c9baa4b4d8e329d80a5","date":"2026-04-11","commit_type":"chore","scope":"openspec","subject":"chore(openspec): archive restructure-project-layout and sync specs","project":"HeartReverie","insertions":15,"deletions":11},{"hash":"894645dadc231f6d9d15c6f3a5e68741375d4163","date":"2026-04-11","commit_type":"refactor","scope":"","subject":"refactor: restructure project layout","project":"HeartReverie","insertions":363,"deletions":82},{"hash":"987d55d11be90e971b4cc6dfeed1a19e69ca8aab","date":"2026-04-11","commit_type":"chore","scope":"openspec","subject":"chore(openspec): archive migrate-writer-to-typescript and sync specs","project":"HeartReverie","insertions":221,"deletions":5},{"hash":"93052f3cc0fde8f9e6da48a56df098c10efc830b","date":"2026-04-11","commit_type":"feat","scope":"writer","subject":"feat(writer): migrate backend to TypeScript","project":"HeartReverie","insertions":1299,"deletions":370},{"hash":"28da58db5cfd18168def5903fd20b2f693e917aa","date":"2026-04-11","commit_type":"chore","scope":"git","subject":"chore(git): ignore playground directory in git","project":"HeartReverie","insertions":1,"deletions":0},{"hash":"1c6b128676193562f424319073b7450fe87171a2","date":"2026-04-11","commit_type":"fix","scope":"apply-patches","subject":"fix(apply-patches): security hardening and correctness fixes","project":"HeartReverie","insertions":662,"deletions":66},{"hash":"ff0c6bbc84b411aeb0cc0edb9cd5d597bf92ced1","date":"2026-04-11","commit_type":"refactor","scope":"apply-patches","subject":"refactor(apply-patches): extract modules and add comprehensive tests","project":"HeartReverie","insertions":2521,"deletions":571},{"hash":"1af09aa334e74bd0e5f04242a4b43a65868efe5a","date":"2026-04-10","commit_type":"test","scope":"","subject":"test: add missing spec scenario tests for full coverage","project":"HeartReverie","insertions":438,"deletions":0},{"hash":"58e7a51bd6204f4b3c22f1a67a8c1eee90c65ec2","date":"2026-04-10","commit_type":"test","scope":"","subject":"test: increase test coverage from 65.9% to 85.4% line coverage","project":"HeartReverie","insertions":1375,"deletions":5},{"hash":"ad274786e9e4b1d1d6cb5e797a07eec5071236fc","date":"2026-04-10","commit_type":"refactor","scope":"","subject":"refactor: decompose monolithic server.js into modules and migrate to Deno + Hono","project":"HeartReverie","insertions":4374,"deletions":1937},{"hash":"62fdf374f92a4d4367a652e5f8926ef15756a01f","date":"2026-04-10","commit_type":"docs","scope":"","subject":"docs: create root AGENTS.md with project-wide instructions","project":"HeartReverie","insertions":162,"deletions":0},{"hash":"e7ea194e733754d0a7125337aee0392ff8ce95fb","date":"2026-04-10","commit_type":"docs","scope":"","subject":"docs: add plugin system documentation in Traditional Chinese","project":"HeartReverie","insertions":381,"deletions":15},{"hash":"14587beb7f64ae4ffa16ba417454522a8d1eca44","date":"2026-04-10","commit_type":"feat","scope":"","subject":"feat: support regex patterns in plugin stripTags manifest field","project":"HeartReverie","insertions":137,"deletions":10},{"hash":"ec890ec1e0e117ddb5e6bab9b5b3adc6b76f0665","date":"2026-04-10","commit_type":"fix","scope":"","subject":"fix: chat input visibility and extract shared prompt builder","project":"HeartReverie","insertions":54,"deletions":77},{"hash":"8e8d9363424973ebecc0145f6619ae4f85849d84","date":"2026-04-10","commit_type":"feat","scope":"plugins","subject":"feat(plugins): add stripTags support to status and variable plugins","project":"HeartReverie","insertions":4,"deletions":2},{"hash":"60f167afe26c82e1e87502d32b97ea3ae8a9450e","date":"2026-04-10","commit_type":"feat","scope":"","subject":"feat: add extensible plugin system for prompt and tag pipeline","project":"HeartReverie","insertions":4948,"deletions":129},{"hash":"89102035cc0a7f019cd179dcc2541b84df1b1dd6","date":"2026-04-10","commit_type":"refactor","scope":"","subject":"refactor: consolidate prompt pipeline into Vento template variables","project":"HeartReverie","insertions":658,"deletions":52},{"hash":"02c3c47a8bdd2351136c05022b08335d8a485d1e","date":"2026-04-07","commit_type":"style","scope":"","subject":"style: remove bold font-weight from .char-name","project":"HeartReverie","insertions":1,"deletions":1},{"hash":"0a70bc2c45608ab0d3d7e27dc49bd12c23114e94","date":"2026-04-07","commit_type":"style","scope":"","subject":"style: dark theme for select dropdowns","project":"HeartReverie","insertions":6,"deletions":0},{"hash":"d014c07b38a72706bb1846139afb3d54c7906507","date":"2026-04-06","commit_type":"fix","scope":"","subject":"fix: increase backend poll interval and add 429 backoff","project":"HeartReverie","insertions":119,"deletions":5},{"hash":"7baa0dd66dc7a02f68bc33f33b811219f80e2471","date":"2026-04-06","commit_type":"style","scope":"","subject":"style: add backdrop blur to passphrase overlay","project":"HeartReverie","insertions":1,"deletions":1},{"hash":"4b76eaf586097530c29c9bb4f8fee208d6378d3e","date":"2026-04-06","commit_type":"fix","scope":"","subject":"fix: add hidden username field to passphrase form","project":"HeartReverie","insertions":1,"deletions":0},{"hash":"9202d9ab01ce23588d3d47bd15a512a4a3c3f83f","date":"2026-04-06","commit_type":"fix","scope":"","subject":"fix: add autocomplete attribute to passphrase input","project":"HeartReverie","insertions":1,"deletions":1},{"hash":"e7f3c34d485fd9e55d7e051da7ae1d8d3040ec95","date":"2026-04-06","commit_type":"fix","scope":"","subject":"fix: resolve browser console errors and warnings","project":"HeartReverie","insertions":159,"deletions":12},{"hash":"bd156acf2e2c4d1f53208381b09cbe79e0b518fd","date":"2026-04-06","commit_type":"fix","scope":"","subject":"fix: add path separator boundary to safePath traversal check","project":"HeartReverie","insertions":3,"deletions":2},{"hash":"ad0a3ea4a88de9256f1ec12c760b048ab12a7801","date":"2026-04-06","commit_type":"feat","scope":"","subject":"feat: harden security across backend and frontend","project":"HeartReverie","insertions":823,"deletions":111},{"hash":"d3cc1e66269116b6be8e9e53c317ab0e8bf8da5e","date":"2026-04-06","commit_type":"feat","scope":"","subject":"feat: add passphrase gate for API access control","project":"HeartReverie","insertions":658,"deletions":51},{"hash":"301c6bff88e38e0bea216088d4284a8cedf894e9","date":"2026-04-06","commit_type":"feat","scope":"","subject":"feat: clean up keyboard shortcuts and strip T-task tags","project":"HeartReverie","insertions":143,"deletions":11},{"hash":"c14528dc138276826088b86b87a25185befcbd83","date":"2026-04-06","commit_type":"feat","scope":"","subject":"feat: append option text to chat input on click","project":"HeartReverie","insertions":177,"deletions":4},{"hash":"806c960c7a12187ea4b1ef8ecfd771d8163230fe","date":"2026-04-06","commit_type":"feat","scope":"","subject":"feat: add resend button, message retention, and last-chapter chat visibility","project":"HeartReverie","insertions":403,"deletions":11},{"hash":"bbe1cf0893043fe55c14a81a5cd2e031449343f1","date":"2026-04-06","commit_type":"feat","scope":"","subject":"feat: persist user chat message in chapter files","project":"HeartReverie","insertions":203,"deletions":9},{"hash":"7a743e3eb8bcbfe2d528ef4968e839b04b8ba963","date":"2026-04-06","commit_type":"chore","scope":"","subject":"chore: cleanup","project":"HeartReverie","insertions":0,"deletions":295},{"hash":"f1c3172083a0a1f43766d9fbf4b0985794768786","date":"2026-04-06","commit_type":"feat","scope":"","subject":"feat: strip prompt tags from chat history and add live content polling","project":"HeartReverie","insertions":197,"deletions":2},{"hash":"74819311772cbf076f1532b6a891a9d68240681f","date":"2026-04-06","commit_type":"fix","scope":"","subject":"fix: write first chapter into empty 001.md instead of creating 002.md","project":"HeartReverie","insertions":18,"deletions":8},{"hash":"865f0322c31a2e33484a573081fb21154cfb947a","date":"2026-04-06","commit_type":"feat","scope":"","subject":"feat: stream OpenRouter responses to disk and auto-run apply-patches","project":"HeartReverie","insertions":331,"deletions":18},{"hash":"f19f989e6e06a3352e5fc8d4269ec484df128a61","date":"2026-04-06","commit_type":"feat","scope":"","subject":"feat: add story writer backend server with chat UI","project":"HeartReverie","insertions":2662,"deletions":93},{"hash":"79188d47a4170555aa82b9433fbc0f6f97c1aa5c","date":"2026-04-06","commit_type":"chore","scope":"repo","subject":"chore(repo): ignore generated status files and run patch apply on stop","project":"HeartReverie","insertions":1,"deletions":0},{"hash":"6874f80abbdf1979dea3557e7e86d466045cc528","date":"2026-04-06","commit_type":"feat","scope":"","subject":"feat: add apply-patches Rust CLI for JSONPatch processing","project":"HeartReverie","insertions":1362,"deletions":16},{"hash":"0e268a67d712dd50d059ce340a0d4a08f56ecf50","date":"2026-04-06","commit_type":"feat","scope":"","subject":"feat: setup playground","project":"HeartReverie","insertions":0,"deletions":189},{"hash":"a9dc4530878e73be8ba1a7873d584b5b0aa80cb7","date":"2026-04-06","commit_type":"refactor","scope":"i18n","subject":"refactor(i18n): localize variable update labels to traditional Chinese","project":"HeartReverie","insertions":20,"deletions":20},{"hash":"fa7692f0c7a41e6b2608d3196d93875c57ad3072","date":"2026-04-06","commit_type":"feat","scope":"","subject":"feat: add auto-reload polling and manual reload button","project":"HeartReverie","insertions":241,"deletions":2},{"hash":"238b3eed49771e02e02792bfa5cae6f2ba116d7d","date":"2026-04-06","commit_type":"docs","scope":"","subject":"docs: rewrite README.md in Traditional Chinese with updated browser support","project":"HeartReverie","insertions":32,"deletions":33},{"hash":"436f08a2c77c00c9235a53e1818851c56fa187f8","date":"2026-04-06","commit_type":"docs","scope":"","subject":"docs: move AGENTS.md to reader/ and scope to reader app","project":"HeartReverie","insertions":71,"deletions":102},{"hash":"bf05c664c0b9f74f8d334569efadfdcc7ac73c1f","date":"2026-04-06","commit_type":"docs","scope":"","subject":"docs: add AGENTS.md and rewrite README.md","project":"HeartReverie","insertions":144,"deletions":10},{"hash":"9b049c57ffd176fc82a31259f82e4e2f6cae7c23","date":"2026-04-06","commit_type":"refactor","scope":"","subject":"refactor: move web reader files into reader/ directory","project":"HeartReverie","insertions":147,"deletions":1},{"hash":"8e156d4b0bbe814a9f789573a492fc42d6727739","date":"2026-04-06","commit_type":"feat","scope":"","subject":"feat: add custom font stacks, content padding, and scroll offset fix","project":"HeartReverie","insertions":220,"deletions":9},{"hash":"e313e795194c17e03e101ae027c6580bfa35a5cf","date":"2026-04-06","commit_type":"feat","scope":"","subject":"feat: merge nav into header, love-themed selection, sidebar polish","project":"HeartReverie","insertions":432,"deletions":51},{"hash":"3cfe465ad92ffd0ec171ad41aa30ad9189679cb5","date":"2026-04-06","commit_type":"feat","scope":"","subject":"feat: UI refinements — grid layout, compact header, colour merge, conditional options","project":"HeartReverie","insertions":557,"deletions":34},{"hash":"ea0a5b712480c93bffb9eddf9776af198a4137a9","date":"2026-04-06","commit_type":"feat","scope":"https-server","subject":"feat(https-server): add HTTPS static file server script for localhost","project":"HeartReverie","insertions":165,"deletions":0},{"hash":"a644041548450cfb5753e524b65900ab1c0be36d","date":"2026-04-06","commit_type":"feat","scope":"","subject":"feat: add MD story reader web application","project":"HeartReverie","insertions":2116,"deletions":0},{"hash":"508fc38e34218deae9e7db1a1b96594f56630da0","date":"2026-04-06","commit_type":"docs","scope":"scenarios","subject":"docs(scenarios): restructure scenarios into numbered markdown files","project":"HeartReverie","insertions":189,"deletions":214},{"hash":"925b8ea6af676986446fd9504acd81824277f34c","date":"2026-04-06","commit_type":"chore","scope":"git","subject":"chore(git): ignore tmp directory in Git","project":"HeartReverie","insertions":1,"deletions":0},{"hash":"49becdefaddf9f272433f0d7c72538a4f4dbf2d3","date":"2026-04-06","commit_type":"feat","scope":"","subject":"feat: openspec init","project":"HeartReverie","insertions":1386,"deletions":0},{"hash":"9c42c77f7231e743b7b3edd96161e2c586848d36","date":"2026-04-06","commit_type":"feat","scope":"","subject":"feat: add old files","project":"HeartReverie","insertions":509,"deletions":0},{"hash":"d84e650bf4403c3358575433511403e8a9bb6405","date":"2026-04-06","commit_type":"other","scope":"","subject":"init","project":"HeartReverie","insertions":0,"deletions":0}]};
+
+    var NAV_LABELS = ['封面', '指標', '時間軸', '類型', '專案', '測試', '提案', '紀錄'];
+    var SLIDE_IDS = ['slide-cover', 'slide-kpi', 'slide-timeline', 'slide-breakdown', 'slide-projects', 'slide-tests', 'slide-proposals', 'slide-commits'];
+    var COMMIT_LIMIT = 100;
+    var commitShowAll = false;
+    var commitSortCol = null;
+    var commitSortAsc = true;
+
+    function init() {
+      renderNav();
+      renderCover();
+      renderKPI();
+      renderTimeline();
+      renderBreakdown();
+      renderProjects();
+      renderTestMetrics();
+      renderProposals();
+      renderCommits();
+      initAnimations();
+      initNavObserver();
+      initKeyboard();
+    }
+
+    // --- Navigation ---
+    function renderNav() {
+      var nav = document.getElementById('slideNav');
+      var html = '';
+      for (var i = 0; i < SLIDE_IDS.length; i++) {
+        html += '<button class="nav-dot" data-slide="' + SLIDE_IDS[i] + '" aria-label="' + NAV_LABELS[i] + '">';
+        html += '<span class="nav-dot-label">' + NAV_LABELS[i] + '</span>';
+        html += '</button>';
+      }
+      nav.innerHTML = html;
+
+      var dots = nav.querySelectorAll('.nav-dot');
+      for (var j = 0; j < dots.length; j++) {
+        dots[j].addEventListener('click', function() {
+          var target = document.getElementById(this.getAttribute('data-slide'));
+          if (target) target.scrollIntoView({ behavior: 'smooth' });
+        });
+      }
+    }
+
+    function initNavObserver() {
+      var dots = document.querySelectorAll('.nav-dot');
+      var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            var id = entry.target.id;
+            for (var i = 0; i < dots.length; i++) {
+              var isActive = dots[i].getAttribute('data-slide') === id;
+              dots[i].setAttribute('aria-current', isActive ? 'true' : 'false');
+            }
+          }
+        });
+      }, { threshold: 0.5 });
+
+      SLIDE_IDS.forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) observer.observe(el);
+      });
+    }
+
+    // --- Cover ---
+    function renderCover() {
+      document.getElementById('coverTitle').textContent = DATA.title || '貢獻總覽';
+      document.getElementById('coverSubtitle').textContent = (DATA.author || '') + ' · ' + (DATA.date_range || '');
+      document.getElementById('coverGenerated').textContent = '產生於 ' + (DATA.generated_at || '');
+      var counter = document.getElementById('heroCounter');
+      counter.setAttribute('data-target', DATA.summary.total_commits || 0);
+    }
+
+    // --- KPI ---
+    function renderKPI() {
+      var grid = document.getElementById('kpiGrid');
+      var cards = [
+        { label: '總提交', value: DATA.summary.total_commits, cls: '' },
+        { label: '活躍儲存庫', value: DATA.summary.total_repos, cls: '' },
+        { label: 'OpenSpec 提案', value: DATA.summary.total_proposals, cls: '' },
+        { label: '新增行數', value: DATA.summary.lines_added, cls: 'kpi-card--green' },
+        { label: '刪除行數', value: DATA.summary.lines_removed, cls: 'kpi-card--red' },
+        { label: '日均變更行數', value: Math.round(DATA.summary.avg_daily_lines), unit: '行/天', cls: 'kpi-card--accent' }
+      ];
+
+      var html = '';
+      for (var i = 0; i < cards.length; i++) {
+        var c = cards[i];
+        html += '<div class="kpi-card ' + c.cls + ' animate stagger-' + (i + 1) + '">';
+        html += '<span class="caps">' + c.label + '</span>';
+        html += '<span class="kpi-value counter" data-target="' + (c.value || 0) + '">' + (c.value || 0).toLocaleString('zh-TW') + '</span>';
+        if (c.unit) html += '<span class="kpi-unit">' + c.unit + '</span>';
+        html += '</div>';
+      }
+      grid.innerHTML = html;
+    }
+
+    // --- Timeline ---
+    function renderTimeline() {
+      var chart = document.getElementById('timelineChart');
+      var timeline = DATA.timeline || [];
+
+      if (timeline.length === 0) {
+        chart.innerHTML = '<div class="empty-state">無提交記錄</div>';
+        return;
+      }
+
+      var peakIdx = 0;
+      for (var i = 1; i < timeline.length; i++) {
+        if (timeline[i].lines > timeline[peakIdx].lines) peakIdx = i;
+      }
+
+      var html = '';
+      for (var j = 0; j < timeline.length; j++) {
+        var entry = timeline[j];
+        var isPeak = j === peakIdx;
+        html += '<div class="bar-wrapper">';
+        if (isPeak && timeline[peakIdx].lines > 0) {
+          html += '<span class="peak-annotation">高峰：' + entry.label + '（' + entry.lines.toLocaleString('zh-TW') + '行）</span>';
+        }
+        var barClass = 'bar' + (isPeak ? ' bar--peak' : '') + (entry.lines === 0 ? ' bar--zero' : '');
+        html += '<div class="' + barClass + '" style="height: 0%;" data-height="' + entry.height + '"></div>';
+        html += '<span class="bar-label">' + entry.label + '</span>';
+        html += '</div>';
+      }
+      chart.innerHTML = html;
+    }
+
+    function animateTimeline() {
+      var bars = document.querySelectorAll('.bar[data-height]');
+      for (var i = 0; i < bars.length; i++) {
+        (function(bar) {
+          setTimeout(function() {
+            bar.style.height = bar.getAttribute('data-height') + '%';
+          }, 50);
+        })(bars[i]);
+      }
+    }
+
+    // --- Breakdown ---
+    function renderBreakdown() {
+      var list = document.getElementById('breakdownList');
+      var breakdown = DATA.type_breakdown || [];
+
+      if (breakdown.length === 0) {
+        list.innerHTML = '<div class="empty-state">無貢獻類型資料</div>';
+        return;
+      }
+
+      var html = '';
+      for (var i = 0; i < breakdown.length; i++) {
+        var entry = breakdown[i];
+        var typeClass = entry.commit_type || 'other';
+        html += '<div class="breakdown-row animate" style="transition-delay: ' + (i * 80) + 'ms;">';
+        html += '<span class="breakdown-label">' + escapeHtml(entry.label) + '（' + entry.lines.toLocaleString('zh-TW') + '行）</span>';
+        html += '<div class="breakdown-bar-track"><div class="breakdown-bar-fill" style="width: 0%; background: var(--' + typeClass + ');" data-width="' + entry.percentage + '"></div></div>';
+        html += '<span class="breakdown-pct">' + entry.percentage.toFixed(1) + '%</span>';
+        html += '</div>';
+      }
+      list.innerHTML = html;
+    }
+
+    function animateBreakdown() {
+      var fills = document.querySelectorAll('.breakdown-bar-fill[data-width]');
+      for (var i = 0; i < fills.length; i++) {
+        (function(fill, delay) {
+          setTimeout(function() {
+            fill.style.width = fill.getAttribute('data-width') + '%';
+          }, delay);
+        })(fills[i], i * 80);
+      }
+    }
+
+    // --- Projects ---
+    function renderProjects() {
+      var grid = document.getElementById('projectGrid');
+      var projects = DATA.projects || [];
+
+      if (projects.length === 0) {
+        grid.innerHTML = '<div class="empty-state">無專案資料</div>';
+        return;
+      }
+
+      var html = '';
+      for (var i = 0; i < projects.length; i++) {
+        var p = projects[i];
+        html += '<div class="project-card animate" style="transition-delay: ' + (i * 100) + 'ms;">';
+        html += '<h3 class="h2">' + escapeHtml(p.name) + '</h3>';
+        if (p.description) html += '<p class="small muted">' + escapeHtml(p.description) + '</p>';
+        html += '<div class="project-stats">';
+        html += '<span>' + p.commit_count + ' 次提交</span>';
+        html += '<span>' + p.proposal_count + ' 提案</span>';
+        html += '</div>';
+        html += '<div class="project-lines">';
+        html += '<span class="line-add">+' + (p.lines_added || 0).toLocaleString('zh-TW') + '</span> ';
+        html += '<span class="line-del">−' + (p.lines_removed || 0).toLocaleString('zh-TW') + '</span>';
+        html += '</div>';
+        if (p.top_types && p.top_types.length > 0) {
+          html += '<div class="type-badges">';
+          for (var t = 0; t < p.top_types.length; t++) {
+            var tt = p.top_types[t];
+            html += '<span class="badge badge-' + tt.commit_type + '">' + tt.label + '</span>';
+          }
+          html += '</div>';
+        }
+        html += '</div>';
+      }
+      grid.innerHTML = html;
+    }
+
+    // --- Proposals ---
+    function renderProposals() {
+      var container = document.getElementById('proposalContainer');
+      var proposals = DATA.proposals || [];
+
+      if (proposals.length === 0) {
+        container.innerHTML = '<div class="empty-state">無提案紀錄</div>';
+        return;
+      }
+
+      var html = '<table class="data-table"><thead><tr>';
+      html += '<th>日期</th><th>專案</th><th>代稱</th><th>工作項</th>';
+      html += '</tr></thead><tbody>';
+
+      var lastProject = '';
+      for (var i = 0; i < proposals.length; i++) {
+        var p = proposals[i];
+        var showProject = p.project !== lastProject;
+        lastProject = p.project;
+        html += '<tr>';
+        html += '<td class="date-cell">' + escapeHtml(p.date) + '</td>';
+        html += '<td>' + (showProject ? escapeHtml(p.project) : '') + '</td>';
+        html += '<td class="mono">' + escapeHtml(p.slug) + '</td>';
+        html += '<td>' + (p.task_count || 0) + '</td>';
+        html += '</tr>';
+      }
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+
+    // --- Test Metrics ---
+    function renderTestMetrics() {
+      var container = document.getElementById('testMetricsContainer');
+      var metrics = DATA.test_metrics || [];
+
+      if (metrics.length === 0) {
+        container.innerHTML = '<div class="empty-state">無測試資料</div>';
+        return;
+      }
+
+      // First pass: compute totals for KPI
+      var totalFiles = 0;
+      var totalCases = 0;
+      var coverageSum = 0;
+      var coverageCount = 0;
+
+      for (var i = 0; i < metrics.length; i++) {
+        var m = metrics[i];
+        totalFiles += m.test_file_count || 0;
+        totalCases += m.test_case_count || 0;
+        if (m.coverage_percent != null) {
+          coverageSum += m.coverage_percent;
+          coverageCount++;
+        }
+      }
+
+      // Build KPI row FIRST
+      var avgCoverage = coverageCount > 0 ? (coverageSum / coverageCount) : null;
+      var html = '<div class="test-kpi-row">';
+      html += '<div class="test-kpi-card"><div class="test-kpi-value">' + totalFiles + '</div><div class="test-kpi-label">總測試檔案</div></div>';
+      html += '<div class="test-kpi-card"><div class="test-kpi-value">' + totalCases + '</div><div class="test-kpi-label">總測試案例</div></div>';
+      html += '<div class="test-kpi-card"><div class="test-kpi-value">' + (avgCoverage != null ? avgCoverage.toFixed(1) + '%' : '—') + '</div><div class="test-kpi-label">平均覆蓋率</div></div>';
+      html += '</div>';
+
+      // Build table SECOND
+      html += '<table class="data-table"><thead><tr>';
+      html += '<th>專案</th><th>框架</th><th>測試檔案</th><th>測試案例</th><th>覆蓋率</th>';
+      html += '</tr></thead><tbody>';
+
+      for (var i = 0; i < metrics.length; i++) {
+        var m = metrics[i];
+        html += '<tr>';
+        html += '<td>' + escapeHtml(m.project) + '</td>';
+        html += '<td class="mono">' + escapeHtml(m.framework) + '</td>';
+        html += '<td class="mono">' + (m.test_file_count || 0) + '</td>';
+        html += '<td class="mono">' + (m.test_case_count || 0) + '</td>';
+
+        if (m.coverage_percent != null) {
+          var pct = m.coverage_percent;
+          var color = pct >= 80 ? 'var(--feat)' : pct >= 50 ? 'var(--refactor)' : 'var(--fix)';
+          html += '<td><div class="coverage-cell">';
+          html += '<div class="coverage-bar-track"><div class="coverage-bar-fill" style="width:' + pct.toFixed(0) + '%;background:' + color + '"></div></div>';
+          html += '<span>' + pct.toFixed(1) + '%</span>';
+          html += '</div></td>';
+        } else {
+          html += '<td class="muted">—</td>';
+        }
+        html += '</tr>';
+      }
+      html += '</tbody></table>';
+
+      container.innerHTML = html;
+    }
+
+    // --- Commits ---
+    function renderCommits() {
+      var container = document.getElementById('commitContainer');
+      var commits = DATA.commits || [];
+
+      if (commits.length === 0) {
+        container.innerHTML = '<div class="empty-state">無提交紀錄</div>';
+        return;
+      }
+
+      var sorted = sortCommits(commits.slice());
+      var display = commitShowAll ? sorted : sorted.slice(0, COMMIT_LIMIT);
+
+      var html = '<table class="data-table" id="commitTable"><thead><tr>';
+      html += buildSortHeader('date', '日期');
+      html += buildSortHeader('project', '專案');
+      html += '<th>Hash</th>';
+      html += buildSortHeader('commit_type', '類型');
+      html += buildSortHeader('subject', '說明');
+      html += buildSortHeader('changes', '+/−');
+      html += '</tr></thead><tbody>';
+
+      for (var i = 0; i < display.length; i++) {
+        var c = display[i];
+        var typeClass = c.commit_type || 'other';
+        var subject = c.subject || '';
+        html += '<tr>';
+        html += '<td class="date-cell">' + escapeHtml(c.date) + '</td>';
+        html += '<td>' + escapeHtml(c.project) + '</td>';
+        html += '<td class="mono">' + escapeHtml(c.hash.substring(0, 8)) + '</td>';
+        html += '<td><span class="badge badge-' + typeClass + '">' + escapeHtml(c.commit_type || 'other') + '</span></td>';
+        html += '<td>' + escapeHtml(subject) + '</td>';
+        html += '<td class="mono"><span class="line-add">+' + (c.insertions || 0) + '</span> <span class="line-del">−' + (c.deletions || 0) + '</span></td>';
+        html += '</tr>';
+      }
+      html += '</tbody></table>';
+
+      if (commits.length > COMMIT_LIMIT) {
+        html += '<button class="show-more-btn" id="commitToggle">';
+        html += commitShowAll ? '收合' : '顯示全部（' + commits.length + ' 筆）';
+        html += '</button>';
+      }
+
+      container.innerHTML = html;
+
+      // Bind sort handlers
+      var sortBtns = container.querySelectorAll('[data-sort]');
+      for (var j = 0; j < sortBtns.length; j++) {
+        sortBtns[j].addEventListener('click', function() {
+          var col = this.getAttribute('data-sort');
+          if (commitSortCol === col) {
+            commitSortAsc = !commitSortAsc;
+          } else {
+            commitSortCol = col;
+            commitSortAsc = true;
+          }
+          renderCommits();
+        });
+      }
+
+      // Bind show more
+      var toggle = document.getElementById('commitToggle');
+      if (toggle) {
+        toggle.addEventListener('click', function() {
+          commitShowAll = !commitShowAll;
+          renderCommits();
+        });
+      }
+    }
+
+    function buildSortHeader(col, label) {
+      var arrow = '';
+      var ariaSort = 'none';
+      if (commitSortCol === col) {
+        arrow = commitSortAsc ? ' <span class="sort-arrow">▲</span>' : ' <span class="sort-arrow">▼</span>';
+        ariaSort = commitSortAsc ? 'ascending' : 'descending';
+      }
+      return '<th aria-sort="' + ariaSort + '"><button data-sort="' + col + '">' + label + arrow + '</button></th>';
+    }
+
+    function sortCommits(arr) {
+      if (!commitSortCol) return arr;
+      var col = commitSortCol;
+      var asc = commitSortAsc;
+      arr.sort(function(a, b) {
+        var va, vb;
+        if (col === 'changes') {
+          va = (a.insertions || 0) + (a.deletions || 0);
+          vb = (b.insertions || 0) + (b.deletions || 0);
+        } else {
+          va = a[col] || '';
+          vb = b[col] || '';
+        }
+        if (va < vb) return asc ? -1 : 1;
+        if (va > vb) return asc ? 1 : -1;
+        return 0;
+      });
+      return arr;
+    }
+
+    // --- Animations ---
+    function initAnimations() {
+      var reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+      if (reducedMotion) {
+        document.querySelectorAll('.animate').forEach(function(el) {
+          el.classList.add('in-view');
+        });
+        // Set all counters (including hero) to final values immediately
+        document.querySelectorAll('.counter').forEach(function(el) {
+          var target = parseFloat(el.getAttribute('data-target'));
+          el.textContent = target ? Math.round(target).toLocaleString('zh-TW') : '0';
+        });
+        animateTimeline();
+        animateBreakdown();
+        return;
+      }
+
+      var observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('in-view');
+            observer.unobserve(entry.target);
+
+            // Trigger bar/fill animations when parent slide enters view
+            if (entry.target.closest('#slide-timeline') || entry.target.id === 'slide-timeline') {
+              animateTimeline();
+            }
+            if (entry.target.closest('#slide-breakdown') || entry.target.id === 'slide-breakdown') {
+              animateBreakdown();
+            }
+
+            // Counter animation for KPI cards
+            var counters = entry.target.querySelectorAll('.counter');
+            if (entry.target.classList.contains('counter')) {
+              animateCounter(entry.target);
+            }
+            for (var i = 0; i < counters.length; i++) {
+              animateCounter(counters[i]);
+            }
+          }
+        });
+      }, { threshold: 0.2 });
+
+      document.querySelectorAll('.animate').forEach(function(el) {
+        observer.observe(el);
+      });
+
+      // Observe hero counter separately
+      var heroCounter = document.getElementById('heroCounter');
+      if (heroCounter) {
+        var heroObs = new IntersectionObserver(function(entries) {
+          if (entries[0].isIntersecting) {
+            animateCounter(heroCounter);
+            heroObs.unobserve(heroCounter);
+          }
+        }, { threshold: 0.5 });
+        heroObs.observe(heroCounter);
+      }
+    }
+
+    function animateCounter(el) {
+      var target = parseFloat(el.getAttribute('data-target'));
+      if (!target || target === 0) { el.textContent = '0'; return; }
+      var duration = 1200;
+      var start = null;
+
+      function step(timestamp) {
+        if (!start) start = timestamp;
+        var progress = Math.min((timestamp - start) / duration, 1);
+        var eased = 1 - Math.pow(1 - progress, 3);
+        var current = eased * target;
+        el.textContent = Math.round(current).toLocaleString('zh-TW');
+        if (progress < 1) {
+          requestAnimationFrame(step);
+        } else {
+          el.textContent = Math.round(target).toLocaleString('zh-TW');
+        }
+      }
+
+      requestAnimationFrame(step);
+    }
+
+    // --- Keyboard ---
+    function initKeyboard() {
+      document.addEventListener('keydown', function(e) {
+        var tag = e.target.tagName.toLowerCase();
+        if (tag === 'input' || tag === 'textarea' || tag === 'select' || tag === 'button' || tag === 'a') return;
+        if (e.target.closest('.scroll-container')) return;
+
+        var slides = document.querySelectorAll('.slide');
+        var currentIdx = getCurrentSlideIndex();
+
+        if (e.key === 'ArrowDown' || e.key === 'PageDown') {
+          e.preventDefault();
+          if (currentIdx < slides.length - 1) {
+            slides[currentIdx + 1].scrollIntoView({ behavior: 'smooth' });
+          }
+        } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+          e.preventDefault();
+          if (currentIdx > 0) {
+            slides[currentIdx - 1].scrollIntoView({ behavior: 'smooth' });
+          }
+        }
+      });
+    }
+
+    function getCurrentSlideIndex() {
+      var slides = document.querySelectorAll('.slide');
+      var mainEl = document.getElementById('main');
+      var scrollTop = mainEl.scrollTop;
+      var viewHeight = mainEl.clientHeight;
+
+      for (var i = slides.length - 1; i >= 0; i--) {
+        if (slides[i].offsetTop <= scrollTop + viewHeight * 0.5) {
+          return i;
+        }
+      }
+      return 0;
+    }
+
+    // --- Utilities ---
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    // --- Boot ---
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>

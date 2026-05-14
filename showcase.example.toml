@@ -77,6 +77,10 @@ path = "../my-backend"
 # Displayed as a subtitle under the project name in the report.
 description = "REST API server and background workers"
 
+# url [optional] — URL of the project's hosted repository (e.g., GitHub, GitLab).
+# When set, the project name in the report becomes a clickable hyperlink.
+# url = "https://github.com/user/my-backend"
+
 # branch [optional] — The Git branch to analyse. When omitted the tool uses
 # the repository's current HEAD (usually "main" or "master").
 branch = "main"
@@ -113,6 +117,10 @@ branch = "main"
 name = "my-frontend"
 path = "../my-frontend"
 description = "Single-page application for the operator console"
+
+# url [optional] — URL of the project's hosted repository (e.g., GitHub, GitLab).
+# When set, the project name in the report becomes a clickable hyperlink.
+# url = "https://github.com/user/my-frontend"
 
 # branch is omitted here — the tool will use whatever branch is checked out.
 

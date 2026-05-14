@@ -49,6 +49,7 @@ pub struct ProjectData {
     pub lines_added: usize,
     pub lines_removed: usize,
     pub top_types: Vec<TypeBreakdown>,
+    pub url: Option<String>,
 }
 
 #[derive(Debug, Serialize, Clone)]

@@ -462,4 +462,174 @@ mod tests {
         assert!(run_init(args).is_ok());
         assert!(path.exists());
     }
+
+    // --- Project URL linking integration tests ---
+
+    #[test]
+    fn test_run_generate_with_project_url() {
+        let repo_dir = init_temp_git_repo_for_main();
+        let config_dir = tempfile::tempdir().unwrap();
+        let output_path = config_dir.path().join("dist/output.html");
+        let config_content = format!(
+            "title = \"Test\"\n[output]\npath = {}\n[[projects]]\nname = \"url-project\"\npath = {}\nbranch = \"main\"\nurl = \"https://github.com/example/repo\"\n",
+            toml_literal(&output_path.to_string_lossy()),
+            toml_literal(&repo_dir.path().to_string_lossy())
+        );
+        let config_path = config_dir.path().join("showcase.toml");
+        std::fs::write(&config_path, config_content).unwrap();
+
+        let args = Generate {
+            config: config_path.to_str().unwrap().to_string(),
+            output: None,
+            author: None,
+            since: None,
+            until: None,
+        };
+        run_generate(args).unwrap();
+        let html = std::fs::read_to_string(&output_path).unwrap();
+        // URL appears in the embedded JSON data
+        assert!(
+            html.contains("https://github.com/example/repo"),
+            "HTML should contain the project URL in the embedded JSON data"
+        );
+        // Template contains the conditional link rendering logic
+        assert!(
+            html.contains("target=\"_blank\""),
+            "Template should contain target=_blank for link rendering"
+        );
+        assert!(
+            html.contains("noopener noreferrer"),
+            "Template should contain noopener noreferrer for link security"
+        );
+    }
+
+    #[test]
+    fn test_run_generate_without_project_url() {
+        let repo_dir = init_temp_git_repo_for_main();
+        let config_dir = tempfile::tempdir().unwrap();
+        let output_path = config_dir.path().join("dist/output.html");
+        let config_content = format!(
+            "title = \"Test\"\n[output]\npath = {}\n[[projects]]\nname = \"no-url-project\"\npath = {}\nbranch = \"main\"\n",
+            toml_literal(&output_path.to_string_lossy()),
+            toml_literal(&repo_dir.path().to_string_lossy())
+        );
+        let config_path = config_dir.path().join("showcase.toml");
+        std::fs::write(&config_path, config_content).unwrap();
+
+        let args = Generate {
+            config: config_path.to_str().unwrap().to_string(),
+            output: None,
+            author: None,
+            since: None,
+            until: None,
+        };
+        run_generate(args).unwrap();
+        let html = std::fs::read_to_string(&output_path).unwrap();
+        assert!(
+            html.contains("no-url-project"),
+            "Project name should be present in the embedded JSON"
+        );
+        // When no URL is set, the JSON should contain "url":null
+        assert!(
+            html.contains(r#""url":null"#),
+            "JSON should contain url:null when no URL is configured"
+        );
+    }
+
+    #[test]
+    fn test_run_generate_with_special_chars_in_url() {
+        let repo_dir = init_temp_git_repo_for_main();
+        let config_dir = tempfile::tempdir().unwrap();
+        let output_path = config_dir.path().join("dist/output.html");
+        let config_content = format!(
+            "title = \"Test\"\n[output]\npath = {}\n[[projects]]\nname = \"special-proj\"\npath = {}\nbranch = \"main\"\nurl = \"https://example.com/repo?a=1&b=2\"\n",
+            toml_literal(&output_path.to_string_lossy()),
+            toml_literal(&repo_dir.path().to_string_lossy())
+        );
+        let config_path = config_dir.path().join("showcase.toml");
+        std::fs::write(&config_path, config_content).unwrap();
+
+        let args = Generate {
+            config: config_path.to_str().unwrap().to_string(),
+            output: None,
+            author: None,
+            since: None,
+            until: None,
+        };
+        run_generate(args).unwrap();
+        let html = std::fs::read_to_string(&output_path).unwrap();
+        // The & in the URL is escaped to \u0026 by escape_json_for_html_script
+        assert!(
+            html.contains(r"https://example.com/repo?a=1\u0026b=2"),
+            "URL with & should be HTML-safe escaped in embedded JSON"
+        );
+    }
+
+    #[test]
+    fn test_run_generate_with_empty_url() {
+        let repo_dir = init_temp_git_repo_for_main();
+        let config_dir = tempfile::tempdir().unwrap();
+        let output_path = config_dir.path().join("dist/output.html");
+        let config_content = format!(
+            "title = \"Test\"\n[output]\npath = {}\n[[projects]]\nname = \"empty-url-project\"\npath = {}\nbranch = \"main\"\nurl = \"\"\n",
+            toml_literal(&output_path.to_string_lossy()),
+            toml_literal(&repo_dir.path().to_string_lossy())
+        );
+        let config_path = config_dir.path().join("showcase.toml");
+        std::fs::write(&config_path, config_content).unwrap();
+
+        let args = Generate {
+            config: config_path.to_str().unwrap().to_string(),
+            output: None,
+            author: None,
+            since: None,
+            until: None,
+        };
+        run_generate(args).unwrap();
+        let html = std::fs::read_to_string(&output_path).unwrap();
+        assert!(
+            html.contains("empty-url-project"),
+            "Project name should be present"
+        );
+        // Empty string URL should be in JSON as "" — the JS template treats
+        // empty strings as no-URL via safeProjectUrl(), rendering plain text
+        assert!(
+            html.contains(r#""url":"""#),
+            "JSON should contain empty string URL"
+        );
+    }
+
+    #[test]
+    fn test_run_generate_with_javascript_url_is_safe() {
+        let repo_dir = init_temp_git_repo_for_main();
+        let config_dir = tempfile::tempdir().unwrap();
+        let output_path = config_dir.path().join("dist/output.html");
+        let config_content = format!(
+            "title = \"Test\"\n[output]\npath = {}\n[[projects]]\nname = \"xss-project\"\npath = {}\nbranch = \"main\"\nurl = \"javascript:alert(1)\"\n",
+            toml_literal(&output_path.to_string_lossy()),
+            toml_literal(&repo_dir.path().to_string_lossy())
+        );
+        let config_path = config_dir.path().join("showcase.toml");
+        std::fs::write(&config_path, config_content).unwrap();
+
+        let args = Generate {
+            config: config_path.to_str().unwrap().to_string(),
+            output: None,
+            author: None,
+            since: None,
+            until: None,
+        };
+        run_generate(args).unwrap();
+        let html = std::fs::read_to_string(&output_path).unwrap();
+        // The template contains safeProjectUrl() which rejects non-http(s) schemes
+        assert!(
+            html.contains("safeProjectUrl"),
+            "Template should contain safeProjectUrl function for URL scheme validation"
+        );
+        // The URL is still present in JSON data (it's the JS that filters it at render time)
+        assert!(
+            html.contains("javascript"),
+            "The raw URL value is in the JSON data (filtered by JS at render time)"
+        );
+    }
 }

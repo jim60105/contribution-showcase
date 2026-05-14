@@ -346,6 +346,15 @@
       box-shadow: 0 4px 16px rgba(0,0,0,0.05);
     }
 
+    .project-card h3 a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .project-card h3 a:hover {
+      color: var(--accent);
+    }
+
     .project-stats {
       display: flex;
       gap: var(--gap-md);
@@ -852,7 +861,12 @@
       for (var i = 0; i < projects.length; i++) {
         var p = projects[i];
         html += '<div class="project-card animate" style="transition-delay: ' + (i * 100) + 'ms;">';
-        html += '<h3 class="h2">' + escapeHtml(p.name) + '</h3>';
+        var safeUrl = safeProjectUrl(p.url);
+        if (safeUrl) {
+          html += '<h3 class="h2"><a href="' + escapeHtml(safeUrl) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(p.name) + '</a></h3>';
+        } else {
+          html += '<h3 class="h2">' + escapeHtml(p.name) + '</h3>';
+        }
         if (p.description) html += '<p class="small muted">' + escapeHtml(p.description) + '</p>';
         html += '<div class="project-stats">';
         html += '<span>' + p.commit_count + ' 次提交</span>';
@@ -1199,6 +1213,17 @@
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#039;');
+    }
+
+    function safeProjectUrl(url) {
+      if (!url || !String(url).trim()) return null;
+      try {
+        var parsed = new URL(String(url), window.location.href);
+        if (parsed.protocol === 'https:' || parsed.protocol === 'http:') {
+          return parsed.href;
+        }
+      } catch (_) {}
+      return null;
     }
 
     // --- Boot ---

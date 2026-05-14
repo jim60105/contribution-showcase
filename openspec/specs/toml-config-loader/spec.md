@@ -8,7 +8,7 @@ Load, parse, and validate a TOML configuration file that defines project entries
 
 ### Requirement: Config File Loading and TOML Parsing
 
-The system SHALL read a TOML config file and deserialize it into a typed configuration structure containing `[[projects]]` entries (each with `name`, `path`, `description`, and optional `branch`) and top-level filter/output options.
+The system SHALL read a TOML config file and deserialize it into a typed configuration structure containing `[[projects]]` entries (each with `name`, `path`, `description`, optional `branch`, and optional `url`) and top-level filter/output options.
 
 #### Scenario: Valid config with multiple projects
 - **GIVEN** a TOML file containing two `[[projects]]` entries with `name`, `path`, and `description`
@@ -24,6 +24,16 @@ The system SHALL read a TOML config file and deserialize it into a typed configu
 - **GIVEN** a `[[projects]]` entry omits the `branch` field
 - **WHEN** the config is loaded
 - **THEN** the project's branch field is `None`
+
+#### Scenario: Project with optional URL
+- **GIVEN** a `[[projects]]` entry includes `url = "https://github.com/example/repo"`
+- **WHEN** the config is loaded
+- **THEN** the project's URL field is `Some("https://github.com/example/repo")`
+
+#### Scenario: Project without URL
+- **GIVEN** a `[[projects]]` entry omits the `url` field
+- **WHEN** the config is loaded
+- **THEN** the project's URL field is `None`
 
 #### Scenario: Malformed TOML
 - **GIVEN** the config file contains invalid TOML syntax

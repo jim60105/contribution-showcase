@@ -22,6 +22,7 @@ pub struct ProjectConfig {
     pub branch: Option<String>,
     pub coverage_command: Option<String>,
     pub coverage_result_path: Option<String>,
+    pub url: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Default, Clone)]
@@ -426,6 +427,35 @@ mod tests {
     #[test]
     fn test_sanitize_consecutive_special_chars() {
         assert_eq!(sanitize_title_for_filename(Some("a!!!b")), "a-b.html");
+    }
+
+    #[test]
+    fn test_config_project_url_present() {
+        let dir = temp_dir_unique("url-present");
+        let config_file = dir.join("showcase.toml");
+        fs::write(
+            &config_file,
+            "[[projects]]\nname = \"test\"\npath = \"/tmp/test\"\nurl = \"https://github.com/example/repo\"\n",
+        )
+        .unwrap();
+        let config = Config::load(config_file.to_str().unwrap()).unwrap();
+        assert_eq!(
+            config.projects[0].url,
+            Some("https://github.com/example/repo".to_string())
+        );
+    }
+
+    #[test]
+    fn test_config_project_url_absent() {
+        let dir = temp_dir_unique("url-absent");
+        let config_file = dir.join("showcase.toml");
+        fs::write(
+            &config_file,
+            "[[projects]]\nname = \"test\"\npath = \"/tmp/test\"\n",
+        )
+        .unwrap();
+        let config = Config::load(config_file.to_str().unwrap()).unwrap();
+        assert!(config.projects[0].url.is_none());
     }
 
     #[test]
