@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-05-14
+
+### Added
+
+- Stacked type bar chart: timeline bars now show colored segments per commit type with consistent ordering
+- Hover tooltip on timeline bars displaying per-type line breakdown with colored indicators and zh-TW formatted counts
+- GitHub Pages hosting with automated deployment workflow
+- Clickable project names in report cards linking to repository URLs
+- URL sanitization (`safeProjectUrl()`) rejecting non-http(s) schemes for XSS prevention
+- Deno framework detection (`deno.json`) for test metrics collection
+- Framework-agnostic coverage execution: coverage commands now run regardless of framework detection
+
+### Fixed
+
+- Timeline X-axis labels no longer overlap with bar content (changed rotation geometry to extend labels downward)
+- Undefined CSS variables resolved (`--card-bg` → `--surface`, `--fs-sm` → `--fs-xs`)
+- XSS hardening: `escapeHtml()` applied to bar labels and peak annotation
+- Windows compatibility fix for coverage test using echo with relative paths
+
 ## [0.2.0] - 2026-05-13
 
 ### Added
@@ -53,6 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
-[Unreleased]: https://github.com/jim60105/contribution-showcase/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/jim60105/contribution-showcase/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/jim60105/contribution-showcase/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/jim60105/contribution-showcase/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/jim60105/contribution-showcase/releases/tag/v0.1.0
