@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use serde::Serialize;
 
 #[derive(Debug, Serialize)]
@@ -30,6 +32,7 @@ pub struct TimelineEntry {
     pub label: String,
     pub lines: usize,
     pub height: f64,
+    pub type_lines: BTreeMap<String, usize>,
 }
 
 #[derive(Debug, Serialize)]

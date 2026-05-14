@@ -621,15 +621,73 @@ mod tests {
         };
         run_generate(args).unwrap();
         let html = std::fs::read_to_string(&output_path).unwrap();
-        // The template contains safeProjectUrl() which rejects non-http(s) schemes
         assert!(
             html.contains("safeProjectUrl"),
             "Template should contain safeProjectUrl function for URL scheme validation"
         );
-        // The URL is still present in JSON data (it's the JS that filters it at render time)
         assert!(
             html.contains("javascript"),
             "The raw URL value is in the JSON data (filtered by JS at render time)"
+        );
+    }
+
+    #[test]
+    fn test_generated_html_contains_commit_trends_heading() {
+        let repo_dir = init_temp_git_repo_for_main();
+        let config_dir = tempfile::tempdir().unwrap();
+        let output_path = config_dir.path().join("dist/output.html");
+        let config_content = format!(
+            "title = \"Test\"\n[output]\npath = {}\n[[projects]]\nname = \"p1\"\npath = {}\nbranch = \"main\"\n",
+            toml_literal(&output_path.to_string_lossy()),
+            toml_literal(&repo_dir.path().to_string_lossy())
+        );
+        let config_path = config_dir.path().join("showcase.toml");
+        std::fs::write(&config_path, config_content).unwrap();
+
+        let args = Generate {
+            config: config_path.to_str().unwrap().to_string(),
+            output: None,
+            author: None,
+            since: None,
+            until: None,
+        };
+        run_generate(args).unwrap();
+        let html = std::fs::read_to_string(&output_path).unwrap();
+        assert!(
+            html.contains("提交趨勢"),
+            "HTML should contain renamed heading '提交趨勢'"
+        );
+        assert!(
+            !html.contains("時間軸"),
+            "HTML should no longer contain old heading '時間軸'"
+        );
+    }
+
+    #[test]
+    fn test_generated_html_contains_type_lines_in_json() {
+        let repo_dir = init_temp_git_repo_for_main();
+        let config_dir = tempfile::tempdir().unwrap();
+        let output_path = config_dir.path().join("dist/output.html");
+        let config_content = format!(
+            "title = \"Test\"\n[output]\npath = {}\n[[projects]]\nname = \"p1\"\npath = {}\nbranch = \"main\"\n",
+            toml_literal(&output_path.to_string_lossy()),
+            toml_literal(&repo_dir.path().to_string_lossy())
+        );
+        let config_path = config_dir.path().join("showcase.toml");
+        std::fs::write(&config_path, config_content).unwrap();
+
+        let args = Generate {
+            config: config_path.to_str().unwrap().to_string(),
+            output: None,
+            author: None,
+            since: None,
+            until: None,
+        };
+        run_generate(args).unwrap();
+        let html = std::fs::read_to_string(&output_path).unwrap();
+        assert!(
+            html.contains("type_lines"),
+            "Embedded JSON should contain 'type_lines' field in timeline entries"
         );
     }
 }

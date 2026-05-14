@@ -262,14 +262,20 @@
 
     .bar {
       width: 100%;
-      background: rgba(37, 99, 235, 0.25);
       border-radius: 3px 3px 0 0;
       transition: height 1s cubic-bezier(0.22, 1, 0.36, 1);
+      display: flex;
+      flex-direction: column-reverse;
+      align-items: stretch;
+      overflow: hidden;
     }
 
     .bar:not(.bar--zero) { min-height: 2px; }
 
-    .bar--peak { background: var(--accent); }
+    .bar-segment {
+      width: 100%;
+      min-height: 0;
+    }
 
     .bar-label {
       position: absolute;
@@ -630,7 +636,7 @@
 
     <section class="slide" id="slide-timeline">
       <div class="slide-inner">
-        <h2 class="h1 animate">時間軸</h2>
+        <h2 class="h1 animate">提交趨勢</h2>
         <div class="timeline-chart animate stagger-1" id="timelineChart"></div>
       </div>
     </section>
@@ -676,7 +682,7 @@
   <script>
     var DATA = "__SHOWCASE_DATA__";
 
-    var NAV_LABELS = ['封面', '指標', '時間軸', '類型', '專案', '測試', '提案', '紀錄'];
+    var NAV_LABELS = ['封面', '指標', '提交趨勢', '類型', '專案', '測試', '提案', '紀錄'];
     var SLIDE_IDS = ['slide-cover', 'slide-kpi', 'slide-timeline', 'slide-breakdown', 'slide-projects', 'slide-tests', 'slide-proposals', 'slide-commits'];
     var COMMIT_LIMIT = 100;
     var commitShowAll = false;
@@ -781,6 +787,23 @@
         return;
       }
 
+      // Compute global type order: descending by total lines, "other" always last
+      var typeTotals = {};
+      for (var i = 0; i < timeline.length; i++) {
+        var tl = timeline[i].type_lines || {};
+        for (var t in tl) {
+          if (tl.hasOwnProperty(t)) {
+            typeTotals[t] = (typeTotals[t] || 0) + tl[t];
+          }
+        }
+      }
+      var typeOrder = Object.keys(typeTotals).filter(function(k) { return k !== 'other'; });
+      typeOrder.sort(function(a, b) { return typeTotals[b] - typeTotals[a]; });
+      if (typeTotals.hasOwnProperty('other')) {
+        typeOrder.push('other');
+      }
+
+      // Find peak bucket
       var peakIdx = 0;
       for (var i = 1; i < timeline.length; i++) {
         if (timeline[i].lines > timeline[peakIdx].lines) peakIdx = i;
@@ -794,8 +817,22 @@
         if (isPeak && timeline[peakIdx].lines > 0) {
           html += '<span class="peak-annotation">高峰：' + entry.label + '（' + entry.lines.toLocaleString('zh-TW') + '行）</span>';
         }
-        var barClass = 'bar' + (isPeak ? ' bar--peak' : '') + (entry.lines === 0 ? ' bar--zero' : '');
-        html += '<div class="' + barClass + '" style="height: 0%;" data-height="' + entry.height + '"></div>';
+        var barClass = 'bar' + (entry.lines === 0 ? ' bar--zero' : '');
+        html += '<div class="' + barClass + '" style="height: 0%;" data-height="' + entry.height + '">';
+
+        // Stacked segments in global type order
+        var tl = entry.type_lines || {};
+        if (entry.lines > 0) {
+          for (var k = 0; k < typeOrder.length; k++) {
+            var type = typeOrder[k];
+            if (tl[type] && tl[type] > 0) {
+              var pct = (tl[type] / entry.lines * 100).toFixed(2);
+              html += '<div class="bar-segment" style="height:' + pct + '%;background:var(--' + type + ', var(--other))"></div>';
+            }
+          }
+        }
+
+        html += '</div>';
         html += '<span class="bar-label">' + entry.label + '</span>';
         html += '</div>';
       }

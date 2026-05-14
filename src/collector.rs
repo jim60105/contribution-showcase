@@ -389,6 +389,34 @@ fn build_timeline(commits: &[CommitEntry]) -> Vec<TimelineEntry> {
         *bucket_lines.entry(label).or_insert(0) += lines;
     }
 
+    // Aggregate per-type lines into buckets
+    let known_types: HashSet<&str> = [
+        "feat", "fix", "docs", "refactor", "test", "chore", "ci", "build", "style", "perf",
+    ]
+    .into_iter()
+    .collect();
+    let mut bucket_type_lines: HashMap<String, std::collections::BTreeMap<String, usize>> =
+        HashMap::new();
+    for c in commits {
+        let lines = c.insertions + c.deletions;
+        if lines == 0 {
+            continue;
+        }
+        if let Ok(d) = chrono::NaiveDate::parse_from_str(&c.date, "%Y-%m-%d") {
+            let label = format_label(&d);
+            let canonical = if known_types.contains(c.commit_type.as_str()) {
+                c.commit_type.clone()
+            } else {
+                "other".to_string()
+            };
+            *bucket_type_lines
+                .entry(label)
+                .or_default()
+                .entry(canonical)
+                .or_insert(0) += lines;
+        }
+    }
+
     // Generate contiguous bucket labels from min_date to max_date
     let all_labels: Vec<String> = match granularity {
         Granularity::Daily => {
@@ -459,6 +487,7 @@ fn build_timeline(commits: &[CommitEntry]) -> Vec<TimelineEntry> {
         .into_iter()
         .map(|label| {
             let lines = *bucket_lines.get(&label).unwrap_or(&0);
+            let type_lines = bucket_type_lines.remove(&label).unwrap_or_default();
             TimelineEntry {
                 label,
                 lines,
@@ -467,6 +496,7 @@ fn build_timeline(commits: &[CommitEntry]) -> Vec<TimelineEntry> {
                 } else {
                     (lines as f64 / max_lines as f64) * 100.0
                 },
+                type_lines,
             }
         })
         .collect()
@@ -3324,5 +3354,158 @@ mod tests {
         assert_eq!(metrics[0].coverage_percent, Some(82.0));
         assert!(metrics[0].test_file_count >= 1, "should find test files");
         assert!(metrics[0].test_case_count >= 1, "should count test cases");
+    }
+
+    // ── build_timeline() type_lines tests ──────────────────────────────────────
+
+    #[test]
+    fn test_build_timeline_type_lines_multiple_types() {
+        // Task 3.1: bucket with multiple commit types records correct per-type lines
+        let commits = vec![
+            CommitEntry {
+                hash: "a".to_string(),
+                date: "2024-01-01".to_string(),
+                commit_type: "feat".to_string(),
+                scope: "".to_string(),
+                subject: "feat: A".to_string(),
+                project: "test".to_string(),
+                insertions: 10,
+                deletions: 5,
+            },
+            CommitEntry {
+                hash: "b".to_string(),
+                date: "2024-01-01".to_string(),
+                commit_type: "fix".to_string(),
+                scope: "".to_string(),
+                subject: "fix: B".to_string(),
+                project: "test".to_string(),
+                insertions: 20,
+                deletions: 3,
+            },
+            CommitEntry {
+                hash: "c".to_string(),
+                date: "2024-01-01".to_string(),
+                commit_type: "docs".to_string(),
+                scope: "".to_string(),
+                subject: "docs: C".to_string(),
+                project: "test".to_string(),
+                insertions: 7,
+                deletions: 2,
+            },
+        ];
+        let timeline = build_timeline(&commits);
+        assert_eq!(timeline.len(), 1);
+        let entry = &timeline[0];
+        assert_eq!(entry.type_lines.len(), 3);
+        assert_eq!(entry.type_lines["feat"], 15);
+        assert_eq!(entry.type_lines["fix"], 23);
+        assert_eq!(entry.type_lines["docs"], 9);
+        let type_sum: usize = entry.type_lines.values().sum();
+        assert_eq!(type_sum, entry.lines);
+    }
+
+    #[test]
+    fn test_build_timeline_type_lines_single_type() {
+        // Task 3.2: bucket with single commit type produces single-entry map
+        let commits = vec![
+            CommitEntry {
+                hash: "a".to_string(),
+                date: "2024-01-01".to_string(),
+                commit_type: "feat".to_string(),
+                scope: "".to_string(),
+                subject: "feat: A".to_string(),
+                project: "test".to_string(),
+                insertions: 10,
+                deletions: 5,
+            },
+            CommitEntry {
+                hash: "b".to_string(),
+                date: "2024-01-01".to_string(),
+                commit_type: "feat".to_string(),
+                scope: "".to_string(),
+                subject: "feat: B".to_string(),
+                project: "test".to_string(),
+                insertions: 20,
+                deletions: 3,
+            },
+        ];
+        let timeline = build_timeline(&commits);
+        assert_eq!(timeline.len(), 1);
+        let entry = &timeline[0];
+        assert_eq!(entry.type_lines.len(), 1);
+        assert_eq!(entry.type_lines["feat"], 38);
+    }
+
+    #[test]
+    fn test_build_timeline_type_lines_zero_lines_omitted() {
+        // Task 3.3: commits with zero lines changed are omitted from type_lines
+        let commits = vec![
+            CommitEntry {
+                hash: "a".to_string(),
+                date: "2024-01-01".to_string(),
+                commit_type: "feat".to_string(),
+                scope: "".to_string(),
+                subject: "feat: A".to_string(),
+                project: "test".to_string(),
+                insertions: 10,
+                deletions: 5,
+            },
+            CommitEntry {
+                hash: "b".to_string(),
+                date: "2024-01-01".to_string(),
+                commit_type: "fix".to_string(),
+                scope: "".to_string(),
+                subject: "fix: B".to_string(),
+                project: "test".to_string(),
+                insertions: 0,
+                deletions: 0,
+            },
+        ];
+        let timeline = build_timeline(&commits);
+        assert_eq!(timeline.len(), 1);
+        let entry = &timeline[0];
+        assert_eq!(entry.type_lines.len(), 1);
+        assert!(entry.type_lines.contains_key("feat"));
+        assert!(!entry.type_lines.contains_key("fix"));
+    }
+
+    #[test]
+    fn test_build_timeline_type_lines_gap_bucket_empty() {
+        // Task 3.4: contiguous gap bucket has empty type_lines map
+        let commits = vec![
+            CommitEntry {
+                hash: "a".to_string(),
+                date: "2024-01-01".to_string(),
+                commit_type: "feat".to_string(),
+                scope: "".to_string(),
+                subject: "feat: A".to_string(),
+                project: "test".to_string(),
+                insertions: 10,
+                deletions: 5,
+            },
+            CommitEntry {
+                hash: "b".to_string(),
+                date: "2024-01-05".to_string(),
+                commit_type: "fix".to_string(),
+                scope: "".to_string(),
+                subject: "fix: B".to_string(),
+                project: "test".to_string(),
+                insertions: 20,
+                deletions: 3,
+            },
+        ];
+        let timeline = build_timeline(&commits);
+        // Daily granularity (5 days <= 14), gap days should exist
+        assert!(timeline.len() >= 3);
+        // Middle entries (gap days) should have empty type_lines
+        for entry in &timeline[1..timeline.len() - 1] {
+            if entry.lines == 0 {
+                assert!(
+                    entry.type_lines.is_empty(),
+                    "Gap bucket '{}' should have empty type_lines",
+                    entry.label
+                );
+            }
+        }
     }
 }
