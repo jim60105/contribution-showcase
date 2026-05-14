@@ -174,6 +174,10 @@ The peak annotation label SHALL use the format:
 高峰：{label}（{lines.toLocaleString('zh-TW')}行）
 ```
 
+When the user hovers the cursor over a bar, a tooltip SHALL appear displaying the bucket label, total lines, and a per-type breakdown of lines changed (from `type_lines`). Each type row SHALL show a colored indicator matching the type's CSS custom property, the type name, and the line count formatted with `toLocaleString('zh-TW')` followed by `行`. Type rows SHALL be ordered consistently with the bar segment stacking order (descending by total lines, `other` last). The tooltip SHALL disappear when the cursor leaves the bar.
+
+X-axis bucket labels SHALL be positioned with sufficient vertical offset below the bars to prevent overlap with bar content, accounting for the -45° rotation.
+
 #### Scenario: Timeline chart renders stacked bars
 
 - **GIVEN** a timeline data entry with `lines: 1500`, `height: 100`, `label: "2024-W03"`, and `type_lines: {"feat": 900, "fix": 600}`
@@ -214,6 +218,41 @@ The peak annotation label SHALL use the format:
 - **GIVEN** a timeline entry with `height: 80`, `lines: 1000`, and `type_lines: {"feat": 700, "fix": 300}`
 - **WHEN** the bar is rendered
 - **THEN** the overall bar height SHALL be 80% of maximum, the `feat` segment SHALL occupy 70% of the bar height, and the `fix` segment SHALL occupy 30%
+
+#### Scenario: Tooltip displays per-type lines on hover
+
+- **WHEN** the user hovers over a bar with `label: "2024-W03"`, `lines: 1500`, and `type_lines: {"feat": 900, "fix": 600}`
+- **THEN** a tooltip SHALL appear showing "2024-W03（1,500行）" followed by rows "feat: 900行" and "fix: 600行" with colored indicators
+
+#### Scenario: Tooltip type rows use consistent ordering
+
+- **WHEN** the user hovers over a bar and the global type order is [feat, fix, docs, other]
+- **THEN** the tooltip rows SHALL appear in the same order: feat, fix, docs, other
+
+#### Scenario: Tooltip colored indicators match bar segment colors
+
+- **WHEN** the tooltip displays a row for type `feat`
+- **THEN** the colored indicator SHALL use the CSS custom property `var(--feat)`
+
+#### Scenario: Tooltip disappears on mouse leave
+
+- **WHEN** the user moves the cursor away from a bar
+- **THEN** the tooltip SHALL be hidden
+
+#### Scenario: Empty bucket tooltip shows only label and zero lines
+
+- **WHEN** the user hovers over a gap bucket with `lines: 0` and empty `type_lines`
+- **THEN** the tooltip SHALL show "{label}（0行）" with no type rows
+
+#### Scenario: Tooltip is positioned above the hovered bar
+
+- **WHEN** the user hovers over a bar
+- **THEN** the tooltip SHALL be positioned centered above the bar, clamped to prevent overflow outside the chart container
+
+#### Scenario: Bar labels do not overlap chart bars
+
+- **WHEN** the timeline chart renders with rotated X-axis labels
+- **THEN** the labels SHALL be positioned entirely below the bar area, with sufficient padding to prevent visual overlap between label text and bar segments at all granularities (daily, weekly, monthly, quarterly, yearly)
 
 ### Requirement: Lines-Based Type Breakdown Chart
 

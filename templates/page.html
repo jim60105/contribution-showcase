@@ -243,10 +243,10 @@
       display: flex;
       align-items: flex-end;
       gap: 2px;
-      height: 240px;
+      height: 280px;
       width: 100%;
       max-width: var(--container);
-      padding-bottom: 40px;
+      padding-bottom: 80px;
       position: relative;
     }
 
@@ -277,13 +277,55 @@
       min-height: 0;
     }
 
+    .timeline-tooltip {
+      position: absolute;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 10px 14px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+      z-index: 10;
+      white-space: normal;
+      font-size: var(--fs-xs);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      max-width: min(320px, calc(100% - 16px));
+      box-sizing: border-box;
+    }
+
+    .timeline-tooltip.visible { opacity: 1; }
+
+    .tooltip-header {
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--fg);
+    }
+
+    .tooltip-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 2px 0;
+      color: var(--muted);
+    }
+
+    .tooltip-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
     .bar-label {
       position: absolute;
-      bottom: -36px;
+      top: 100%;
+      right: 50%;
+      margin-top: 4px;
       font-size: var(--fs-xs);
       color: var(--muted);
       transform: rotate(-45deg);
-      transform-origin: top left;
+      transform-origin: top right;
       white-space: nowrap;
     }
 
@@ -815,7 +857,7 @@
         var isPeak = j === peakIdx;
         html += '<div class="bar-wrapper">';
         if (isPeak && timeline[peakIdx].lines > 0) {
-          html += '<span class="peak-annotation">高峰：' + entry.label + '（' + entry.lines.toLocaleString('zh-TW') + '行）</span>';
+          html += '<span class="peak-annotation">高峰：' + escapeHtml(entry.label) + '（' + entry.lines.toLocaleString('zh-TW') + '行）</span>';
         }
         var barClass = 'bar' + (entry.lines === 0 ? ' bar--zero' : '');
         html += '<div class="' + barClass + '" style="height: 0%;" data-height="' + entry.height + '">';
@@ -833,10 +875,51 @@
         }
 
         html += '</div>';
-        html += '<span class="bar-label">' + entry.label + '</span>';
+        html += '<span class="bar-label">' + escapeHtml(entry.label) + '</span>';
         html += '</div>';
       }
       chart.innerHTML = html;
+
+      // Shared tooltip element
+      var tooltip = document.createElement('div');
+      tooltip.className = 'timeline-tooltip';
+      chart.appendChild(tooltip);
+
+      // Attach hover events to each bar-wrapper
+      var wrappers = chart.querySelectorAll('.bar-wrapper');
+      for (var w = 0; w < wrappers.length; w++) {
+        (function(wrapper, idx) {
+          wrapper.addEventListener('mouseenter', function() {
+            var entry = timeline[idx];
+            var tl = entry.type_lines || {};
+            var content = '<div class="tooltip-header">' + escapeHtml(entry.label) + '（' + entry.lines.toLocaleString('zh-TW') + '行）</div>';
+            if (entry.lines > 0) {
+              for (var k = 0; k < typeOrder.length; k++) {
+                var type = typeOrder[k];
+                if (tl[type] && tl[type] > 0) {
+                  content += '<div class="tooltip-row"><span class="tooltip-dot" style="background:var(--' + type + ', var(--other))"></span>' + escapeHtml(type) + ': ' + tl[type].toLocaleString('zh-TW') + '行</div>';
+                }
+              }
+            }
+            tooltip.innerHTML = content;
+            tooltip.classList.add('visible');
+
+            // Position centered above the bar
+            var chartRect = chart.getBoundingClientRect();
+            var wrapperRect = wrapper.getBoundingClientRect();
+            var tooltipWidth = tooltip.offsetWidth;
+            var left = (wrapperRect.left - chartRect.left) + wrapperRect.width / 2 - tooltipWidth / 2;
+            left = Math.max(0, Math.min(left, chart.offsetWidth - tooltipWidth));
+            var barEl = wrapper.querySelector('.bar');
+            var barTop = barEl ? (wrapperRect.top - chartRect.top + wrapperRect.height - barEl.offsetHeight) : wrapperRect.top - chartRect.top;
+            tooltip.style.left = left + 'px';
+            tooltip.style.top = Math.max(0, barTop - tooltip.offsetHeight - 8) + 'px';
+          });
+          wrapper.addEventListener('mouseleave', function() {
+            tooltip.classList.remove('visible');
+          });
+        })(wrappers[w], w);
+      }
     }
 
     function animateTimeline() {
