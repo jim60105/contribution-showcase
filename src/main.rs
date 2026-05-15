@@ -59,6 +59,18 @@ struct Generate {
     /// Maximum timeline buckets before escalating granularity
     #[arg(long, value_parser = parse_positive_usize)]
     timeline_max_buckets: Option<usize>,
+
+    /// Report title (overrides config)
+    #[arg(long)]
+    title: Option<String>,
+
+    /// Comma-separated commit types to include (overrides config), e.g. feat,fix,docs
+    #[arg(long)]
+    types: Option<String>,
+
+    /// Comma-separated commit hashes to exclude (overrides config)
+    #[arg(long)]
+    exclude_hashes: Option<String>,
 }
 
 #[derive(Parser)]
@@ -83,6 +95,22 @@ fn escape_html(text: &str) -> String {
         .replace('"', "&quot;")
 }
 
+/// Parse a comma-separated string into a list of trimmed, non-empty, lowercased values.
+fn parse_csv_list(input: &str, lowercase: bool) -> Vec<String> {
+    input
+        .split(',')
+        .map(|s| {
+            let trimmed = s.trim();
+            if lowercase {
+                trimmed.to_ascii_lowercase()
+            } else {
+                trimmed.to_string()
+            }
+        })
+        .filter(|s| !s.is_empty())
+        .collect()
+}
+
 fn run_generate(args: Generate) -> Result<()> {
     let mut config = config::Config::load(&args.config)?;
 
@@ -97,10 +125,26 @@ fn run_generate(args: Generate) -> Result<()> {
     if let Some(ref until) = args.until {
         filters.until = Some(until.clone());
     }
+    if let Some(ref types_csv) = args.types {
+        let parsed = parse_csv_list(types_csv, true);
+        if !parsed.is_empty() {
+            filters.types = Some(parsed);
+        }
+    }
+    if let Some(ref hashes_csv) = args.exclude_hashes {
+        let parsed = parse_csv_list(hashes_csv, true);
+        if !parsed.is_empty() {
+            filters.exclude_hashes = Some(parsed);
+        }
+    }
 
     if let Some(max_buckets) = args.timeline_max_buckets {
         let output = config.output.get_or_insert_with(Default::default);
         output.timeline_max_buckets = Some(max_buckets);
+    }
+
+    if let Some(ref title) = args.title {
+        config.title = Some(title.clone());
     }
 
     // Validate date range after CLI overrides are merged
@@ -436,6 +480,9 @@ mod tests {
             since: None,
             until: None,
             timeline_max_buckets: None,
+            title: None,
+            types: None,
+            exclude_hashes: None,
         };
         run_generate(args).unwrap();
         assert!(output_path.exists());
@@ -462,6 +509,9 @@ mod tests {
             since: None,
             until: None,
             timeline_max_buckets: None,
+            title: None,
+            types: None,
+            exclude_hashes: None,
         };
         run_generate(args).unwrap();
         assert!(override_output.exists());
@@ -487,6 +537,9 @@ mod tests {
             since: None,
             until: None,
             timeline_max_buckets: None,
+            title: None,
+            types: None,
+            exclude_hashes: None,
         };
         run_generate(args).unwrap();
         assert!(output_path.exists());
@@ -512,6 +565,9 @@ mod tests {
             since: Some("2020-01-01".to_string()),
             until: Some("2030-12-31".to_string()),
             timeline_max_buckets: None,
+            title: None,
+            types: None,
+            exclude_hashes: None,
         };
         run_generate(args).unwrap();
         assert!(output_path.exists());
@@ -561,6 +617,9 @@ mod tests {
             since: None,
             until: None,
             timeline_max_buckets: None,
+            title: None,
+            types: None,
+            exclude_hashes: None,
         };
         run_generate(args).unwrap();
         let html = std::fs::read_to_string(&output_path).unwrap();
@@ -600,6 +659,9 @@ mod tests {
             since: None,
             until: None,
             timeline_max_buckets: None,
+            title: None,
+            types: None,
+            exclude_hashes: None,
         };
         run_generate(args).unwrap();
         let html = std::fs::read_to_string(&output_path).unwrap();
@@ -634,6 +696,9 @@ mod tests {
             since: None,
             until: None,
             timeline_max_buckets: None,
+            title: None,
+            types: None,
+            exclude_hashes: None,
         };
         run_generate(args).unwrap();
         let html = std::fs::read_to_string(&output_path).unwrap();
@@ -664,6 +729,9 @@ mod tests {
             since: None,
             until: None,
             timeline_max_buckets: None,
+            title: None,
+            types: None,
+            exclude_hashes: None,
         };
         run_generate(args).unwrap();
         let html = std::fs::read_to_string(&output_path).unwrap();
@@ -699,6 +767,9 @@ mod tests {
             since: None,
             until: None,
             timeline_max_buckets: None,
+            title: None,
+            types: None,
+            exclude_hashes: None,
         };
         run_generate(args).unwrap();
         let html = std::fs::read_to_string(&output_path).unwrap();
@@ -732,6 +803,9 @@ mod tests {
             since: None,
             until: None,
             timeline_max_buckets: None,
+            title: None,
+            types: None,
+            exclude_hashes: None,
         };
         run_generate(args).unwrap();
         let html = std::fs::read_to_string(&output_path).unwrap();
@@ -765,6 +839,9 @@ mod tests {
             since: None,
             until: None,
             timeline_max_buckets: None,
+            title: None,
+            types: None,
+            exclude_hashes: None,
         };
         run_generate(args).unwrap();
         let html = std::fs::read_to_string(&output_path).unwrap();
@@ -794,6 +871,9 @@ mod tests {
             since: None,
             until: None,
             timeline_max_buckets: None,
+            title: None,
+            types: None,
+            exclude_hashes: None,
         };
         run_generate(args).unwrap();
         let html = std::fs::read_to_string(&output_path).unwrap();
@@ -857,6 +937,9 @@ mod tests {
             since: None,
             until: None,
             timeline_max_buckets: Some(5),
+            title: None,
+            types: None,
+            exclude_hashes: None,
         };
 
         let mut config = config::Config::load(&args.config).unwrap();
@@ -898,6 +981,9 @@ mod tests {
             since: None,
             until: None,
             timeline_max_buckets: None,
+            title: None,
+            types: None,
+            exclude_hashes: None,
         };
         run_generate(args).unwrap();
         let html = std::fs::read_to_string(&output_path).unwrap();
@@ -931,6 +1017,9 @@ mod tests {
             since: None,
             until: None,
             timeline_max_buckets: None,
+            title: None,
+            types: None,
+            exclude_hashes: None,
         };
         run_generate(args).unwrap();
         let html = std::fs::read_to_string(&output_path).unwrap();
@@ -960,6 +1049,9 @@ mod tests {
             since: None,
             until: None,
             timeline_max_buckets: None,
+            title: None,
+            types: None,
+            exclude_hashes: None,
         };
         run_generate(args).unwrap();
         let html = std::fs::read_to_string(&output_path).unwrap();
@@ -967,5 +1059,188 @@ mod tests {
             html.contains("<title>貢獻總覽</title>"),
             "Default title should be used when title is omitted from config"
         );
+    }
+
+    // --- CLI filter flags tests ---
+
+    #[test]
+    fn test_cli_title_overrides_config_and_appears_in_html() {
+        let repo_dir = init_temp_git_repo_for_main();
+        let config_dir = tempfile::tempdir().unwrap();
+        let output_path = config_dir.path().join("dist/out.html");
+        let config_content = format!(
+            "title = \"Config Title\"\n[output]\npath = {}\n[[projects]]\nname = \"proj\"\npath = {}\nbranch = \"main\"\n",
+            toml_literal(&output_path.to_string_lossy()),
+            toml_literal(&repo_dir.path().to_string_lossy())
+        );
+        let config_path = config_dir.path().join("showcase.toml");
+        std::fs::write(&config_path, config_content).unwrap();
+
+        let args = Generate {
+            config: config_path.to_str().unwrap().to_string(),
+            output: None,
+            author: None,
+            since: None,
+            until: None,
+            timeline_max_buckets: None,
+            title: Some("CLI Title".to_string()),
+            types: None,
+            exclude_hashes: None,
+        };
+        run_generate(args).unwrap();
+        let html = std::fs::read_to_string(&output_path).unwrap();
+        assert!(
+            html.contains("<title>CLI Title</title>"),
+            "CLI --title should override config title in HTML"
+        );
+    }
+
+    #[test]
+    fn test_cli_title_affects_default_output_filename() {
+        let repo_dir = init_temp_git_repo_for_main();
+        let config_dir = tempfile::tempdir().unwrap();
+        let config_content = format!(
+            "title = \"Config Name\"\n[[projects]]\nname = \"proj\"\npath = {}\nbranch = \"main\"\n",
+            toml_literal(&repo_dir.path().to_string_lossy())
+        );
+        let config_path = config_dir.path().join("showcase.toml");
+        std::fs::write(&config_path, config_content).unwrap();
+
+        // Config title -> "config-name.html", CLI title -> "cli-report.html"
+        // The CLI title should win, producing "cli-report.html" in the default output dir.
+        let args = Generate {
+            config: config_path.to_str().unwrap().to_string(),
+            output: None,
+            author: None,
+            since: None,
+            until: None,
+            timeline_max_buckets: None,
+            title: Some("CLI Report".to_string()),
+            types: None,
+            exclude_hashes: None,
+        };
+        run_generate(args).unwrap();
+        // output_path() returns relative "dist/cli-report.html" when no [output] section
+        let expected = std::path::Path::new("dist/cli-report.html");
+        assert!(
+            expected.exists(),
+            "Default output filename should use CLI title"
+        );
+        // Clean up the generated file
+        let _ = std::fs::remove_file(expected);
+    }
+
+    #[test]
+    fn test_cli_types_filters_commits() {
+        let repo_dir = init_temp_git_repo_for_main();
+        let config_dir = tempfile::tempdir().unwrap();
+        let output_path = config_dir.path().join("dist/out.html");
+        let config_content = format!(
+            "title = \"Test\"\n[output]\npath = {}\n[[projects]]\nname = \"proj\"\npath = {}\nbranch = \"main\"\n",
+            toml_literal(&output_path.to_string_lossy()),
+            toml_literal(&repo_dir.path().to_string_lossy())
+        );
+        let config_path = config_dir.path().join("showcase.toml");
+        std::fs::write(&config_path, config_content).unwrap();
+
+        let args = Generate {
+            config: config_path.to_str().unwrap().to_string(),
+            output: None,
+            author: None,
+            since: None,
+            until: None,
+            timeline_max_buckets: None,
+            title: None,
+            types: Some("docs".to_string()),
+            exclude_hashes: None,
+        };
+        run_generate(args).unwrap();
+        let html = std::fs::read_to_string(&output_path).unwrap();
+        assert!(
+            !html.contains("initial commit"),
+            "Types filter should exclude non-matching commit types"
+        );
+    }
+
+    #[test]
+    fn test_cli_exclude_hashes_excludes_commits() {
+        let repo_dir = init_temp_git_repo_for_main();
+        let config_dir = tempfile::tempdir().unwrap();
+        let output_path = config_dir.path().join("dist/out.html");
+        let config_content = format!(
+            "title = \"Test\"\n[output]\npath = {}\n[[projects]]\nname = \"proj\"\npath = {}\nbranch = \"main\"\n",
+            toml_literal(&output_path.to_string_lossy()),
+            toml_literal(&repo_dir.path().to_string_lossy())
+        );
+        let config_path = config_dir.path().join("showcase.toml");
+        std::fs::write(&config_path, config_content).unwrap();
+
+        let hash_output = std::process::Command::new("git")
+            .args(["log", "--format=%H", "-1"])
+            .current_dir(repo_dir.path())
+            .output()
+            .unwrap();
+        let hash = String::from_utf8(hash_output.stdout)
+            .unwrap()
+            .trim()
+            .to_string();
+
+        let args = Generate {
+            config: config_path.to_str().unwrap().to_string(),
+            output: None,
+            author: None,
+            since: None,
+            until: None,
+            timeline_max_buckets: None,
+            title: None,
+            types: None,
+            exclude_hashes: Some(hash),
+        };
+        run_generate(args).unwrap();
+        let html = std::fs::read_to_string(&output_path).unwrap();
+        assert!(
+            !html.contains("initial commit"),
+            "Excluded hash should remove the commit from output"
+        );
+    }
+
+    #[test]
+    fn test_cli_comma_parsing_handles_whitespace_and_empty() {
+        let repo_dir = init_temp_git_repo_for_main();
+        let config_dir = tempfile::tempdir().unwrap();
+        let output_path = config_dir.path().join("dist/out.html");
+        let config_content = format!(
+            "title = \"Test\"\n[output]\npath = {}\n[filters]\ntypes = [\"feat\"]\n[[projects]]\nname = \"proj\"\npath = {}\nbranch = \"main\"\n",
+            toml_literal(&output_path.to_string_lossy()),
+            toml_literal(&repo_dir.path().to_string_lossy())
+        );
+        let config_path = config_dir.path().join("showcase.toml");
+        std::fs::write(&config_path, config_content).unwrap();
+
+        let args = Generate {
+            config: config_path.to_str().unwrap().to_string(),
+            output: None,
+            author: None,
+            since: None,
+            until: None,
+            timeline_max_buckets: None,
+            title: None,
+            types: Some(" , , ".to_string()),
+            exclude_hashes: None,
+        };
+        run_generate(args).unwrap();
+        let html = std::fs::read_to_string(&output_path).unwrap();
+        assert!(
+            html.contains("initial commit"),
+            "Empty comma-separated list should not override config types"
+        );
+    }
+
+    #[test]
+    fn test_parse_csv_list_lowercases_and_trims() {
+        assert_eq!(parse_csv_list(" Feat , FIX ", true), vec!["feat", "fix"]);
+        assert_eq!(parse_csv_list(",,", true), Vec::<String>::new());
+        assert_eq!(parse_csv_list("AbC123", true), vec!["abc123"]);
+        assert_eq!(parse_csv_list(" Feat , FIX ", false), vec!["Feat", "FIX"]);
     }
 }

@@ -1,10 +1,4 @@
-# Rust CLI Scaffold
-
-## Purpose
-
-Provide a well-structured Rust CLI entry point for the contribution-showcase tool, using `clap` 4 with subcommands (`generate` and `init`) and `anyhow` for error handling. The `generate` subcommand accepts flags that control configuration, output destination, and commit filtering, with CLI flags always taking precedence over values loaded from the TOML config file. The `init` subcommand bootstraps a template configuration file.
-
-## Requirements
+## MODIFIED Requirements
 
 ### Requirement: CLI Argument Parsing
 
@@ -33,22 +27,6 @@ The system SHALL use clap 4 subcommands. The binary SHALL accept two subcommands
 - **GIVEN** the binary is invoked with an unrecognized subcommand (e.g. `foobar`)
 - **WHEN** argument parsing runs
 - **THEN** an error message is written to stderr and the process exits with a non-zero status
-
-### Requirement: Default Config File Path
-
-The system SHALL use `showcase.toml` as the default config file path when `--config` is not specified under the `generate` subcommand.
-
-#### Scenario: Config flag omitted under generate
-
-- **GIVEN** the binary is invoked with `generate` and no `--config` flag
-- **WHEN** the config path is resolved
-- **THEN** the effective config path is `showcase.toml`
-
-#### Scenario: Config flag provided under generate
-
-- **GIVEN** the binary is invoked with `generate --config custom.toml`
-- **WHEN** the config path is resolved
-- **THEN** the effective config path is `custom.toml`
 
 ### Requirement: CLI Flags Override Config Values
 
@@ -89,48 +67,3 @@ Under the `generate` subcommand, CLI flag values SHALL take precedence over valu
 - **GIVEN** the TOML config file sets `exclude_hashes = ["aaa111"]` under `[filters]`
 - **WHEN** the binary is invoked with `generate --exclude-hashes bbb222,ccc333`
 - **THEN** the effective exclude hashes list is `["bbb222", "ccc333"]`
-
-### Requirement: Error Output to Stderr
-
-Both `generate` and `init` subcommands SHALL write all error and diagnostic messages to stderr.
-
-#### Scenario: Generate config file not found
-
-- **GIVEN** the binary is invoked with `generate --config nonexistent.toml`
-- **WHEN** the config file cannot be found
-- **THEN** an error message is written to stderr and the process exits with a non-zero status
-
-#### Scenario: Init target file already exists
-
-- **GIVEN** a file named `showcase.toml` already exists in the current directory
-- **WHEN** the binary is invoked with `init`
-- **THEN** an error or warning message is written to stderr indicating the file already exists
-
-### Requirement: HTML Output to File
-
-The `generate` subcommand SHALL write generated HTML output to the file specified by the effective output path.
-
-#### Scenario: Successful generation under generate
-
-- **GIVEN** a valid config file exists and commit data is available
-- **WHEN** the binary is invoked with `generate`
-- **THEN** an HTML file is written to the effective output path and nothing is written to stdout
-
-### Requirement: Average Daily Lines in Data Model
-
-The `Summary` struct SHALL include an `avg_daily_lines` field of type `f64`
-that is serialised to JSON.
-
-#### Scenario: ShowcaseData serialisation
-- **GIVEN** a `ShowcaseData` instance with `summary.avg_daily_lines` set to `150.0`
-- **WHEN** the data is serialised to JSON
-- **THEN** the output contains `"avg_daily_lines": 150.0` within the summary object
-
-### Requirement: Anyhow Error Handling
-
-The system SHALL use `anyhow` for error propagation, providing contextual error messages throughout the call chain.
-
-#### Scenario: Nested error context
-- **GIVEN** a TOML parse error occurs inside config loading
-- **WHEN** the error propagates to `main`
-- **THEN** the displayed error includes context from each layer (e.g., "Failed to load config: invalid TOML: …")
