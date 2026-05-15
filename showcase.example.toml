@@ -24,6 +24,12 @@ title = "My Team's Contribution Showcase"
 # Defaults to "dist/index.html" when omitted.
 path = "dist/index.html"
 
+# timeline_max_buckets [optional] — Maximum number of timeline buckets before
+# the chart escalates to a coarser time granularity (e.g., daily → weekly →
+# monthly). Controls the density of bars in the contribution trend chart.
+# Defaults to 14 when omitted. Must be ≥ 1.
+# timeline_max_buckets = 14
+
 # --------------------------------------------------------------------------
 # [filters] [optional]
 # --------------------------------------------------------------------------

@@ -303,7 +303,7 @@ fn collect_git_commits_filtered(
     Ok(commits)
 }
 
-fn build_timeline(commits: &[CommitEntry]) -> Vec<TimelineEntry> {
+fn build_timeline(commits: &[CommitEntry], max_buckets: usize) -> Vec<TimelineEntry> {
     use chrono::Datelike;
 
     let dates: Vec<(chrono::NaiveDate, usize)> = commits
@@ -322,7 +322,7 @@ fn build_timeline(commits: &[CommitEntry]) -> Vec<TimelineEntry> {
     let min_date = dates.iter().map(|(d, _)| *d).min().unwrap();
     let max_date = dates.iter().map(|(d, _)| *d).max().unwrap();
 
-    // Five-level granularity cascade: escalate when distinct bucket count > 14
+    // Five-level granularity cascade: escalate when distinct bucket count > max_buckets
     #[derive(Clone, Copy)]
     enum Granularity {
         Daily,
@@ -334,32 +334,32 @@ fn build_timeline(commits: &[CommitEntry]) -> Vec<TimelineEntry> {
 
     let day_count = (max_date - min_date).num_days() + 1; // inclusive
 
-    let granularity = if day_count <= 14 {
+    let granularity = if (day_count as usize) <= max_buckets {
         Granularity::Daily
     } else {
-        // Count distinct ISO weeks (early exit once > 14)
+        // Count distinct ISO weeks (early exit once > max_buckets)
         let mut week_set = std::collections::HashSet::new();
         let mut d = min_date;
         while d <= max_date {
             week_set.insert(d.format("%G-W%V").to_string());
-            if week_set.len() > 14 {
+            if week_set.len() > max_buckets {
                 break;
             }
             d += chrono::Duration::days(1);
         }
-        if week_set.len() <= 14 {
+        if week_set.len() <= max_buckets {
             Granularity::Weekly
         } else {
             let month_count = (max_date.year() - min_date.year()) * 12 + max_date.month() as i32
                 - min_date.month() as i32
                 + 1;
-            if month_count <= 14 {
+            if (month_count as usize) <= max_buckets {
                 Granularity::Monthly
             } else {
                 let min_q = (min_date.month() as i32 - 1) / 3 + 1;
                 let max_q = (max_date.month() as i32 - 1) / 3 + 1;
                 let quarter_count = (max_date.year() - min_date.year()) * 4 + max_q - min_q + 1;
-                if quarter_count <= 14 {
+                if (quarter_count as usize) <= max_buckets {
                     Granularity::Quarterly
                 } else {
                     Granularity::Yearly
@@ -915,7 +915,7 @@ pub fn collect(config: &Config) -> Result<ShowcaseData> {
         format!("{} ~ {}", min_date, max_date)
     };
 
-    let timeline = build_timeline(&all_commits);
+    let timeline = build_timeline(&all_commits, config.timeline_max_buckets());
     let type_breakdown = build_type_breakdown(&all_commits);
 
     let projects: Vec<ProjectData> = config
@@ -1100,7 +1100,7 @@ mod tests {
                 deletions: 2,
             },
         ];
-        let timeline = build_timeline(&commits);
+        let timeline = build_timeline(&commits, 14);
         assert!(timeline.len() >= 2, "Should have at least 2 week buckets");
         let total: usize = timeline.iter().map(|t| t.lines).sum();
         assert_eq!(total, 10 + 5 + 20 + 3 + 7 + 2);
@@ -1375,7 +1375,7 @@ mod tests {
             insertions: 0,
             deletions: 0,
         }];
-        let timeline = build_timeline(&commits);
+        let timeline = build_timeline(&commits, 14);
         assert_eq!(timeline.len(), 1);
         assert_eq!(timeline[0].lines, 0);
     }
@@ -1404,7 +1404,7 @@ mod tests {
                 deletions: 0,
             },
         ];
-        let timeline = build_timeline(&commits);
+        let timeline = build_timeline(&commits, 14);
         for entry in &timeline {
             assert_eq!(
                 entry.height, 0.0,
@@ -2663,7 +2663,7 @@ mod tests {
 
     #[test]
     fn test_build_timeline_empty_commits() {
-        let timeline = build_timeline(&[]);
+        let timeline = build_timeline(&[], 14);
         assert!(timeline.is_empty());
     }
 
@@ -2687,7 +2687,7 @@ mod tests {
             make_commit("2025-03-12", 20, 3),
             make_commit("2025-03-15", 7, 2),
         ];
-        let timeline = build_timeline(&commits);
+        let timeline = build_timeline(&commits, 14);
         // Contiguous daily buckets from 03-10 to 03-15 = 6 days
         assert_eq!(timeline.len(), 6);
         assert!(timeline.iter().all(|t| t.label.len() == 10)); // %Y-%m-%d
@@ -2708,7 +2708,7 @@ mod tests {
             make_commit("2025-03-15", 20, 3),
             make_commit("2025-03-31", 7, 2),
         ];
-        let timeline = build_timeline(&commits);
+        let timeline = build_timeline(&commits, 14);
         assert!(timeline.iter().all(|t| t.label.contains("-W")));
         let total: usize = timeline.iter().map(|t| t.lines).sum();
         assert_eq!(total, 10 + 5 + 20 + 3 + 7 + 2);
@@ -2722,7 +2722,7 @@ mod tests {
             make_commit("2025-06-01", 20, 3),
             make_commit("2025-08-15", 7, 2),
         ];
-        let timeline = build_timeline(&commits);
+        let timeline = build_timeline(&commits, 14);
         // Contiguous monthly buckets from 2025-01 to 2025-08 = 8 months
         assert_eq!(timeline.len(), 8);
         assert!(timeline.iter().all(|t| t.label.len() == 7)); // %Y-%m
@@ -2745,7 +2745,7 @@ mod tests {
             make_commit("2025-03-01", 10, 0),
             make_commit("2025-03-15", 5, 0),
         ];
-        let timeline = build_timeline(&commits);
+        let timeline = build_timeline(&commits, 14);
         assert!(timeline.iter().all(|t| t.label.contains("-W")));
     }
 
@@ -2756,7 +2756,7 @@ mod tests {
             make_commit("2025-01-01", 10, 0),
             make_commit("2025-03-02", 5, 0),
         ];
-        let timeline = build_timeline(&commits);
+        let timeline = build_timeline(&commits, 14);
         assert!(timeline.iter().all(|t| t.label.contains("-W")));
     }
 
@@ -2767,7 +2767,7 @@ mod tests {
             make_commit("2025-01-01", 10, 0),
             make_commit("2025-03-03", 5, 0),
         ];
-        let timeline = build_timeline(&commits);
+        let timeline = build_timeline(&commits, 14);
         assert!(timeline.iter().all(|t| t.label.contains("-W")));
     }
 
@@ -2777,7 +2777,7 @@ mod tests {
             make_commit("2025-06-01", 10, 5),
             make_commit("2025-06-01", 20, 3),
         ];
-        let timeline = build_timeline(&commits);
+        let timeline = build_timeline(&commits, 14);
         assert_eq!(timeline.len(), 1);
         assert_eq!(timeline[0].label, "2025-06-01");
         assert_eq!(timeline[0].lines, 10 + 5 + 20 + 3);
@@ -2791,7 +2791,7 @@ mod tests {
             make_commit("2025-03-01", 10, 0),
             make_commit("2025-03-14", 5, 0),
         ];
-        let timeline = build_timeline(&commits);
+        let timeline = build_timeline(&commits, 14);
         // Contiguous daily buckets: 03-01 through 03-14 = 14 days
         assert_eq!(timeline.len(), 14);
         assert_eq!(timeline[0].label, "2025-03-01");
@@ -2809,7 +2809,7 @@ mod tests {
             make_commit("2024-01-15", 10, 5),
             make_commit("2025-04-20", 20, 3),
         ];
-        let timeline = build_timeline(&commits);
+        let timeline = build_timeline(&commits, 14);
         assert!(timeline.iter().all(|t| t.label.contains("-Q")));
         // 2024-Q1 to 2025-Q2 = 6 quarters
         assert_eq!(timeline.len(), 6);
@@ -2828,7 +2828,7 @@ mod tests {
             make_commit("2023-01-15", 10, 0),
             make_commit("2024-06-15", 5, 0),
         ];
-        let timeline = build_timeline(&commits);
+        let timeline = build_timeline(&commits, 14);
         // 2023-Q1 to 2024-Q2 = 6 quarters
         assert_eq!(timeline.len(), 6);
         assert!(timeline.iter().all(|t| t.label.contains("-Q")));
@@ -2847,7 +2847,7 @@ mod tests {
             make_commit("2020-01-01", 100, 50),
             make_commit("2025-12-31", 20, 10),
         ];
-        let timeline = build_timeline(&commits);
+        let timeline = build_timeline(&commits, 14);
         assert_eq!(timeline.len(), 6); // 2020..2025
         assert!(timeline.iter().all(|t| t.label.len() == 4)); // YYYY
         assert_eq!(timeline[0].label, "2020");
@@ -2865,7 +2865,7 @@ mod tests {
             make_commit("2015-06-01", 10, 0),
             make_commit("2025-06-01", 5, 0),
         ];
-        let timeline = build_timeline(&commits);
+        let timeline = build_timeline(&commits, 14);
         assert_eq!(timeline.len(), 11); // 2015..2025
         assert!(timeline.iter().all(|t| t.label.len() == 4));
         assert_eq!(timeline[0].label, "2015");
@@ -2883,7 +2883,7 @@ mod tests {
             make_commit("2025-03-01", 10, 0),
             make_commit("2025-03-14", 5, 0),
         ];
-        let timeline = build_timeline(&commits);
+        let timeline = build_timeline(&commits, 14);
         assert_eq!(timeline.len(), 14);
         assert!(timeline.iter().all(|t| t.label.len() == 10)); // YYYY-MM-DD
     }
@@ -2895,7 +2895,7 @@ mod tests {
             make_commit("2025-03-01", 10, 0),
             make_commit("2025-03-15", 5, 0),
         ];
-        let timeline = build_timeline(&commits);
+        let timeline = build_timeline(&commits, 14);
         assert!(timeline.iter().all(|t| t.label.contains("-W")));
     }
 
@@ -2907,7 +2907,7 @@ mod tests {
             make_commit("2025-01-06", 10, 0), // W02
             make_commit("2025-04-13", 5, 0),  // W15
         ];
-        let timeline = build_timeline(&commits);
+        let timeline = build_timeline(&commits, 14);
         assert!(timeline.iter().all(|t| t.label.contains("-W")));
         assert_eq!(timeline.len(), 14);
     }
@@ -2919,7 +2919,7 @@ mod tests {
             make_commit("2025-01-01", 10, 0),
             make_commit("2025-04-30", 5, 0),
         ];
-        let timeline = build_timeline(&commits);
+        let timeline = build_timeline(&commits, 14);
         // Jan-Apr = 4 months, but > 14 weeks → monthly
         // Check label format: YYYY-MM (7 chars)
         assert!(timeline.iter().all(|t| t.label.len() == 7));
@@ -2932,7 +2932,7 @@ mod tests {
             make_commit("2024-01-01", 10, 0),
             make_commit("2025-03-31", 5, 0),
         ];
-        let timeline = build_timeline(&commits);
+        let timeline = build_timeline(&commits, 14);
         // 15 months > 14 → quarterly. Q1 2024 to Q1 2025 = 5 quarters
         assert!(timeline.iter().all(|t| t.label.contains("-Q")));
     }
@@ -2944,7 +2944,7 @@ mod tests {
             make_commit("2024-01-01", 10, 0),
             make_commit("2025-02-28", 5, 0),
         ];
-        let timeline = build_timeline(&commits);
+        let timeline = build_timeline(&commits, 14);
         // 14 months ≤ 14 → monthly
         assert_eq!(timeline.len(), 14);
         assert!(timeline.iter().all(|t| t.label.len() == 7));
@@ -2958,7 +2958,7 @@ mod tests {
             make_commit("2022-01-15", 10, 0),
             make_commit("2025-06-15", 5, 0),
         ];
-        let timeline = build_timeline(&commits);
+        let timeline = build_timeline(&commits, 14);
         assert_eq!(timeline.len(), 14);
         assert!(timeline.iter().all(|t| t.label.contains("-Q")));
     }
@@ -2970,7 +2970,7 @@ mod tests {
             make_commit("2021-01-01", 10, 0),
             make_commit("2024-09-30", 5, 0),
         ];
-        let timeline = build_timeline(&commits);
+        let timeline = build_timeline(&commits, 14);
         // Q1 2021 to Q3 2024 = 15 quarters > 14 → yearly
         assert!(timeline.iter().all(|t| t.label.len() == 4)); // YYYY
         assert_eq!(timeline.len(), 4); // 2021, 2022, 2023, 2024
@@ -2984,7 +2984,7 @@ mod tests {
             make_commit("2024-12-25", 10, 0),
             make_commit("2025-01-05", 5, 0),
         ];
-        let timeline = build_timeline(&commits);
+        let timeline = build_timeline(&commits, 14);
         // 12 inclusive days → daily
         assert_eq!(timeline.len(), 12);
         assert!(timeline.iter().all(|t| t.label.len() == 10));
@@ -2998,7 +2998,7 @@ mod tests {
             make_commit("2024-12-20", 10, 0),
             make_commit("2025-01-20", 5, 0),
         ];
-        let timeline = build_timeline(&commits);
+        let timeline = build_timeline(&commits, 14);
         assert!(timeline.iter().all(|t| t.label.contains("-W")));
         // Should have labels crossing ISO year boundary:
         // 2024-W51, 2024-W52, 2025-W01, 2025-W02, 2025-W03, 2025-W04
@@ -3006,6 +3006,88 @@ mod tests {
         let has_2025 = timeline.iter().any(|t| t.label.starts_with("2025-W"));
         assert!(has_2024, "Should have 2024 ISO week labels");
         assert!(has_2025, "Should have 2025 ISO week labels");
+    }
+
+    // ========================================================================
+    // build_timeline() custom threshold tests
+    // ========================================================================
+
+    #[test]
+    fn test_build_timeline_custom_threshold_7_escalates_daily_to_weekly() {
+        // 10-day span: with threshold 14, stays daily. With threshold 7, > 7 days → escalates to weekly
+        let commits = vec![
+            make_commit("2025-03-01", 10, 0),
+            make_commit("2025-03-10", 10, 0),
+        ];
+        // threshold 14: daily (10 days ≤ 14)
+        let timeline_14 = build_timeline(&commits, 14);
+        assert_eq!(timeline_14[0].label, "2025-03-01"); // daily format
+
+        // threshold 7: weekly (10 days > 7, but ~2 weeks ≤ 7)
+        let timeline_7 = build_timeline(&commits, 7);
+        assert!(
+            timeline_7[0].label.contains("-W"),
+            "expected weekly format, got {}",
+            timeline_7[0].label
+        );
+    }
+
+    #[test]
+    fn test_build_timeline_custom_threshold_21_keeps_daily_longer() {
+        // 20-day span: with threshold 14, escalates to weekly. With threshold 21, stays daily (20 ≤ 21)
+        let commits = vec![
+            make_commit("2025-03-01", 10, 0),
+            make_commit("2025-03-20", 10, 0),
+        ];
+        // threshold 14: weekly (20 > 14)
+        let timeline_14 = build_timeline(&commits, 14);
+        assert!(
+            timeline_14[0].label.contains("-W"),
+            "expected weekly with threshold 14"
+        );
+
+        // threshold 21: daily (20 ≤ 21)
+        let timeline_21 = build_timeline(&commits, 21);
+        assert_eq!(
+            timeline_21[0].label, "2025-03-01",
+            "expected daily with threshold 21"
+        );
+    }
+
+    #[test]
+    fn test_build_timeline_custom_threshold_1_forces_yearly() {
+        // 6-month span with threshold 1: cascades past daily (>1), weekly (>1), monthly (6>1), quarterly (2>1) → yearly
+        let commits = vec![
+            make_commit("2025-01-15", 10, 0),
+            make_commit("2025-06-15", 10, 0),
+        ];
+        let timeline = build_timeline(&commits, 1);
+        // yearly: label should be just "2025"
+        assert_eq!(timeline[0].label, "2025");
+        assert_eq!(timeline.len(), 1);
+    }
+
+    #[test]
+    fn test_build_timeline_custom_threshold_7_escalates_weekly_to_monthly() {
+        // Span producing ~10 distinct weeks (> 7): with threshold 7, escalates to monthly
+        // 2025-01-06 (Mon W02) to 2025-03-16 (Sun W11) → 10 distinct ISO weeks
+        let commits = vec![
+            make_commit("2025-01-06", 10, 0),
+            make_commit("2025-03-16", 10, 0),
+        ];
+        // threshold 14: weekly (10 weeks ≤ 14)
+        let timeline_14 = build_timeline(&commits, 14);
+        assert!(
+            timeline_14[0].label.contains("-W"),
+            "expected weekly with threshold 14"
+        );
+
+        // threshold 7: monthly (10 weeks > 7, but 3 months ≤ 7)
+        let timeline_7 = build_timeline(&commits, 7);
+        assert_eq!(
+            timeline_7[0].label, "2025-01",
+            "expected monthly with threshold 7"
+        );
     }
 
     // ========================================================================
@@ -3393,7 +3475,7 @@ mod tests {
                 deletions: 2,
             },
         ];
-        let timeline = build_timeline(&commits);
+        let timeline = build_timeline(&commits, 14);
         assert_eq!(timeline.len(), 1);
         let entry = &timeline[0];
         assert_eq!(entry.type_lines.len(), 3);
@@ -3429,7 +3511,7 @@ mod tests {
                 deletions: 3,
             },
         ];
-        let timeline = build_timeline(&commits);
+        let timeline = build_timeline(&commits, 14);
         assert_eq!(timeline.len(), 1);
         let entry = &timeline[0];
         assert_eq!(entry.type_lines.len(), 1);
@@ -3461,7 +3543,7 @@ mod tests {
                 deletions: 0,
             },
         ];
-        let timeline = build_timeline(&commits);
+        let timeline = build_timeline(&commits, 14);
         assert_eq!(timeline.len(), 1);
         let entry = &timeline[0];
         assert_eq!(entry.type_lines.len(), 1);
@@ -3494,7 +3576,7 @@ mod tests {
                 deletions: 3,
             },
         ];
-        let timeline = build_timeline(&commits);
+        let timeline = build_timeline(&commits, 14);
         // Daily granularity (5 days <= 14), gap days should exist
         assert!(timeline.len() >= 3);
         // Middle entries (gap days) should have empty type_lines

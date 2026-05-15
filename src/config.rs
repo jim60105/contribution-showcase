@@ -1,6 +1,8 @@
 use anyhow::Result;
 use serde::Deserialize;
 
+pub const DEFAULT_TIMELINE_MAX_BUCKETS: usize = 14;
+
 #[derive(Debug, Deserialize)]
 pub struct Config {
     pub title: Option<String>,
@@ -9,9 +11,11 @@ pub struct Config {
     pub filters: Option<FilterConfig>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Default)]
 pub struct OutputConfig {
     pub path: Option<String>,
+    #[serde(default)]
+    pub timeline_max_buckets: Option<usize>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -83,6 +87,13 @@ impl Config {
             }
         }
 
+        // Validate timeline_max_buckets
+        if let Some(ref output) = config.output
+            && let Some(0) = output.timeline_max_buckets
+        {
+            anyhow::bail!("timeline_max_buckets must be ≥ 1");
+        }
+
         Ok(config)
     }
 
@@ -96,6 +107,13 @@ impl Config {
             "dist/{}",
             sanitize_title_for_filename(self.title.as_deref())
         )
+    }
+
+    pub fn timeline_max_buckets(&self) -> usize {
+        self.output
+            .as_ref()
+            .and_then(|o| o.timeline_max_buckets)
+            .unwrap_or(DEFAULT_TIMELINE_MAX_BUCKETS)
     }
 
     pub fn filters(&self) -> FilterConfig {
@@ -464,5 +482,44 @@ mod tests {
             sanitize_title_for_filename(Some("Report #1: Q2 (2025)")),
             "report-1-q2-2025.html"
         );
+    }
+
+    #[test]
+    fn test_config_timeline_max_buckets_present() {
+        let dir = temp_dir_unique("timeline-present");
+        let config_file = dir.join("showcase.toml");
+        fs::write(
+            &config_file,
+            "[output]\ntimeline_max_buckets = 21\n\n[[projects]]\nname = \"test\"\npath = \"/tmp/test\"\n",
+        )
+        .unwrap();
+        let config = Config::load(config_file.to_str().unwrap()).unwrap();
+        assert_eq!(config.timeline_max_buckets(), 21);
+    }
+
+    #[test]
+    fn test_config_timeline_max_buckets_absent() {
+        let dir = temp_dir_unique("timeline-absent");
+        let config_file = dir.join("showcase.toml");
+        fs::write(
+            &config_file,
+            "[[projects]]\nname = \"test\"\npath = \"/tmp/test\"\n",
+        )
+        .unwrap();
+        let config = Config::load(config_file.to_str().unwrap()).unwrap();
+        assert_eq!(config.timeline_max_buckets(), 14);
+    }
+
+    #[test]
+    fn test_config_timeline_max_buckets_zero_rejected() {
+        let dir = temp_dir_unique("timeline-zero");
+        let config_file = dir.join("showcase.toml");
+        fs::write(
+            &config_file,
+            "[output]\ntimeline_max_buckets = 0\n\n[[projects]]\nname = \"test\"\npath = \"/tmp/test\"\n",
+        )
+        .unwrap();
+        let result = Config::load(config_file.to_str().unwrap());
+        assert!(result.is_err());
     }
 }

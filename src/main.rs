@@ -26,6 +26,14 @@ enum Command {
     Init(Init),
 }
 
+fn parse_positive_usize(s: &str) -> Result<usize, String> {
+    let val: usize = s.parse().map_err(|e| format!("{e}"))?;
+    if val < 1 {
+        return Err("value must be ≥ 1".to_string());
+    }
+    Ok(val)
+}
+
 #[derive(Parser)]
 struct Generate {
     /// Config file path
@@ -47,6 +55,10 @@ struct Generate {
     /// Filter commits until date YYYY-MM-DD (overrides config)
     #[arg(long)]
     until: Option<String>,
+
+    /// Maximum timeline buckets before escalating granularity
+    #[arg(long, value_parser = parse_positive_usize)]
+    timeline_max_buckets: Option<usize>,
 }
 
 #[derive(Parser)]
@@ -77,6 +89,11 @@ fn run_generate(args: Generate) -> Result<()> {
     }
     if let Some(ref until) = args.until {
         filters.until = Some(until.clone());
+    }
+
+    if let Some(max_buckets) = args.timeline_max_buckets {
+        let output = config.output.get_or_insert_with(Default::default);
+        output.timeline_max_buckets = Some(max_buckets);
     }
 
     // Validate date range after CLI overrides are merged
@@ -363,6 +380,7 @@ mod tests {
             author: None,
             since: None,
             until: None,
+            timeline_max_buckets: None,
         };
         run_generate(args).unwrap();
         assert!(output_path.exists());
@@ -388,6 +406,7 @@ mod tests {
             author: None,
             since: None,
             until: None,
+            timeline_max_buckets: None,
         };
         run_generate(args).unwrap();
         assert!(override_output.exists());
@@ -412,6 +431,7 @@ mod tests {
             author: Some("Test User".to_string()),
             since: None,
             until: None,
+            timeline_max_buckets: None,
         };
         run_generate(args).unwrap();
         assert!(output_path.exists());
@@ -436,6 +456,7 @@ mod tests {
             author: None,
             since: Some("2020-01-01".to_string()),
             until: Some("2030-12-31".to_string()),
+            timeline_max_buckets: None,
         };
         run_generate(args).unwrap();
         assert!(output_path.exists());
@@ -484,6 +505,7 @@ mod tests {
             author: None,
             since: None,
             until: None,
+            timeline_max_buckets: None,
         };
         run_generate(args).unwrap();
         let html = std::fs::read_to_string(&output_path).unwrap();
@@ -522,6 +544,7 @@ mod tests {
             author: None,
             since: None,
             until: None,
+            timeline_max_buckets: None,
         };
         run_generate(args).unwrap();
         let html = std::fs::read_to_string(&output_path).unwrap();
@@ -555,6 +578,7 @@ mod tests {
             author: None,
             since: None,
             until: None,
+            timeline_max_buckets: None,
         };
         run_generate(args).unwrap();
         let html = std::fs::read_to_string(&output_path).unwrap();
@@ -584,6 +608,7 @@ mod tests {
             author: None,
             since: None,
             until: None,
+            timeline_max_buckets: None,
         };
         run_generate(args).unwrap();
         let html = std::fs::read_to_string(&output_path).unwrap();
@@ -618,6 +643,7 @@ mod tests {
             author: None,
             since: None,
             until: None,
+            timeline_max_buckets: None,
         };
         run_generate(args).unwrap();
         let html = std::fs::read_to_string(&output_path).unwrap();
@@ -650,6 +676,7 @@ mod tests {
             author: None,
             since: None,
             until: None,
+            timeline_max_buckets: None,
         };
         run_generate(args).unwrap();
         let html = std::fs::read_to_string(&output_path).unwrap();
@@ -682,6 +709,7 @@ mod tests {
             author: None,
             since: None,
             until: None,
+            timeline_max_buckets: None,
         };
         run_generate(args).unwrap();
         let html = std::fs::read_to_string(&output_path).unwrap();
@@ -710,6 +738,7 @@ mod tests {
             author: None,
             since: None,
             until: None,
+            timeline_max_buckets: None,
         };
         run_generate(args).unwrap();
         let html = std::fs::read_to_string(&output_path).unwrap();
@@ -717,5 +746,80 @@ mod tests {
             html.contains("timeline-tooltip"),
             "HTML should contain timeline-tooltip class for hover tooltips"
         );
+    }
+
+    // --- CLI --timeline-max-buckets tests ---
+
+    #[test]
+    fn test_cli_timeline_max_buckets_parsed() {
+        let cli = Cli::try_parse_from(["prog", "generate", "--timeline-max-buckets", "7"]).unwrap();
+        match cli.command {
+            Command::Generate(g) => assert_eq!(g.timeline_max_buckets, Some(7)),
+            _ => panic!("expected Generate"),
+        }
+    }
+
+    #[test]
+    fn test_cli_timeline_max_buckets_default_none() {
+        let cli = Cli::try_parse_from(["prog", "generate"]).unwrap();
+        match cli.command {
+            Command::Generate(g) => assert_eq!(g.timeline_max_buckets, None),
+            _ => panic!("expected Generate"),
+        }
+    }
+
+    #[test]
+    fn test_cli_timeline_max_buckets_rejects_zero() {
+        let result = Cli::try_parse_from(["prog", "generate", "--timeline-max-buckets", "0"]);
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_cli_timeline_max_buckets_override_applied() {
+        let dir = tempfile::tempdir().unwrap();
+        let repo_dir = dir.path().join("repo");
+        std::fs::create_dir_all(&repo_dir).unwrap();
+        std::process::Command::new("git")
+            .args(["init"])
+            .current_dir(&repo_dir)
+            .output()
+            .unwrap();
+
+        let config_path = dir.path().join("showcase.toml");
+        std::fs::write(
+            &config_path,
+            format!(
+                "title = 'test'\n[[projects]]\nname = 'p'\npath = {}\n",
+                toml_literal(repo_dir.to_str().unwrap())
+            ),
+        )
+        .unwrap();
+
+        let args = Generate {
+            config: config_path.to_str().unwrap().to_string(),
+            output: None,
+            author: None,
+            since: None,
+            until: None,
+            timeline_max_buckets: Some(5),
+        };
+
+        let mut config = config::Config::load(&args.config).unwrap();
+        assert!(
+            config.output.is_none()
+                || config
+                    .output
+                    .as_ref()
+                    .unwrap()
+                    .timeline_max_buckets
+                    .is_none()
+        );
+
+        if let Some(max_buckets) = args.timeline_max_buckets {
+            let output = config.output.get_or_insert_with(Default::default);
+            output.timeline_max_buckets = Some(max_buckets);
+        }
+
+        assert_eq!(config.timeline_max_buckets(), 5);
     }
 }
