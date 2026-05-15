@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-05-15
+
+### Added
+
+- Configurable timeline granularity threshold via `timeline_max_buckets` config field and `--timeline-max-buckets` CLI flag (default: 14)
+- Dynamic HTML page title derived from the configured `title` field, with HTML-entity escaping for XSS safety
+- CLI filter flags `--title`, `--types`, and `--exclude-hashes` for overriding TOML config values at runtime with comma-separated input and case-insensitive matching
+- README now recommends installing the CLI from crates.io
+
+### Changed
+
+- Timeline bar chart columns use dynamically computed widths proportional to bucket count with even spacing, replacing fixed-width bars
+
+### Fixed
+
+- OpenSpec Empty Data State requirement reworded to pass strict validation
+- Test reliability improved by disabling GPG signing in test git repos to prevent hangs
+
 ## [0.3.0] - 2026-05-14
 
 ### Added
@@ -72,7 +90,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/).
 
 ---
 
-[Unreleased]: https://github.com/jim60105/contribution-showcase/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/jim60105/contribution-showcase/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/jim60105/contribution-showcase/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/jim60105/contribution-showcase/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/jim60105/contribution-showcase/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/jim60105/contribution-showcase/releases/tag/v0.1.0
