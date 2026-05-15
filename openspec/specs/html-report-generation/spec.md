@@ -177,6 +177,13 @@ The Timeline chart JavaScript SHALL read `entry.lines` (total lines changed)
 for value annotations and peak identification, while continuing to use
 `entry.height` (backend-normalized 0–100) for bar rendering dimensions.
 
+Each bar wrapper SHALL have its width dynamically computed so that the total
+width of all bars equals exactly half the chart container width. Specifically,
+each bar wrapper's width SHALL be set to `100 / (N × 2)` percent, where N is
+the number of timeline buckets. The `.timeline-chart` container SHALL distribute
+the remaining space evenly around and between bars using `space-evenly`
+justification.
+
 Each bar SHALL be rendered as a vertically stacked column of colored segments.
 Each segment represents a conventional commit type and is colored using the
 corresponding CSS custom property (`--feat`, `--fix`, `--docs`, `--refactor`,
@@ -201,6 +208,24 @@ X-axis bucket labels SHALL be positioned with sufficient vertical offset below t
 - **GIVEN** a timeline data entry with `lines: 1500`, `height: 100`, `label: "2024-W03"`, and `type_lines: {"feat": 900, "fix": 600}`
 - **WHEN** the timeline chart is rendered
 - **THEN** the bar height MUST be proportional to `entry.height`, the bar SHALL contain two colored segments (`feat` at 60% and `fix` at 40% of the bar height), and the peak annotation SHALL read "高峰：2024-W03（1,500行）"
+
+#### Scenario: Bar width is computed from bucket count
+
+- **GIVEN** a timeline with 6 buckets rendered in a chart container
+- **WHEN** the bars are rendered
+- **THEN** each `.bar-wrapper` SHALL have a width of approximately `100 / (6 × 2) ≈ 8.33%`, and the total bar width SHALL equal approximately 50% of the chart width
+
+#### Scenario: Single bucket uses half the chart width
+
+- **GIVEN** a timeline with exactly 1 bucket
+- **WHEN** the bar is rendered
+- **THEN** the `.bar-wrapper` SHALL have a width of 50% of the chart container
+
+#### Scenario: Spacing distributes evenly around bars
+
+- **GIVEN** a timeline with N buckets
+- **WHEN** the bars are rendered
+- **THEN** the gaps between and around bars SHALL be visually equal, consistent with `space-evenly` justification
 
 #### Scenario: Segment ordering is fixed across bars
 
