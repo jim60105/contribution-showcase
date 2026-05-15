@@ -409,6 +409,7 @@ mod tests {
         run(&["init", "--initial-branch", "main"]);
         run(&["config", "user.email", "test@example.com"]);
         run(&["config", "user.name", "Test User"]);
+        run(&["config", "commit.gpgsign", "false"]);
         std::fs::write(repo.join("file.txt"), "hello world\n").unwrap();
         run(&["add", "."]);
         run(&["commit", "-m", "feat: initial commit"]);

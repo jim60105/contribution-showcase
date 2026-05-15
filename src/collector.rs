@@ -2073,6 +2073,7 @@ mod tests {
         run(&["init", "--initial-branch", "main"]);
         run(&["config", "user.email", "test@example.com"]);
         run(&["config", "user.name", "Test User"]);
+        run(&["config", "commit.gpgsign", "false"]);
         dir
     }
 
