@@ -242,7 +242,7 @@
     .timeline-chart {
       display: flex;
       align-items: flex-end;
-      gap: 10px;
+      justify-content: space-evenly;
       height: 280px;
       width: 100%;
       max-width: var(--container);
@@ -251,7 +251,6 @@
     }
 
     .bar-wrapper {
-      flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -851,11 +850,12 @@
         if (timeline[i].lines > timeline[peakIdx].lines) peakIdx = i;
       }
 
+      var barWidthPct = (100 / (timeline.length * 2)).toFixed(4);
       var html = '';
       for (var j = 0; j < timeline.length; j++) {
         var entry = timeline[j];
         var isPeak = j === peakIdx;
-        html += '<div class="bar-wrapper">';
+        html += '<div class="bar-wrapper" style="width:' + barWidthPct + '%">';
         if (isPeak && timeline[peakIdx].lines > 0) {
           html += '<span class="peak-annotation">高峰：' + escapeHtml(entry.label) + '（' + entry.lines.toLocaleString('zh-TW') + '行）</span>';
         }
