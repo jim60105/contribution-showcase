@@ -11,7 +11,8 @@
 # --------------------------------------------------------------------------
 # title [optional]
 # --------------------------------------------------------------------------
-# A human-readable title displayed at the top of the generated report.
+# A human-readable title displayed at the top of the generated report
+# and in the browser tab (<title> element).
 title = "My Team's Contribution Showcase"
 
 # --------------------------------------------------------------------------

@@ -76,6 +76,13 @@ fn escape_json_for_html_script(json: &str) -> String {
         .replace('\u{2029}', r"\u2029")
 }
 
+fn escape_html(text: &str) -> String {
+    text.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+}
+
 fn run_generate(args: Generate) -> Result<()> {
     let mut config = config::Config::load(&args.config)?;
 
@@ -115,9 +122,10 @@ fn run_generate(args: Generate) -> Result<()> {
 
     // Generate HTML
     let template = include_str!("../templates/page.html");
+    let html = template.replace("__PAGE_TITLE__", &escape_html(&data.title));
     let json_data = serde_json::to_string(&data)?;
     let json_data = escape_json_for_html_script(&json_data);
-    let html = template.replace("\"__SHOWCASE_DATA__\"", &json_data);
+    let html = html.replace("\"__SHOWCASE_DATA__\"", &json_data);
 
     // Write output
     if let Some(parent) = std::path::Path::new(&output_path).parent() {
@@ -216,6 +224,52 @@ mod tests {
         assert!(!escaped.contains('<'));
         assert!(!escaped.contains('>'));
         assert!(!escaped.contains('&'));
+    }
+
+    // --- escape_html tests ---
+
+    #[test]
+    fn test_escape_html_plain_text() {
+        assert_eq!(escape_html("hello world"), "hello world");
+    }
+
+    #[test]
+    fn test_escape_html_empty_string() {
+        assert_eq!(escape_html(""), "");
+    }
+
+    #[test]
+    fn test_escape_html_ampersand() {
+        assert_eq!(escape_html("Tom & Jerry"), "Tom &amp; Jerry");
+    }
+
+    #[test]
+    fn test_escape_html_angle_brackets() {
+        assert_eq!(escape_html("<script>"), "&lt;script&gt;");
+    }
+
+    #[test]
+    fn test_escape_html_double_quotes() {
+        assert_eq!(escape_html(r#"say "hi""#), "say &quot;hi&quot;");
+    }
+
+    #[test]
+    fn test_escape_html_combined_characters() {
+        assert_eq!(
+            escape_html("A & B <C> \"D\""),
+            "A &amp; B &lt;C&gt; &quot;D&quot;"
+        );
+    }
+
+    #[test]
+    fn test_escape_html_title_breakout_payload() {
+        let payload = r#"</title><script>alert(1)</script>"#;
+        let escaped = escape_html(payload);
+        assert_eq!(
+            escaped,
+            "&lt;/title&gt;&lt;script&gt;alert(1)&lt;/script&gt;"
+        );
+        assert!(!escaped.contains("</title>"));
     }
 
     // --- 4.2: Init subcommand tests ---
@@ -821,5 +875,96 @@ mod tests {
         }
 
         assert_eq!(config.timeline_max_buckets(), 5);
+    }
+
+    #[test]
+    fn test_generated_html_title_matches_config() {
+        let repo_dir = init_temp_git_repo_for_main();
+        let config_dir = tempfile::tempdir().unwrap();
+        let output_path = config_dir.path().join("out.html");
+        let config_content = format!(
+            "title = \"我的超讚專案！貢獻總覽\"\n[output]\npath = {}\n[[projects]]\nname = \"p\"\npath = {}\nbranch = \"main\"\n",
+            toml_literal(&output_path.to_string_lossy()),
+            toml_literal(&repo_dir.path().to_string_lossy())
+        );
+        let config_path = config_dir.path().join("showcase.toml");
+        std::fs::write(&config_path, config_content).unwrap();
+
+        let args = Generate {
+            config: config_path.to_str().unwrap().to_string(),
+            output: None,
+            author: None,
+            since: None,
+            until: None,
+            timeline_max_buckets: None,
+        };
+        run_generate(args).unwrap();
+        let html = std::fs::read_to_string(&output_path).unwrap();
+        assert!(
+            html.contains("<title>我的超讚專案！貢獻總覽</title>"),
+            "Page title should match configured title"
+        );
+        assert!(
+            !html.contains("__PAGE_TITLE__"),
+            "Placeholder should be replaced"
+        );
+    }
+
+    #[test]
+    fn test_generated_html_title_escapes_special_chars() {
+        let repo_dir = init_temp_git_repo_for_main();
+        let config_dir = tempfile::tempdir().unwrap();
+        let output_path = config_dir.path().join("out.html");
+        let config_content = format!(
+            "title = \"A & B <C>\"\n[output]\npath = {}\n[[projects]]\nname = \"p\"\npath = {}\nbranch = \"main\"\n",
+            toml_literal(&output_path.to_string_lossy()),
+            toml_literal(&repo_dir.path().to_string_lossy())
+        );
+        let config_path = config_dir.path().join("showcase.toml");
+        std::fs::write(&config_path, config_content).unwrap();
+
+        let args = Generate {
+            config: config_path.to_str().unwrap().to_string(),
+            output: None,
+            author: None,
+            since: None,
+            until: None,
+            timeline_max_buckets: None,
+        };
+        run_generate(args).unwrap();
+        let html = std::fs::read_to_string(&output_path).unwrap();
+        assert!(
+            html.contains("<title>A &amp; B &lt;C&gt;</title>"),
+            "HTML-sensitive characters should be escaped in <title>"
+        );
+    }
+
+    #[test]
+    fn test_generated_html_title_defaults_when_omitted() {
+        let repo_dir = init_temp_git_repo_for_main();
+        let config_dir = tempfile::tempdir().unwrap();
+        let output_path = config_dir.path().join("out.html");
+        let config_content = format!(
+            "[output]\npath = {}\n[[projects]]\nname = \"p\"\npath = {}\nbranch = \"main\"\n",
+            toml_literal(&output_path.to_string_lossy()),
+            toml_literal(&repo_dir.path().to_string_lossy())
+        );
+        let config_path = config_dir.path().join("showcase.toml");
+        std::fs::write(&config_path, config_content).unwrap();
+
+        let args = Generate {
+            config: config_path.to_str().unwrap().to_string(),
+            output: None,
+            author: None,
+            since: None,
+            until: None,
+            timeline_max_buckets: None,
+        };
+        run_generate(args).unwrap();
+        let html = std::fs::read_to_string(&output_path).unwrap();
+        assert!(
+            html.contains("<title>貢獻總覽</title>"),
+            "Default title should be used when title is omitted from config"
+        );
     }
 }
