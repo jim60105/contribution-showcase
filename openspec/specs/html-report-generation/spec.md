@@ -324,9 +324,10 @@ and values MUST be formatted with `toLocaleString('zh-TW')`.
 
 ### Requirement: Empty Data State
 
-When a slide's data set is empty (zero commits, zero proposals, zero timeline
-entries), the slide SHALL still render with a centred message indicating no
-data is available (e.g. "無提交記錄", "無提案紀錄"). Slides are never hidden.
+The system SHALL render a centred empty-state message on any slide whose data
+set is empty (zero commits, zero proposals, zero timeline entries). The message
+SHALL indicate no data is available (e.g. "無提交記錄", "無提案紀錄"). Slides
+are never hidden.
 
 #### Scenario: No commits after filtering
 - **GIVEN** a `ShowcaseData` instance with zero commits
