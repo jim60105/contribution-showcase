@@ -79,6 +79,7 @@ title = "My Contribution Showcase"
 # 輸出設定（選填）
 [output]
 path = "dist/index.html"
+# timeline_max_buckets = 14   # 時間軸最大分段數（預設：14）
 
 # 全域篩選條件（選填）
 [filters]
@@ -100,6 +101,8 @@ coverage_result_path = "coverage.xml"
 
 **必填欄位：** `name`、`path`。其餘欄位皆為選填。
 
+> **CLI 覆寫：** `--title`、`--types`、`--exclude-hashes` 等 CLI 旗標會覆寫設定檔中的對應值。以逗號分隔的輸入會自動去除空白並轉為小寫。
+
 ## CLI 用法
 
 ### `generate` — 產生報告
@@ -115,6 +118,10 @@ contribution-showcase generate [OPTIONS]
 | `--author <NAME>` | 依作者篩選（覆寫設定檔中的值） |
 | `--since <DATE>` | 起始日期 YYYY-MM-DD（覆寫設定檔中的值） |
 | `--until <DATE>` | 結束日期 YYYY-MM-DD（覆寫設定檔中的值） |
+| `--title <TITLE>` | 報告標題（覆寫設定檔中的值，同時影響預設輸出檔名） |
+| `--types <TYPES>` | 以逗號分隔的 Conventional Commit 類型篩選（覆寫設定檔），例如 `feat,fix,docs` |
+| `--exclude-hashes <HASHES>` | 以逗號分隔的 commit SHA 排除清單（覆寫設定檔） |
+| `--timeline-max-buckets <N>` | 時間軸最大分段數，超過時自動提升時間粒度（預設：14） |
 
 ### `init` — 建立起始設定檔
 
